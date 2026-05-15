@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wordly Wise Lesson 1 — Vocabulary Quest</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.0/dist/confetti.browser.min.js"></script>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--gold:#f0c040;--gold2:#e8a820;--teal:#1fcfb0;--teal2:#0fa890;--navy:#0d1b2a;--correct:#22c97a;--wrong:#e84040;--white:#f0f4ff;--muted:#7a9ab8;}
+  body{font-family:'Nunito',sans-serif;background:var(--navy);color:var(--white);min-height:100vh;overflow-x:hidden;display:flex;flex-direction:column;align-items:center;}
+  canvas#bg{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+  #app{position:relative;z-index:1;width:100%;max-width:680px;padding:1.5rem 1rem 3rem;min-height:100vh;display:flex;flex-direction:column}
+  #home-link{position:fixed;top:1rem;left:1rem;z-index:10;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:.35rem .85rem;font-size:.78rem;font-weight:700;color:var(--muted);text-decoration:none;transition:background .15s,color .15s;letter-spacing:.04em}
+  #home-link:hover{background:rgba(255,255,255,.13);color:var(--white)}
+  #header{text-align:center;margin-bottom:1.5rem}
+  #header h1{font-family:'Cinzel',serif;font-size:1.5rem;color:var(--gold);letter-spacing:.06em;text-shadow:0 0 20px rgba(240,192,64,.4)}
+  #header p{font-size:.8rem;color:var(--muted);margin-top:.25rem;letter-spacing:.08em;text-transform:uppercase}
+  #scorebar{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;padding:.6rem 1rem;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px}
+  .sb-item{text-align:center}
+  .sb-label{font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+  .sb-val{font-size:1.1rem;font-weight:800;color:var(--white)}
+  .sb-val.gold{color:var(--gold)} .sb-val.teal{color:var(--teal)}
+  #progress-wrap{margin-bottom:1.25rem}
+  #progress-bar-bg{height:6px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden}
+  #progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--teal2),var(--teal));border-radius:4px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+  #progress-label{font-size:.7rem;color:var(--muted);text-align:right;margin-top:.3rem}
+  #type-badge{display:inline-flex;align-items:center;padding:.3rem .8rem;border-radius:20px;font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:.9rem;border:1px solid currentColor;opacity:.9}
+  #q-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:1.5rem;margin-bottom:1rem;backdrop-filter:blur(10px);transition:transform .15s;position:relative;overflow:hidden;}
+  #q-card::before{content:'';position:absolute;inset:0;border-radius:18px;background:linear-gradient(135deg,rgba(255,255,255,.04) 0%,transparent 60%);pointer-events:none}
+  #q-text{font-size:1.1rem;font-weight:700;line-height:1.55;white-space:pre-line;color:var(--white)}
+  #hint-box{margin-top:.9rem;padding:.6rem .9rem;background:rgba(240,192,64,.08);border:1px solid rgba(240,192,64,.2);border-radius:10px;font-size:.8rem;color:var(--gold);line-height:1.5;display:none}
+  #hint-box.show{display:block;animation:fadeIn .2s ease}
+  #choices{display:grid;gap:.6rem;margin-bottom:1rem}
+  .choice{width:100%;padding:.85rem 1.1rem;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.12);border-radius:12px;font-family:'Nunito',sans-serif;font-size:.95rem;font-weight:600;color:var(--white);cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;transition:background .15s,border-color .15s,transform .1s;}
+  .choice:hover:not(:disabled){background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.25);transform:translateX(3px)}
+  .choice:disabled{cursor:default}
+  .choice.correct{background:rgba(34,201,122,.15);border-color:var(--correct);color:var(--correct)}
+  .choice.wrong{background:rgba(232,64,64,.12);border-color:var(--wrong);color:var(--wrong)}
+  .choice.dim{opacity:.4}
+  .choice-icon{font-size:1.1rem;flex-shrink:0;margin-left:.5rem}
+  #actions{display:flex;justify-content:space-between;align-items:center;min-height:42px}
+  #hint-btn{background:transparent;border:1px solid rgba(240,192,64,.3);color:var(--gold);border-radius:20px;padding:.4rem .9rem;font-family:'Nunito',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;transition:background .15s;letter-spacing:.04em}
+  #hint-btn:hover{background:rgba(240,192,64,.1)}
+  #feedback-text{font-size:.95rem;font-weight:800}
+  #next-btn{display:none;background:var(--teal2);border:none;color:#fff;border-radius:22px;padding:.55rem 1.4rem;font-family:'Nunito',sans-serif;font-size:.9rem;font-weight:800;cursor:pointer;transition:background .15s,transform .1s}
+  #next-btn:hover{background:var(--teal);transform:translateX(2px)}
+  #results{display:none;flex-direction:column;align-items:center;text-align:center;animation:fadeIn .4s ease}
+  #results.show{display:flex}
+  #results-score{font-family:'Cinzel',serif;font-size:4rem;font-weight:900;line-height:1;margin:.5rem 0}
+  #results-grade{font-size:1.2rem;font-weight:800;margin-bottom:.3rem}
+  #results-sub{font-size:.8rem;color:var(--muted);margin-bottom:1.5rem}
+  #type-breakdown{display:grid;grid-template-columns:repeat(5,1fr);gap:.5rem;width:100%;margin-bottom:1.5rem}
+  .tb-cell{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:.6rem .3rem;text-align:center}
+  .tb-type{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.2rem}
+  .tb-score{font-size:1.1rem;font-weight:800}
+  #review-list{width:100%;text-align:left;margin-bottom:1.5rem}
+  .review-item{display:flex;gap:.7rem;padding:.6rem .8rem;border-bottom:1px solid rgba(255,255,255,.05);font-size:.8rem;align-items:flex-start}
+  .review-item:last-child{border-bottom:none}
+  .ri-icon{font-size:1rem;flex-shrink:0;margin-top:.05rem}
+  .ri-wrong-ans{color:var(--wrong);font-size:.75rem;margin-top:.2rem}
+  .ri-meta{color:var(--muted);font-size:.72rem}
+  .ri-word{color:var(--white);font-weight:700}
+  #retry-btn{background:var(--gold2);border:none;color:#0d1b2a;border-radius:24px;padding:.7rem 2rem;font-family:'Cinzel',serif;font-size:.95rem;font-weight:700;cursor:pointer;letter-spacing:.05em;transition:background .15s,transform .1s;margin-bottom:.8rem}
+  #retry-btn:hover{background:var(--gold);transform:scale(1.03)}
+  #flash-from-results{background:transparent;border:1px solid rgba(255,255,255,.2);color:var(--muted);border-radius:24px;padding:.55rem 1.6rem;font-family:'Nunito',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;transition:background .15s,color .15s}
+  #flash-from-results:hover{background:rgba(255,255,255,.07);color:var(--white)}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+  .shake{animation:shake .35s ease}
+  @keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.04)}100%{transform:scale(1)}}
+  .pop{animation:pop .25s ease}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+  #start-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;text-align:center;animation:fadeIn .4s ease}
+  #start-screen h2{font-family:'Cinzel',serif;font-size:2rem;color:var(--gold);margin-bottom:.5rem;text-shadow:0 0 30px rgba(240,192,64,.3)}
+  #start-screen p{color:var(--muted);max-width:380px;line-height:1.6;margin-bottom:.4rem;font-size:.9rem}
+  .pill-grid{display:flex;flex-wrap:wrap;gap:.4rem;justify-content:center;margin:1rem 0 1.5rem}
+  .pill{padding:.3rem .8rem;border-radius:20px;font-size:.72rem;font-weight:700;letter-spacing:.05em;border:1px solid currentColor;text-transform:uppercase}
+  #start-btn{background:var(--gold2);border:none;color:#0d1b2a;border-radius:24px;padding:.8rem 2.4rem;font-family:'Cinzel',serif;font-size:1rem;font-weight:700;cursor:pointer;letter-spacing:.06em;transition:background .15s,transform .1s;box-shadow:0 0 30px rgba(240,192,64,.2);margin-bottom:.8rem}
+  #start-btn:hover{background:var(--gold);transform:scale(1.04)}
+  #flash-btn{background:transparent;border:1px solid rgba(31,207,176,.4);color:var(--teal);border-radius:24px;padding:.65rem 2rem;font-family:'Nunito',sans-serif;font-size:.9rem;font-weight:800;cursor:pointer;transition:background .15s}
+  #flash-btn:hover{background:rgba(31,207,176,.1)}
+  #quiz{display:none;flex-direction:column;width:100%;animation:fadeIn .3s ease}
+  #quiz.show{display:flex}
+  #flashcard-screen{display:none;flex-direction:column;align-items:center;width:100%;animation:fadeIn .3s ease}
+  #flashcard-screen.show{display:flex}
+  #fc-header{text-align:center;margin-bottom:1rem;width:100%}
+  #fc-header h2{font-family:'Cinzel',serif;font-size:1.2rem;color:var(--gold)}
+  #fc-header p{font-size:.75rem;color:var(--muted);margin-top:.2rem}
+  #fc-counter{font-size:.75rem;color:var(--muted);margin-bottom:.8rem;letter-spacing:.06em}
+  .fc-scene{width:100%;max-width:480px;perspective:1000px;margin-bottom:1.2rem}
+  .fc-card{width:100%;min-height:220px;position:relative;transform-style:preserve-3d;transition:transform .5s cubic-bezier(.4,0,.2,1);cursor:pointer}
+  .fc-card.flipped{transform:rotateY(180deg)}
+  .fc-front,.fc-back{position:absolute;width:100%;min-height:220px;backface-visibility:hidden;border-radius:18px;padding:2rem 1.5rem;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+  .fc-front{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12)}
+  .fc-back{background:rgba(31,207,176,.07);border:1px solid rgba(31,207,176,.25);transform:rotateY(180deg)}
+  .fc-word{font-family:'Cinzel',serif;font-size:2rem;font-weight:900;color:var(--gold);margin-bottom:.4rem}
+  .fc-pos{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem}
+  .fc-tap{font-size:.72rem;color:var(--muted);margin-top:.8rem}
+  .fc-def{font-size:.95rem;font-weight:600;color:var(--white);line-height:1.55;margin-bottom:.6rem}
+  .fc-example{font-size:.8rem;color:var(--teal);font-style:italic;line-height:1.5}
+  #fc-controls{display:flex;gap:.8rem;align-items:center;justify-content:center;margin-bottom:1rem}
+  .fc-nav{background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.15);color:var(--white);border-radius:50%;width:44px;height:44px;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,transform .1s}
+  .fc-nav:hover{background:rgba(255,255,255,.15);transform:scale(1.08)}
+  .fc-nav:disabled{opacity:.3;cursor:default}
+  #fc-flip-btn{background:var(--teal2);border:none;color:#fff;border-radius:22px;padding:.5rem 1.4rem;font-family:'Nunito',sans-serif;font-size:.88rem;font-weight:800;cursor:pointer;transition:background .15s}
+  #fc-flip-btn:hover{background:var(--teal)}
+  #fc-progress-bar-bg{width:100%;max-width:480px;height:4px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;margin-bottom:1rem}
+  #fc-progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--teal2),var(--teal));border-radius:4px;transition:width .4s ease}
+  #fc-back-btn{background:transparent;border:1px solid rgba(255,255,255,.2);color:var(--muted);border-radius:24px;padding:.5rem 1.4rem;font-family:'Nunito',sans-serif;font-size:.83rem;font-weight:700;cursor:pointer;transition:background .15s,color .15s}
+  #fc-back-btn:hover{background:rgba(255,255,255,.07);color:var(--white)}
+  #particle-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:2;pointer-events:none}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<canvas id="particle-canvas"></canvas>
+<a id="home-link" href="../index.html">← Home</a>
+<div id="app">
+  <div id="start-screen">
+    <div id="header" style="margin-bottom:1rem">
+      <h1>Vocabulary Quest</h1>
+      <p>Wordly Wise 3000 · Book 6 · Lesson 1</p>
+    </div>
+    <h2>🗽 Lady Liberty Challenge</h2>
+    <p>Master all 15 words from Lesson 1. Each round draws 20 questions at random from 195 total.</p>
+    <div class="pill-grid">
+      <span class="pill" style="color:#1fcfb0;border-color:#1fcfb0">50 Synonyms</span>
+      <span class="pill" style="color:#4ea6f0;border-color:#4ea6f0">35 Antonyms</span>
+      <span class="pill" style="color:#f0c040;border-color:#f0c040">40 Analogies</span>
+      <span class="pill" style="color:#e870a0;border-color:#e870a0">35 Similes</span>
+      <span class="pill" style="color:#a878f0;border-color:#a878f0">35 Metaphors</span>
+    </div>
+    <p style="font-size:.75rem;color:var(--muted)">20 questions per round · Hint available · Streak tracking</p>
+    <br>
+    <button id="start-btn" onclick="startQuiz()">Begin the Quest →</button>
+    <button id="flash-btn" onclick="showFlashcards()">📚 Study Flashcards</button>
+  </div>
+
+  <div id="flashcard-screen">
+    <div id="fc-header">
+      <h2>📚 Flashcards — Lesson 1</h2>
+      <p>Tap a card to flip · Use arrows to navigate</p>
+    </div>
+    <div id="fc-counter">1 of 15</div>
+    <div id="fc-progress-bar-bg"><div id="fc-progress-bar-fill" style="width:6.67%"></div></div>
+    <div class="fc-scene">
+      <div class="fc-card" id="fc-card" onclick="flipCard()">
+        <div class="fc-front">
+          <div class="fc-word" id="fc-word">—</div>
+          <div class="fc-pos" id="fc-pos">—</div>
+          <div class="fc-tap">Tap to reveal definition</div>
+        </div>
+        <div class="fc-back">
+          <div class="fc-def" id="fc-def">—</div>
+          <div class="fc-example" id="fc-example">—</div>
+        </div>
+      </div>
+    </div>
+    <div id="fc-controls">
+      <button class="fc-nav" id="fc-prev" onclick="fcNav(-1)">&#8249;</button>
+      <button id="fc-flip-btn" onclick="flipCard()">Flip Card</button>
+      <button class="fc-nav" id="fc-next" onclick="fcNav(1)">&#8250;</button>
+    </div>
+    <button id="fc-back-btn" onclick="showStart()">← Back to Start</button>
+  </div>
+
+  <div id="quiz">
+    <div id="header">
+      <h1>Vocabulary Quest</h1>
+      <p>Wordly Wise 3000 · Book 6 · Lesson 1</p>
+    </div>
+    <div id="scorebar">
+      <div class="sb-item"><div class="sb-label">Score</div><div class="sb-val gold" id="sb-score">0</div></div>
+      <div class="sb-item"><div class="sb-label">Question</div><div class="sb-val" id="sb-q">1 / 20</div></div>
+      <div class="sb-item"><div class="sb-label">Streak</div><div class="sb-val teal" id="sb-streak">0</div></div>
+    </div>
+    <div id="progress-wrap">
+      <div id="progress-bar-bg"><div id="progress-bar-fill" style="width:0%"></div></div>
+      <div id="progress-label">0 of 20 complete</div>
+    </div>
+    <div id="type-badge">—</div>
+    <div id="q-card">
+      <div id="q-text">Loading...</div>
+      <div id="hint-box">&#128161; <span id="hint-text"></span></div>
+    </div>
+    <div id="choices"></div>
+    <div id="actions">
+      <button id="hint-btn" onclick="toggleHint()">&#128161; Show Hint</button>
+      <div id="feedback-text"></div>
+      <button id="next-btn" onclick="nextQuestion()">Next →</button>
+    </div>
+  </div>
+
+  <div id="results">
+    <div id="header" style="margin-bottom:.5rem">
+      <h1>Vocabulary Quest</h1>
+      <p>Wordly Wise 3000 · Book 6 · Lesson 1</p>
+    </div>
+    <div id="results-score" class="gold"></div>
+    <div id="results-grade"></div>
+    <div id="results-sub"></div>
+    <div id="type-breakdown"></div>
+    <div id="review-list"></div>
+    <button id="retry-btn" onclick="startQuiz()">🗽 Play Again</button>
+    <button id="flash-from-results" onclick="showFlashcards()">📚 Review Flashcards</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  const c=document.getElementById('bg'),ctx=c.getContext('2d');
+  let W,H,stars=[];
+  function resize(){W=c.width=window.innerWidth;H=c.height=window.innerHeight;stars=[];for(let i=0;i<180;i++)stars.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.4+.2,spd:Math.random()*.3+.05,alpha:Math.random()*.8+.2,tw:Math.random()*Math.PI*2});}
+  function draw(){
+    ctx.clearRect(0,0,W,H);ctx.fillStyle='#0d1b2a';ctx.fillRect(0,0,W,H);
+    const t=Date.now()/1000;
+    let g=ctx.createRadialGradient(W*.3,H*.2,0,W*.3,H*.2,W*.55);g.addColorStop(0,'rgba(31,207,176,.04)');g.addColorStop(1,'transparent');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    g=ctx.createRadialGradient(W*.75,H*.7,0,W*.75,H*.7,W*.45);g.addColorStop(0,'rgba(168,120,240,.04)');g.addColorStop(1,'transparent');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    stars.forEach(s=>{const tw=.5+.5*Math.sin(t*1.5+s.tw);ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle='rgba(240,244,255,'+(s.alpha*tw)+')';ctx.fill();s.y+=s.spd;if(s.y>H){s.y=0;s.x=Math.random()*W;}});
+    requestAnimationFrame(draw);
+  }
+  window.addEventListener('resize',resize);resize();draw();
+})();
+
+const pc=document.getElementById('particle-canvas'),pctx=pc.getContext('2d');
+let particles=[];
+function resizePC(){pc.width=window.innerWidth;pc.height=window.innerHeight;}
+window.addEventListener('resize',resizePC);resizePC();
+function spawnParticles(x,y,color,count){count=count||24;for(let i=0;i<count;i++){const a=Math.random()*Math.PI*2,s=Math.random()*6+2;particles.push({x:x,y:y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-3,r:Math.random()*5+2,color:color,alpha:1,decay:Math.random()*.025+.015});}}
+function animateParticles(){pctx.clearRect(0,0,pc.width,pc.height);particles=particles.filter(function(p){return p.alpha>0;});particles.forEach(function(p){p.x+=p.vx;p.y+=p.vy;p.vy+=.2;p.alpha-=p.decay;pctx.beginPath();pctx.arc(p.x,p.y,p.r,0,Math.PI*2);pctx.fillStyle=p.color.replace('1)',p.alpha+')');pctx.fill();});requestAnimationFrame(animateParticles);}
+animateParticles();
+
+const WORDS=[
+  {word:"affection",pos:"n.",def:"A fond or tender feeling.",example:"Hugging is one way to show affection."},
+  {word:"appeal",pos:"v. / n.",def:"(v.) To make an earnest request; to be of interest to. (n.) An earnest request; the power to attract.",example:"The letter contained an appeal for money to help the homeless."},
+  {word:"clasp",pos:"v. / n.",def:"(v.) To grasp or hold tightly. (n.) A strong grasp; something that holds two parts together.",example:"The dancers clasped hands and circled the maypole."},
+  {word:"conspicuous",pos:"adj.",def:"Easily or plainly seen; standing out.",example:"His great height made him conspicuous in any crowd."},
+  {word:"contribute",pos:"v.",def:"To give along with others; to have a part in bringing about.",example:"Exercise contributes greatly to good health."},
+  {word:"declare",pos:"v.",def:"To make known; to state openly.",example:"A public holiday was declared on October 28, 1886."},
+  {word:"eloquent",pos:"adj.",def:"Skilled at speaking or writing; having the power to move people.",example:"Anne Frank's eloquent diary often moves readers to tears."},
+  {word:"exhibit",pos:"v. / n.",def:"(v.) To show in public. (n.) An item or collection of items in a public show.",example:"Local artists exhibited their paintings at the library."},
+  {word:"ferry",pos:"n. / v.",def:"(n.) A boat that carries people and goods across a stretch of water. (v.) To move people or goods by boat.",example:"The island is reached by a short ferry ride from lower Manhattan."},
+  {word:"immigrant",pos:"n.",def:"A person who comes into a country to live there.",example:"Many Polish immigrants settled in Chicago."},
+  {word:"lofty",pos:"adj.",def:"1. Very tall or high. 2. Noble in feeling or ideals. 3. Showing a too-proud or superior attitude.",example:"Ending world hunger in our lifetime is a lofty goal."},
+  {word:"pedestal",pos:"n.",def:"A base or support on which something stands.",example:"At the museum, I almost knocked the sculpture off its pedestal."},
+  {word:"persecute",pos:"v.",def:"To treat cruelly or harshly because of political, religious, or other differences.",example:"The First Amendment does not allow anyone to be persecuted for religious beliefs."},
+  {word:"poverty",pos:"n.",def:"The state of being poor.",example:"The food stamp program helps families living in poverty."},
+  {word:"unveil",pos:"v.",def:"1. To remove a covering from. 2. To make known or reveal for the first time.",example:"The police chief will unveil a plan to reduce street crime at today's meeting."},
+];
+
+const QUESTIONS=[
+  {type:"synonym",word:"affection",q:"Which word is closest in meaning to AFFECTION?",a:"warmth",ch:["warmth","hatred","distance","fear"],hint:"Affection is a fond or tender feeling for someone."},
+  {type:"synonym",word:"affection",q:"Which word means the same as AFFECTIONATE?",a:"loving",ch:["loving","cold","harsh","distant"],hint:"Affectionate means gentle and loving."},
+  {type:"synonym",word:"appeal",q:"Which word means the same as APPEAL (to make a request)?",a:"request",ch:["request","ignore","demand","refuse"],hint:"Three students appealed for more time to finish the work."},
+  {type:"synonym",word:"appeal",q:"Which word best matches APPEAL (the power to attract)?",a:"attraction",ch:["attraction","repulsion","boredom","ugliness"],hint:"Neither the asparagus nor the meatloaf had much appeal."},
+  {type:"synonym",word:"clasp",q:"Which word means the same as CLASP (verb)?",a:"grip",ch:["grip","release","drop","push"],hint:"The dancers clasped hands and circled the maypole."},
+  {type:"synonym",word:"clasp",q:"Which word best matches CLASP (a hook or fastener)?",a:"fastener",ch:["fastener","key","rope","knot"],hint:"The necklace has a clasp in the shape of a snake biting its tail."},
+  {type:"synonym",word:"conspicuous",q:"Which word best matches CONSPICUOUS?",a:"obvious",ch:["obvious","hidden","invisible","secret"],hint:"His great height made him conspicuous in any crowd."},
+  {type:"synonym",word:"conspicuous",q:"Which word means the same as CONSPICUOUS?",a:"noticeable",ch:["noticeable","concealed","buried","invisible"],hint:"Conspicuous means easily or plainly seen."},
+  {type:"synonym",word:"contribute",q:"Which word means the same as CONTRIBUTE (to give)?",a:"donate",ch:["donate","keep","take","steal"],hint:"I contributed a spinach salad to the potluck supper."},
+  {type:"synonym",word:"contribute",q:"Which word best matches CONTRIBUTE (to help bring about)?",a:"help",ch:["help","hinder","prevent","harm"],hint:"Exercise contributes greatly to good health."},
+  {type:"synonym",word:"declare",q:"Which word means the same as DECLARE?",a:"announce",ch:["announce","hide","deny","whisper"],hint:"To declare is to make something known openly."},
+  {type:"synonym",word:"declare",q:"Which word best matches DECLARATION?",a:"statement",ch:["statement","question","secret","rumor"],hint:"A declaration is a public statement."},
+  {type:"synonym",word:"eloquent",q:"Which word best matches ELOQUENT?",a:"persuasive",ch:["persuasive","dull","silent","boring"],hint:"Anne Frank's eloquent diary often moves readers to tears."},
+  {type:"synonym",word:"eloquent",q:"Which word means the same as ELOQUENCE?",a:"expressiveness",ch:["expressiveness","silence","clumsiness","confusion"],hint:"Dr. Martin Luther King Jr.'s eloquence made him a powerful leader."},
+  {type:"synonym",word:"exhibit",q:"Which word means the same as EXHIBIT (verb)?",a:"display",ch:["display","hide","bury","cover"],hint:"Local artists exhibited their paintings at the library."},
+  {type:"synonym",word:"exhibit",q:"Which word best matches EXHIBITION?",a:"public show",ch:["public show","storage","archive","secret"],hint:"An exhibition is a large-scale public show."},
+  {type:"synonym",word:"ferry",q:"Which word means the same as FERRY (verb)?",a:"transport",ch:["transport","stop","block","abandon"],hint:"The boat owner who ferried us across the lake would not accept payment."},
+  {type:"synonym",word:"ferry",q:"Which word best matches FERRY (noun)?",a:"vessel",ch:["vessel","bridge","road","train"],hint:"A ferry is a boat that carries people and goods across water."},
+  {type:"synonym",word:"immigrant",q:"Which word best matches IMMIGRANT?",a:"newcomer",ch:["newcomer","native","citizen","local"],hint:"An immigrant comes into a new country to live there."},
+  {type:"synonym",word:"immigrant",q:"Which word means the same as IMMIGRANT?",a:"settler",ch:["settler","tourist","sightseer","visitor"],hint:"Many Polish immigrants settled in Chicago."},
+  {type:"synonym",word:"lofty",q:"Which word means the same as LOFTY (tall or high)?",a:"towering",ch:["towering","short","low","flat"],hint:"Lofty elm trees provided welcome shade along the streets."},
+  {type:"synonym",word:"lofty",q:"Which word best matches LOFTY (noble in ideals)?",a:"noble",ch:["noble","petty","selfish","mean"],hint:"Ending world hunger in our lifetime is a lofty goal."},
+  {type:"synonym",word:"lofty",q:"Which word means the same as LOFTY (too-proud attitude)?",a:"arrogant",ch:["arrogant","humble","modest","shy"],hint:"The lofty way the diner spoke to the waiter made me uncomfortable."},
+  {type:"synonym",word:"pedestal",q:"Which word best matches PEDESTAL?",a:"base",ch:["base","roof","wall","ceiling"],hint:"A pedestal is a base or support on which something stands."},
+  {type:"synonym",word:"pedestal",q:"Which word means the same as PEDESTAL?",a:"support",ch:["support","obstacle","barrier","trap"],hint:"At the museum, the sculpture stood on its pedestal."},
+  {type:"synonym",word:"persecute",q:"Which word means the same as PERSECUTE?",a:"oppress",ch:["oppress","protect","defend","assist"],hint:"To persecute is to treat cruelly or harshly."},
+  {type:"synonym",word:"persecute",q:"Which word best matches PERSECUTION?",a:"oppression",ch:["oppression","freedom","protection","safety"],hint:"Persecution is the state or condition of being persecuted."},
+  {type:"synonym",word:"poverty",q:"Which word best matches POVERTY?",a:"need",ch:["need","wealth","plenty","abundance"],hint:"Poverty is the state of being poor."},
+  {type:"synonym",word:"poverty",q:"Which word means the same as POVERTY?",a:"destitution",ch:["destitution","riches","luxury","comfort"],hint:"The food stamp program helps families living in poverty."},
+  {type:"synonym",word:"unveil",q:"Which word means the same as UNVEIL (remove a covering)?",a:"uncover",ch:["uncover","wrap","seal","close"],hint:"The Red Cross held a ceremony to unveil the portrait."},
+  {type:"synonym",word:"unveil",q:"Which word means the same as UNVEIL (reveal for the first time)?",a:"reveal",ch:["reveal","cover","hide","bury"],hint:"The police chief will unveil a plan to reduce street crime."},
+  {type:"synonym",word:"affection",q:"A fond and tender feeling for someone is best described as ___",a:"affection",ch:["affection","anger","envy","fear"],hint:"This word describes a warm emotional bond."},
+  {type:"synonym",word:"conspicuous",q:"Standing out and being easy to see is being ___",a:"conspicuous",ch:["conspicuous","hidden","invisible","dull"],hint:"A lighthouse on a cliff would be extremely ___."},
+  {type:"synonym",word:"eloquent",q:"Martin Luther King Jr.'s powerful, moving speeches were ___",a:"eloquent",ch:["eloquent","confusing","boring","silent"],hint:"Eloquence is skill at speaking or writing."},
+  {type:"synonym",word:"contribute",q:"To give money to a charity is to ___ to it",a:"contribute",ch:["contribute","steal from","ignore","criticize"],hint:"Contributors to the new theater received free tickets."},
+  {type:"synonym",word:"ferry",q:"A boat that carries passengers across a river is a ___",a:"ferry",ch:["ferry","canoe","yacht","submarine"],hint:"The ferry will stop running when the new bridge opens."},
+  {type:"synonym",word:"persecute",q:"To treat someone cruelly because of their beliefs is to ___ them",a:"persecute",ch:["persecute","protect","celebrate","honor"],hint:"The First Amendment protects people from being persecuted."},
+  {type:"synonym",word:"declare",q:"The mayor will ___ a state of emergency after the storm",a:"declare",ch:["declare","hide","cancel","ignore"],hint:"A declaration is a public statement."},
+  {type:"synonym",word:"exhibit",q:"The artist will ___ her paintings at the museum this weekend",a:"exhibit",ch:["exhibit","destroy","hide","sell"],hint:"To exhibit is to show something in public."},
+  {type:"synonym",word:"poverty",q:"Families living in ___ often cannot afford basic needs",a:"poverty",ch:["poverty","luxury","comfort","wealth"],hint:"Poverty means the state of being poor."},
+  {type:"synonym",word:"appeal",q:"The charity made an ___ for donations to help flood victims",a:"appeal",ch:["appeal","demand","threat","order"],hint:"An appeal is an earnest request for help."},
+  {type:"synonym",word:"clasp",q:"She reached out to ___ her friend's hand in comfort",a:"clasp",ch:["clasp","drop","release","ignore"],hint:"To clasp is to grasp or hold tightly."},
+  {type:"synonym",word:"pedestal",q:"The statue stands on a tall stone ___",a:"pedestal",ch:["pedestal","ladder","shelf","throne"],hint:"A pedestal is a base or support on which something stands."},
+  {type:"synonym",word:"immigrant",q:"My grandparents were ___ who came to America from Italy",a:"immigrants",ch:["immigrants","tourists","natives","citizens"],hint:"An immigrant is a person who comes into a country to live there."},
+  {type:"synonym",word:"unveil",q:"The museum will ___ the new sculpture at tomorrow's ceremony",a:"unveil",ch:["unveil","destroy","sell","move"],hint:"To unveil is to reveal or remove a covering from something."},
+  {type:"synonym",word:"lofty",q:"The skyscraper was ___ — it seemed to touch the clouds",a:"lofty",ch:["lofty","squat","tiny","flat"],hint:"Lofty means very tall or high."},
+  {type:"synonym",word:"affection",q:"She showed great ___ toward the stray kitten she rescued",a:"affection",ch:["affection","scorn","anger","envy"],hint:"Affection is a fond or tender feeling."},
+  {type:"synonym",word:"clasp",q:"The old ___ on the treasure chest kept it firmly shut",a:"clasp",ch:["clasp","window","knob","hinge"],hint:"A clasp is something that holds two parts together."},
+  {type:"synonym",word:"contribute",q:"Each student was asked to ___ a canned good to the food drive",a:"contribute",ch:["contribute","consume","borrow","sell"],hint:"To contribute is to give along with others."},
+  {type:"synonym",word:"declare",q:"The winning team loudly ___ their victory to the cheering crowd",a:"declared",ch:["declared","hid","denied","whispered"],hint:"To declare is to make something known openly."},
+  {type:"antonym",word:"affection",q:"Which word is the OPPOSITE of AFFECTION?",a:"hatred",ch:["hatred","warmth","love","care"],hint:"Affection is a fond or tender feeling — what is the opposite?"},
+  {type:"antonym",word:"affection",q:"Which word is the OPPOSITE of AFFECTIONATE?",a:"cold",ch:["cold","warm","loving","tender"],hint:"Affectionate means gentle and loving."},
+  {type:"antonym",word:"appeal",q:"Which word is the OPPOSITE of APPEAL (power to attract)?",a:"repulsion",ch:["repulsion","attraction","interest","charm"],hint:"Appeal means the power to attract — what pushes people away?"},
+  {type:"antonym",word:"clasp",q:"Which word is the OPPOSITE of CLASP (verb)?",a:"release",ch:["release","grip","hold","clutch"],hint:"To clasp is to hold tightly — the opposite lets go."},
+  {type:"antonym",word:"conspicuous",q:"Which word is the OPPOSITE of CONSPICUOUS?",a:"hidden",ch:["hidden","obvious","visible","noticeable"],hint:"Conspicuous means easily seen — what is hard to notice?"},
+  {type:"antonym",word:"conspicuous",q:"Which word means the OPPOSITE of CONSPICUOUS?",a:"invisible",ch:["invisible","prominent","obvious","visible"],hint:"Conspicuous means standing out — the opposite blends in."},
+  {type:"antonym",word:"contribute",q:"Which word is the OPPOSITE of CONTRIBUTE (to give)?",a:"withhold",ch:["withhold","donate","give","supply"],hint:"To contribute is to give — the opposite holds back."},
+  {type:"antonym",word:"contribute",q:"Which word is the OPPOSITE of CONTRIBUTE (to help bring about)?",a:"hinder",ch:["hinder","help","assist","promote"],hint:"To contribute is to help — the opposite blocks progress."},
+  {type:"antonym",word:"declare",q:"Which word is the OPPOSITE of DECLARE?",a:"conceal",ch:["conceal","announce","state","proclaim"],hint:"To declare is to make known openly — the opposite keeps it secret."},
+  {type:"antonym",word:"eloquent",q:"Which word is the OPPOSITE of ELOQUENT?",a:"inarticulate",ch:["inarticulate","persuasive","expressive","moving"],hint:"Eloquent means skilled at speaking — the opposite struggles to communicate."},
+  {type:"antonym",word:"eloquent",q:"Which word means the OPPOSITE of ELOQUENT?",a:"tongue-tied",ch:["tongue-tied","expressive","clear","powerful"],hint:"Eloquent speech is clear and powerful — the opposite is unclear."},
+  {type:"antonym",word:"exhibit",q:"Which word is the OPPOSITE of EXHIBIT (verb)?",a:"hide",ch:["hide","display","show","present"],hint:"To exhibit is to show in public — the opposite conceals."},
+  {type:"antonym",word:"lofty",q:"Which word is the OPPOSITE of LOFTY (tall or high)?",a:"low",ch:["low","tall","high","elevated"],hint:"Lofty means very tall or high — what is the opposite?"},
+  {type:"antonym",word:"lofty",q:"Which word is the OPPOSITE of LOFTY (noble in ideals)?",a:"base",ch:["base","noble","ideal","elevated"],hint:"Lofty can mean noble and high-minded — the opposite is ignoble."},
+  {type:"antonym",word:"lofty",q:"Which word is the OPPOSITE of LOFTY (too-proud attitude)?",a:"humble",ch:["humble","arrogant","proud","superior"],hint:"A lofty attitude is too proud — the opposite is modest."},
+  {type:"antonym",word:"persecute",q:"Which word is the OPPOSITE of PERSECUTE?",a:"protect",ch:["protect","oppress","torment","harm"],hint:"To persecute is to treat cruelly — the opposite keeps people safe."},
+  {type:"antonym",word:"persecute",q:"Which word is the OPPOSITE of PERSECUTE?",a:"defend",ch:["defend","harm","oppress","torment"],hint:"Persecuting someone hurts them — the opposite shields them."},
+  {type:"antonym",word:"poverty",q:"Which word is the OPPOSITE of POVERTY?",a:"wealth",ch:["wealth","need","want","hardship"],hint:"Poverty is the state of being poor — what is the opposite?"},
+  {type:"antonym",word:"poverty",q:"Which word is the OPPOSITE of POVERTY?",a:"prosperity",ch:["prosperity","hardship","need","want"],hint:"People living in poverty are poor — the opposite is thriving."},
+  {type:"antonym",word:"unveil",q:"Which word is the OPPOSITE of UNVEIL?",a:"conceal",ch:["conceal","reveal","expose","uncover"],hint:"To unveil is to reveal or uncover — the opposite hides."},
+  {type:"antonym",word:"unveil",q:"Which word means the OPPOSITE of UNVEIL?",a:"cover",ch:["cover","reveal","expose","display"],hint:"To unveil is to remove a covering — the opposite adds one."},
+  {type:"antonym",word:"immigrant",q:"What is the OPPOSITE of IMMIGRANT (enters a country to live)?",a:"emigrant",ch:["emigrant","settler","newcomer","traveler"],hint:"An immigrant comes in — what is someone who leaves their country called?"},
+  {type:"antonym",word:"affection",q:"Which word is the OPPOSITE of AFFECTION?",a:"hostility",ch:["hostility","warmth","love","tenderness"],hint:"Affection is a fond feeling — hostility is unfriendly and aggressive."},
+  {type:"antonym",word:"clasp",q:"Which word is the OPPOSITE of CLASP?",a:"drop",ch:["drop","grip","hold","grab"],hint:"To clasp is to hold firmly — the opposite lets something fall."},
+  {type:"antonym",word:"appeal",q:"Which word is the OPPOSITE of APPEAL (to make a request)?",a:"demand",ch:["demand","request","ask","petition"],hint:"An appeal is a humble request — a demand is forceful and commanding."},
+  {type:"antonym",word:"exhibit",q:"Which word is the OPPOSITE of EXHIBIT?",a:"conceal",ch:["conceal","show","display","present"],hint:"To exhibit is to show in public — the opposite hides from view."},
+  {type:"antonym",word:"contribute",q:"Which word is the OPPOSITE of CONTRIBUTE?",a:"take away",ch:["take away","add","give","donate"],hint:"Contributing adds to something — the opposite removes from it."},
+  {type:"antonym",word:"lofty",q:"Which word is the OPPOSITE of LOFTY (tall)?",a:"squat",ch:["squat","towering","high","elevated"],hint:"Lofty skyscrapers tower — squat buildings are the opposite."},
+  {type:"antonym",word:"poverty",q:"'Living in great luxury' is the OPPOSITE of living in ___",a:"poverty",ch:["poverty","wealth","comfort","ease"],hint:"Poverty is the state of being poor — luxury is the opposite extreme."},
+  {type:"antonym",word:"conspicuous",q:"Which word is the OPPOSITE of CONSPICUOUS?",a:"inconspicuous",ch:["inconspicuous","obvious","visible","noticeable"],hint:"Conspicuous means easily seen — the opposite blends into the background."},
+  {type:"antonym",word:"declare",q:"Which word is the OPPOSITE of DECLARE?",a:"hide",ch:["hide","announce","state","proclaim"],hint:"To declare is to make known — the opposite keeps something secret."},
+  {type:"antonym",word:"persecute",q:"Which word is the OPPOSITE of PERSECUTION?",a:"freedom",ch:["freedom","oppression","cruelty","harm"],hint:"Persecution restricts and harms people — the opposite is living freely."},
+  {type:"antonym",word:"unveil",q:"Which word is the OPPOSITE of UNVEILED?",a:"covered",ch:["covered","revealed","exposed","shown"],hint:"An unveiled statue is uncovered — the opposite is still wrapped."},
+  {type:"antonym",word:"eloquent",q:"Which word is the OPPOSITE of ELOQUENCE?",a:"mumbling",ch:["mumbling","expression","persuasion","clarity"],hint:"Eloquence is skillful, powerful speech — the opposite is unclear."},
+  {type:"analogy",word:"analogy",q:"AFFECTION is to LOVE as POVERTY is to ___",a:"need",ch:["need","wealth","luxury","comfort"],hint:"Both pairs share a synonym relationship."},
+  {type:"analogy",word:"analogy",q:"CLASP is to RELEASE as EXHIBIT is to ___",a:"hide",ch:["hide","show","display","present"],hint:"Each pair contains antonyms."},
+  {type:"analogy",word:"analogy",q:"CONSPICUOUS is to OBVIOUS as ELOQUENT is to ___",a:"expressive",ch:["expressive","silent","dull","confused"],hint:"Both pairs are synonyms."},
+  {type:"analogy",word:"analogy",q:"DECLARE is to ANNOUNCE as UNVEIL is to ___",a:"reveal",ch:["reveal","cover","hide","bury"],hint:"Both pairs are synonyms."},
+  {type:"analogy",word:"analogy",q:"POVERTY is to WEALTH as PERSECUTE is to ___",a:"protect",ch:["protect","harm","oppress","torment"],hint:"Each pair contains antonyms."},
+  {type:"analogy",word:"analogy",q:"AFFECTION is to HATRED as LOFTY (proud) is to ___",a:"humble",ch:["humble","tall","noble","proud"],hint:"Both pairs contain antonyms."},
+  {type:"analogy",word:"analogy",q:"ELOQUENT is to PERSUASIVE as CONSPICUOUS is to ___",a:"noticeable",ch:["noticeable","hidden","invisible","secret"],hint:"Both pairs are synonyms."},
+  {type:"analogy",word:"analogy",q:"CONTRIBUTE is to GIVE as DECLARE is to ___",a:"announce",ch:["announce","hide","deny","silence"],hint:"Both pairs are synonyms."},
+  {type:"analogy",word:"analogy",q:"EXHIBIT is to SHOW as FERRY is to ___",a:"transport",ch:["transport","stop","block","anchor"],hint:"Both pairs share a verb/synonym relationship."},
+  {type:"analogy",word:"analogy",q:"AFFECTIONATE is to AFFECTION as ELOQUENT is to ___",a:"eloquence",ch:["eloquence","silence","clumsiness","confusion"],hint:"Both pairs go from adjective to related noun form."},
+  {type:"analogy",word:"analogy",q:"PERSECUTE is to CRUELTY as CONTRIBUTE is to ___",a:"generosity",ch:["generosity","selfishness","greed","harm"],hint:"Both pairs link an action to the quality it shows."},
+  {type:"analogy",word:"analogy",q:"POVERTY is to POOR as AFFECTION is to ___",a:"fond",ch:["fond","cold","distant","angry"],hint:"Both pairs link a noun to its related adjective."},
+  {type:"analogy",word:"analogy",q:"LOFTY (tall) is to SKYSCRAPER as PEDESTAL is to ___",a:"statue",ch:["statue","cloud","mountain","tree"],hint:"Each pair links a quality to a related object."},
+  {type:"analogy",word:"analogy",q:"UNVEIL is to CONCEAL as EXHIBIT is to ___",a:"hide",ch:["hide","show","display","present"],hint:"Both pairs contain antonyms."},
+  {type:"analogy",word:"analogy",q:"DECLARATION is to DECLARE as EXHIBITION is to ___",a:"exhibit",ch:["exhibit","hide","store","sell"],hint:"Both pairs go from noun form back to the base verb."},
+  {type:"analogy",word:"analogy",q:"PERSECUTE is to PERSECUTION as CONTRIBUTE is to ___",a:"contribution",ch:["contribution","volunteer","donor","gift"],hint:"Both pairs go from verb to related noun form."},
+  {type:"analogy",word:"analogy",q:"CLASP is to GRASP as FERRY is to ___",a:"carry",ch:["carry","stop","sink","abandon"],hint:"Both pairs are synonyms."},
+  {type:"analogy",word:"analogy",q:"CONSPICUOUS is to HIDDEN as POVERTY is to ___",a:"wealth",ch:["wealth","need","want","hardship"],hint:"Both pairs contain antonyms."},
+  {type:"analogy",word:"analogy",q:"ELOQUENT is to SPEAKER as EXHIBIT is to ___",a:"museum",ch:["museum","library","park","stadium"],hint:"Both pairs link a quality to a place associated with it."},
+  {type:"analogy",word:"analogy",q:"PEDESTAL is to STATUE as FERRY is to ___",a:"passenger",ch:["passenger","river","sea","dock"],hint:"Both pairs link a carrier or support to what it holds or moves."},
+  {type:"analogy",word:"analogy",q:"CONTRIBUTE is to DONOR as FERRY is to ___",a:"captain",ch:["captain","passenger","dock","boat"],hint:"Both pairs link an action to the person who performs it."},
+  {type:"analogy",word:"analogy",q:"LOFTY is to HUMBLE as ELOQUENT is to ___",a:"inarticulate",ch:["inarticulate","expressive","persuasive","moving"],hint:"Both pairs contain antonyms."},
+  {type:"analogy",word:"analogy",q:"AFFECTION is to FOND as POVERTY is to ___",a:"poor",ch:["poor","rich","comfortable","wealthy"],hint:"Both pairs link a noun to its related adjective."},
+  {type:"analogy",word:"analogy",q:"UNVEIL is to STATUE as DECLARE is to ___",a:"decision",ch:["decision","secret","rumor","lie"],hint:"Both pairs link an action to something that is revealed or announced."},
+  {type:"analogy",word:"analogy",q:"PERSECUTE is to PROTECT as POVERTY is to ___",a:"prosperity",ch:["prosperity","need","want","hardship"],hint:"Both pairs contain antonyms."},
+  {type:"analogy",word:"analogy",q:"CLASP is to FASTEN as FERRY is to ___",a:"transport",ch:["transport","build","anchor","sink"],hint:"Both pairs are synonyms."},
+  {type:"analogy",word:"analogy",q:"DECLARE is to DECLARATION as PERSIST is to ___",a:"persistence",ch:["persistence","persistent","persecuted","persecutor"],hint:"Both pairs go from verb to related noun form."},
+  {type:"analogy",word:"analogy",q:"IMMIGRANT is to SETTLE as PERSECUTE is to ___",a:"suffer",ch:["suffer","thrive","celebrate","rejoice"],hint:"Both pairs link a person or action to its likely outcome."},
+  {type:"analogy",word:"analogy",q:"POVERTY is to PROSPEROUS as CONSPICUOUS is to ___",a:"invisible",ch:["invisible","visible","obvious","notable"],hint:"Both pairs contain antonyms."},
+  {type:"analogy",word:"analogy",q:"PEDESTAL is to BASE as ELOQUENCE is to ___",a:"foundation",ch:["foundation","ceiling","wall","roof"],hint:"Both words describe something that supports something greater."},
+  {type:"analogy",word:"analogy",q:"IMMIGRANT is to AMERICA as PEDESTAL is to ___",a:"statue",ch:["statue","museum","wall","floor"],hint:"Both pairs link something that arrives or stands to its destination or support."},
+  {type:"analogy",word:"analogy",q:"FERRY is to WATER as CONTRIBUTE is to ___",a:"cause",ch:["cause","river","boat","dock"],hint:"A ferry moves across water — a contribution moves toward a cause."},
+  {type:"analogy",word:"analogy",q:"EXHIBIT is to PUBLIC as CLASP is to ___",a:"private",ch:["private","public","open","shared"],hint:"Exhibiting shares with the public — clasping is a personal gesture."},
+  {type:"analogy",word:"analogy",q:"AFFECTION is to SHOW as POVERTY is to ___",a:"hide",ch:["hide","celebrate","embrace","share"],hint:"We often show affection openly but hide poverty out of shame."},
+  {type:"analogy",word:"analogy",q:"CONSPICUOUS is to LIGHTHOUSE as POVERTY is to ___",a:"slum",ch:["slum","mansion","palace","tower"],hint:"Both pairs link an adjective to a place that embodies that quality."},
+  {type:"analogy",word:"analogy",q:"DECLARE is to ANNOUNCE as CLASP is to ___",a:"hold",ch:["hold","release","drop","throw"],hint:"Both pairs are synonyms."},
+  {type:"analogy",word:"analogy",q:"POVERTY is to NEED as AFFECTION is to ___",a:"warmth",ch:["warmth","anger","hatred","fear"],hint:"Both pairs link a noun to a feeling it creates."},
+  {type:"analogy",word:"analogy",q:"EXHIBIT is to ART as FERRY is to ___",a:"people",ch:["people","water","land","sky"],hint:"Both pairs link a method of display or transport to what it carries."},
+  {type:"analogy",word:"analogy",q:"ELOQUENT is to MOVING as CONSPICUOUS is to ___",a:"striking",ch:["striking","hidden","quiet","plain"],hint:"Both pairs are synonyms."},
+  {type:"simile",word:"affection",q:"Complete the simile:\n\"Like a warm blanket on a cold night, she wrapped everyone in _____.\"",a:"affection",ch:["affection","poverty","persecution","exhibit"],hint:"Which word means a fond or tender feeling?"},
+  {type:"simile",word:"lofty",q:"Complete the simile:\n\"The mountain peak was as _____ as a dream — impossibly high above the valley.\"",a:"lofty",ch:["lofty","conspicuous","eloquent","humble"],hint:"Which word means very tall or high?"},
+  {type:"simile",word:"eloquent",q:"Complete the simile:\n\"His speech was like a rushing river — powerful, smooth, and _____.\"",a:"eloquent",ch:["eloquent","conspicuous","lofty","poor"],hint:"Which word means skilled at speaking with the power to move people?"},
+  {type:"simile",word:"appeal",q:"Complete the simile:\n\"The missing child's letter was like an _____ that nobody could ignore.\"",a:"appeal",ch:["appeal","exhibit","ferry","clasp"],hint:"Which word means an earnest request for help?"},
+  {type:"simile",word:"conspicuous",q:"Complete the simile:\n\"The bright red barn was as _____ as a bonfire in a dark field.\"",a:"conspicuous",ch:["conspicuous","lofty","poor","quiet"],hint:"Which word means easily or plainly seen?"},
+  {type:"simile",word:"contribute",q:"Complete the simile:\n\"Like a gift quietly placed in a collection box, she chose to _____ her savings to the cause.\"",a:"contribute",ch:["contribute","exhibit","declare","unveil"],hint:"Which word means to give along with others?"},
+  {type:"simile",word:"ferry",q:"Complete the simile:\n\"The old bridge was like a _____ — carrying people and their stories back and forth.\"",a:"ferry",ch:["ferry","pedestal","exhibit","clasp"],hint:"Which word means a boat that carries people across water?"},
+  {type:"simile",word:"declare",q:"Complete the simile:\n\"Like a trumpet call cutting through the noise, the mayor _____ a public holiday.\"",a:"declared",ch:["declared","exhibited","appealed","unveiled"],hint:"Which word means to make known or state openly?"},
+  {type:"simile",word:"unveil",q:"Complete the simile:\n\"Like a curtain being slowly drawn back, the new painting was finally _____.\"",a:"unveiled",ch:["unveiled","clasped","ferried","persecuted"],hint:"Which word means to remove a covering or reveal for the first time?"},
+  {type:"simile",word:"exhibit",q:"Complete the simile:\n\"Like a trophy case on a wall, the gallery was used to _____ the students' best artwork.\"",a:"exhibit",ch:["exhibit","clasp","ferry","persecute"],hint:"Which word means to show in public?"},
+  {type:"simile",word:"immigrant",q:"Complete the simile:\n\"Fleeing their homeland like birds escaping a storm, the _____ sought safety in America.\"",a:"immigrants",ch:["immigrants","exhibitors","contributors","persecutors"],hint:"Which word means people who come into a new country to live?"},
+  {type:"simile",word:"pedestal",q:"Complete the simile:\n\"The tall bronze figure stood on its _____ like a king on a throne.\"",a:"pedestal",ch:["pedestal","ferry","exhibit","declaration"],hint:"Which word means a base or support on which something stands?"},
+  {type:"simile",word:"clasp",q:"Complete the simile:\n\"Her grip was like iron — she _____ his hand and would not let go.\"",a:"clasped",ch:["clasped","unveiled","ferried","appealed"],hint:"Which word means to grasp or hold tightly?"},
+  {type:"simile",word:"persecute",q:"Complete the simile:\n\"Like shadows following them everywhere, the _____ haunted every refugee.\"",a:"persecution",ch:["persecution","affection","eloquence","poverty"],hint:"Which word describes cruel treatment of people for their beliefs?"},
+  {type:"simile",word:"poverty",q:"Complete the simile:\n\"The slums were as bleak as a winter sky — the _____ was impossible to escape.\"",a:"poverty",ch:["poverty","affection","eloquence","exhibit"],hint:"Which word means the state of being poor?"},
+  {type:"simile",word:"lofty",q:"Complete the simile:\n\"Like an eagle soaring high overhead, her _____ goals inspired the entire school.\"",a:"lofty",ch:["lofty","conspicuous","eloquent","immigrant"],hint:"Which word means noble or high-minded in feeling or ideals?"},
+  {type:"simile",word:"conspicuous",q:"Complete the simile:\n\"The red hat was as _____ as a lighthouse — you could not miss it from a mile away.\"",a:"conspicuous",ch:["conspicuous","lofty","affectionate","poor"],hint:"Which word means easily or plainly seen?"},
+  {type:"simile",word:"eloquent",q:"Complete the simile:\n\"Her words were like music — smooth and _____ — moving everyone to tears.\"",a:"eloquent",ch:["eloquent","lofty","conspicuous","immigrant"],hint:"Which word means having the power to move people?"},
+  {type:"simile",word:"contribute",q:"Complete the simile:\n\"Like a lifeline thrown to a drowning sailor, every _____ helped keep the cause alive.\"",a:"contribution",ch:["contribution","persecution","exhibit","ferry"],hint:"Which word means something given along with others?"},
+  {type:"simile",word:"affection",q:"Complete the simile:\n\"Like a key fitting perfectly into a lock, his gentle _____ put the nervous child at ease.\"",a:"affection",ch:["affection","persecution","poverty","exhibit"],hint:"Which word means a fond or tender feeling?"},
+  {type:"simile",word:"conspicuous",q:"Complete the simile:\n\"The peacock was as _____ as a jewel in a pile of pebbles.\"",a:"conspicuous",ch:["conspicuous","lofty","eloquent","poor"],hint:"Which word means standing out and easy to see?"},
+  {type:"simile",word:"immigrant",q:"Complete the simile:\n\"Like a stranger at a party, the new _____ felt alone in an unfamiliar land.\"",a:"immigrant",ch:["immigrant","exhibitor","contributor","ferry"],hint:"Which word means a person who comes into a new country to live?"},
+  {type:"simile",word:"declare",q:"Complete the simile:\n\"Like a sword slicing through doubt, his words _____ the truth for everyone to hear.\"",a:"declared",ch:["declared","clasped","ferried","exhibited"],hint:"Which word means to state something openly?"},
+  {type:"simile",word:"pedestal",q:"Complete the simile:\n\"The sculptor's masterpiece stood on its _____ like a soldier at attention.\"",a:"pedestal",ch:["pedestal","exhibit","ferry","poverty"],hint:"Which word means a base or support on which something stands?"},
+  {type:"simile",word:"appeal",q:"Complete the simile:\n\"Like a harbor welcoming every ship, America had great _____ for immigrants seeking freedom.\"",a:"appeal",ch:["appeal","exhibit","poverty","clasp"],hint:"Which word means the power to attract?"},
+  {type:"simile",word:"persecute",q:"Complete the simile:\n\"The cruelty of the regime fell on the people like relentless rain — _____ without end.\"",a:"persecution",ch:["persecution","affection","eloquence","exhibit"],hint:"Which word describes cruel treatment for one's beliefs?"},
+  {type:"simile",word:"unveil",q:"Complete the simile:\n\"Like a treasure in a chest finally opened, her talent was _____ to the world.\"",a:"unveiled",ch:["unveiled","clasped","ferried","declared"],hint:"Which word means to reveal for the first time?"},
+  {type:"simile",word:"ferry",q:"Complete the simile:\n\"The river crossing was as smooth as glass — the _____ carried them safely to the other side.\"",a:"ferry",ch:["ferry","pedestal","exhibit","clasp"],hint:"Which word means a boat that carries people across water?"},
+  {type:"simile",word:"pedestal",q:"Complete the simile:\n\"The golden torch on its _____ shone like a star against the New York skyline.\"",a:"pedestal",ch:["pedestal","exhibit","ferry","declaration"],hint:"Which word means the base on which a statue stands?"},
+  {type:"simile",word:"affection",q:"Complete the simile:\n\"Like a candle burning steadily in the dark, her _____ for her students showed in every word.\"",a:"affection",ch:["affection","poverty","persecution","exhibit"],hint:"Which word means a fond or tender feeling?"},
+  {type:"simile",word:"poverty",q:"Complete the simile:\n\"Like a heavy stone tied around its neck, _____ weighed down every dream the family ever had.\"",a:"poverty",ch:["poverty","eloquence","affection","exhibit"],hint:"Which word means the state of being poor?"},
+  {type:"simile",word:"lofty",q:"Complete the simile:\n\"Like a kite straining at its string, her _____ ambitions always pushed toward something greater.\"",a:"lofty",ch:["lofty","conspicuous","poor","silent"],hint:"Which word means noble or high-minded in ideals?"},
+  {type:"simile",word:"exhibit",q:"Complete the simile:\n\"Like a window into another world, each _____ in the museum told a story no book could.\"",a:"exhibit",ch:["exhibit","ferry","clasp","pedestal"],hint:"Which word means an item in a public display?"},
+  {type:"simile",word:"contribute",q:"Complete the simile:\n\"Like drops of rain filling a barrel, every small _____ added up to something great.\"",a:"contribution",ch:["contribution","persecution","exhibit","ferry"],hint:"Which word means something given along with others?"},
+  {type:"simile",word:"clasp",q:"Complete the simile:\n\"The old locket had a golden _____ — delicate as a butterfly's wing but strong as trust.\"",a:"clasp",ch:["clasp","exhibit","ferry","poverty"],hint:"Which word means something that holds two parts together?"},
+  {type:"metaphor",word:"affection",q:"Complete the metaphor:\n\"Her heart was a lamp — always burning with _____ for those around her.\"",a:"affection",ch:["affection","poverty","persecution","exhibit"],hint:"Which word means a fond or tender feeling?"},
+  {type:"metaphor",word:"pedestal",q:"Complete the metaphor:\n\"The crowd's applause was a _____ — lifting the speaker to a place of honor.\"",a:"pedestal",ch:["pedestal","exhibit","ferry","poverty"],hint:"Which word means a base or support that raises something up?"},
+  {type:"metaphor",word:"ferry",q:"Complete the metaphor:\n\"The bridge was a _____ for dreams — carrying hopes from one shore to the other.\"",a:"ferry",ch:["ferry","pedestal","exhibit","poverty"],hint:"Which word means a vessel that transports people across water?"},
+  {type:"metaphor",word:"conspicuous",q:"Complete the metaphor:\n\"His bright orange jacket was a beacon — absolutely _____ in the gray crowd.\"",a:"conspicuous",ch:["conspicuous","lofty","eloquent","poor"],hint:"Which word means easily or plainly seen?"},
+  {type:"metaphor",word:"exhibit",q:"Complete the metaphor:\n\"The library was a _____ of knowledge — displaying the town's great love of books.\"",a:"exhibit",ch:["exhibit","ferry","pedestal","poverty"],hint:"Which word means a public showing or display?"},
+  {type:"metaphor",word:"lofty",q:"Complete the metaphor:\n\"The school's goals were _____ — aimed at transforming education for an entire generation.\"",a:"lofty",ch:["lofty","conspicuous","eloquent","poor"],hint:"Which word means noble or high-minded in ideals?"},
+  {type:"metaphor",word:"eloquent",q:"Complete the metaphor:\n\"Her speech was a river — powerful, clear, and _____ — sweeping the audience forward.\"",a:"eloquent",ch:["eloquent","lofty","conspicuous","poor"],hint:"Which word means skilled at speaking with the power to move people?"},
+  {type:"metaphor",word:"persecute",q:"Complete the metaphor:\n\"The unfair law was a form of _____ — punishing the poor for simply existing.\"",a:"persecution",ch:["persecution","affection","eloquence","exhibit"],hint:"Which word means cruel treatment because of a difference?"},
+  {type:"metaphor",word:"contribute",q:"Complete the metaphor:\n\"The donation box was a symbol of shared _____ — everyone giving what they could spare.\"",a:"contribution",ch:["contribution","persecution","exhibit","ferry"],hint:"Which word means something given along with others?"},
+  {type:"metaphor",word:"poverty",q:"Complete the metaphor:\n\"The city was a prison of _____ — its residents too poor to escape to better places.\"",a:"poverty",ch:["poverty","affection","eloquence","exhibit"],hint:"Which word means the state of being poor?"},
+  {type:"metaphor",word:"unveil",q:"Complete the metaphor:\n\"The artist's new work was finally _____ at the gala — the city gasped in amazement.\"",a:"unveiled",ch:["unveiled","clasped","ferried","persecuted"],hint:"Which word means to reveal for the first time?"},
+  {type:"metaphor",word:"clasp",q:"Complete the metaphor:\n\"His warm handshake was a _____ — firm and full of welcome.\"",a:"clasp",ch:["clasp","exhibit","ferry","poverty"],hint:"Which word means a firm hold or grasp?"},
+  {type:"metaphor",word:"declare",q:"Complete the metaphor:\n\"The announcement was a thunderclap — the winner was finally _____.\"",a:"declared",ch:["declared","exhibited","appealed","unveiled"],hint:"Which word means to make known or state openly?"},
+  {type:"metaphor",word:"immigrant",q:"Complete the metaphor:\n\"America was a magnet — _____ from across the world were drawn to its shores.\"",a:"immigrants",ch:["immigrants","exhibitors","contributors","persecutors"],hint:"Which word means people who come into a country to live there?"},
+  {type:"metaphor",word:"appeal",q:"Complete the metaphor:\n\"His plea was a lifeline — a desperate _____ for anyone who would listen.\"",a:"appeal",ch:["appeal","exhibit","poverty","clasp"],hint:"Which word means an earnest request for help?"},
+  {type:"metaphor",word:"pedestal",q:"Complete the metaphor:\n\"The monument's _____ was its crown — raising it high above the city plaza.\"",a:"pedestal",ch:["pedestal","exhibit","ferry","poverty"],hint:"Which word means the base or support on which something stands?"},
+  {type:"metaphor",word:"affection",q:"Complete the metaphor:\n\"Her kindness was a garden — full of _____ that grew with every act of caring.\"",a:"affection",ch:["affection","poverty","persecution","exhibit"],hint:"Which word means a fond or tender feeling?"},
+  {type:"metaphor",word:"poverty",q:"Complete the metaphor:\n\"The wealthy neighborhood was a mirror — reflecting how far from _____ its residents lived.\"",a:"poverty",ch:["poverty","affection","eloquence","exhibit"],hint:"Which word means the state of being poor?"},
+  {type:"metaphor",word:"eloquent",q:"Complete the metaphor:\n\"His voice was a spotlight — his _____ made every word shine.\"",a:"eloquence",ch:["eloquence","poverty","persecution","clasp"],hint:"Which word means skill at speaking with the power to move people?"},
+  {type:"metaphor",word:"declare",q:"Complete the metaphor:\n\"The bold mural was a _____ — announcing the artist's message to the whole city.\"",a:"declaration",ch:["declaration","persecution","exhibit","poverty"],hint:"Which word means a public statement?"},
+  {type:"metaphor",word:"ferry",q:"Complete the metaphor:\n\"The river was a _____ — connecting two worlds separated by water.\"",a:"ferry",ch:["ferry","pedestal","exhibit","poverty"],hint:"Which word means a vessel that carries people across water?"},
+  {type:"metaphor",word:"persecute",q:"Complete the metaphor:\n\"Her passion for justice was a fire — burning away the _____ that silenced the oppressed.\"",a:"persecution",ch:["persecution","affection","eloquence","exhibit"],hint:"Which word describes cruel treatment because of beliefs or differences?"},
+  {type:"metaphor",word:"exhibit",q:"Complete the metaphor:\n\"The gallery was a treasure chest — each _____ a jewel of human creativity.\"",a:"exhibit",ch:["exhibit","ferry","clasp","poverty"],hint:"Which word means an item in a public display?"},
+  {type:"metaphor",word:"appeal",q:"Complete the metaphor:\n\"The campaign was a beacon — an _____ to the nation to help those most in need.\"",a:"appeal",ch:["appeal","exhibit","poverty","clasp"],hint:"Which word means an earnest request for help?"},
+  {type:"metaphor",word:"contribute",q:"Complete the metaphor:\n\"Each dollar _____ to the fund was a brick in the wall of hope.\"",a:"contributed",ch:["contributed","exhibited","unveiled","declared"],hint:"Which word means to give along with others?"},
+  {type:"metaphor",word:"poverty",q:"Complete the metaphor:\n\"The refugee camp was a wound — the _____ of every inhabitant laid bare for the world.\"",a:"poverty",ch:["poverty","affection","eloquence","exhibit"],hint:"Which word means the state of being poor?"},
+  {type:"metaphor",word:"pedestal",q:"Complete the metaphor:\n\"The golden torch on the _____ was America's promise to the world.\"",a:"pedestal",ch:["pedestal","exhibit","ferry","poverty"],hint:"Which word means the base on which the Statue of Liberty stands?"},
+  {type:"metaphor",word:"appeal",q:"Complete the metaphor:\n\"The child's tears were an _____ — asking the world for compassion without saying a word.\"",a:"appeal",ch:["appeal","exhibit","poverty","clasp"],hint:"Which word means an earnest request?"},
+  {type:"metaphor",word:"clasp",q:"Complete the metaphor:\n\"The child's hug was a _____ — holding tightly to the warmth of love.\"",a:"clasp",ch:["clasp","exhibit","ferry","poverty"],hint:"Which word means a firm hold or grasp?"},
+  {type:"metaphor",word:"immigrant",q:"Complete the metaphor:\n\"Each _____ was a seed — planted in American soil, growing into something entirely new.\"",a:"immigrant",ch:["immigrant","exhibit","pedestal","poverty"],hint:"Which word means a person who comes into a country to live?"},
+  {type:"metaphor",word:"lofty",q:"Complete the metaphor:\n\"Her vision was a mountaintop — _____ and magnificent, visible to everyone below.\"",a:"lofty",ch:["lofty","conspicuous","poor","silent"],hint:"Which word means very tall or noble in ideals?"},
+  {type:"metaphor",word:"conspicuous",q:"Complete the metaphor:\n\"The new stadium was a _____ giant — impossible to miss against the city skyline.\"",a:"conspicuous",ch:["conspicuous","lofty","eloquent","poor"],hint:"Which word means easily or plainly seen?"},
+  {type:"metaphor",word:"declare",q:"Complete the metaphor:\n\"Her silence was a _____ — announcing to everyone that she was finished arguing.\"",a:"declaration",ch:["declaration","persecution","exhibit","poverty"],hint:"Which word means a public statement?"},
+  {type:"metaphor",word:"unveil",q:"Complete the metaphor:\n\"The sunrise was a curtain lifting — slowly _____ the world beneath.\"",a:"unveiling",ch:["unveiling","clasping","ferrying","appealing"],hint:"Which word means to remove a covering or reveal for the first time?"},
+  {type:"metaphor",word:"contribute",q:"Complete the metaphor:\n\"Her smile was a _____ to the team — lifting everyone's spirits without any cost.\"",a:"contribution",ch:["contribution","persecution","exhibit","ferry"],hint:"Which word means something given along with others?"},
+];
+
+const TYPE_STYLES={
+  synonym:{label:"Synonym",color:"#1fcfb0",bg:"rgba(31,207,176,.12)"},
+  antonym:{label:"Antonym",color:"#4ea6f0",bg:"rgba(78,166,240,.12)"},
+  analogy:{label:"Analogy",color:"#f0c040",bg:"rgba(240,192,64,.12)"},
+  simile:{label:"Simile",color:"#e870a0",bg:"rgba(232,112,160,.12)"},
+  metaphor:{label:"Metaphor",color:"#a878f0",bg:"rgba(168,120,240,.12)"},
+};
+
+let questions=[],current=0,score=0,streak=0,bestStreak=0,answered=false,hintShown=false,results=[];
+const TOTAL=20;
+
+function shuffle(arr){var a=arr.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+function clearEl(el){while(el.firstChild)el.removeChild(el.firstChild);}
+function mk(tag,cls,txt){var el=document.createElement(tag);if(cls)el.className=cls;if(txt!==undefined)el.textContent=txt;return el;}
+
+function showStart(){
+  document.getElementById('start-screen').style.display='flex';
+  document.getElementById('flashcard-screen').classList.remove('show');
+  document.getElementById('quiz').classList.remove('show');
+  document.getElementById('results').classList.remove('show');
+}
+
+function startQuiz(){
+  questions=shuffle(QUESTIONS).slice(0,TOTAL).map(function(q){return Object.assign({},q,{ch:shuffle(q.ch)});});
+  current=0;score=0;streak=0;bestStreak=0;answered=false;hintShown=false;results=[];
+  document.getElementById('start-screen').style.display='none';
+  document.getElementById('flashcard-screen').classList.remove('show');
+  document.getElementById('results').classList.remove('show');
+  document.getElementById('quiz').classList.add('show');
+  renderQuestion();
+}
+
+function renderQuestion(){
+  var q=questions[current],ts=TYPE_STYLES[q.type];
+  answered=false;hintShown=false;
+  document.getElementById('sb-score').textContent=score;
+  document.getElementById('sb-q').textContent=(current+1)+' / '+TOTAL;
+  document.getElementById('sb-streak').textContent=streak+(streak>=3?' 🔥':'');
+  document.getElementById('progress-bar-fill').style.width=(current/TOTAL*100)+'%';
+  document.getElementById('progress-label').textContent=current+' of '+TOTAL+' complete';
+  var badge=document.getElementById('type-badge');
+  badge.textContent=ts.label.toUpperCase();badge.style.color=ts.color;badge.style.background=ts.bg;badge.style.borderColor=ts.color;
+  document.getElementById('q-text').textContent=q.q;
+  document.getElementById('hint-box').classList.remove('show');
+  document.getElementById('hint-text').textContent=q.hint;
+  var choicesEl=document.getElementById('choices');
+  clearEl(choicesEl);
+  q.ch.forEach(function(c){
+    var btn=document.createElement('button');
+    btn.className='choice';
+    var spanTxt=mk('span','',c);
+    var spanIco=mk('span','choice-icon','');
+    btn.appendChild(spanTxt);
+    btn.appendChild(spanIco);
+    btn.addEventListener('click',function(){selectAnswer(c,btn,q);});
+    choicesEl.appendChild(btn);
+  });
+  document.getElementById('hint-btn').style.display='block';
+  document.getElementById('hint-btn').textContent='💡 Show Hint';
+  document.getElementById('feedback-text').textContent='';
+  document.getElementById('feedback-text').style.color='';
+  document.getElementById('next-btn').style.display='none';
+  var card=document.getElementById('q-card');
+  card.style.animation='none';void card.offsetWidth;card.style.animation='fadeIn .3s ease';
+}
+
+function selectAnswer(choice,btn,q){
+  if(answered)return;answered=true;
+  var correct=choice===q.a;
+  document.querySelectorAll('.choice').forEach(function(b){
+    b.disabled=true;
+    var s=b.querySelector('span:first-child');
+    var ico=b.querySelector('.choice-icon');
+    if(s&&s.textContent===q.a){b.classList.add('correct');ico.textContent='✓';}
+    else if(b===btn&&!correct){b.classList.add('wrong');ico.textContent='✗';}
+    else b.classList.add('dim');
+  });
+  var card=document.getElementById('q-card');
+  if(correct){
+    score++;streak++;if(streak>bestStreak)bestStreak=streak;
+    document.getElementById('sb-score').textContent=score;
+    document.getElementById('sb-streak').textContent=streak+(streak>=3?' 🔥':'');
+    document.getElementById('feedback-text').textContent=streak>=3?'🔥 On fire! +1':'✓ Correct!';
+    document.getElementById('feedback-text').style.color='#22c97a';
+    card.classList.add('pop');setTimeout(function(){card.classList.remove('pop');},300);
+    var r=btn.getBoundingClientRect();spawnParticles(r.left+r.width/2,r.top+r.height/2,'rgba(34,201,122,',28);
+    if(streak>=5)confetti({particleCount:60,spread:70,origin:{y:.6},colors:['#f0c040','#1fcfb0','#a878f0']});
+  } else {
+    streak=0;document.getElementById('sb-streak').textContent='0';
+    document.getElementById('feedback-text').textContent='✗ Answer: '+q.a;
+    document.getElementById('feedback-text').style.color='#e84040';
+    card.classList.add('shake');setTimeout(function(){card.classList.remove('shake');},400);
+    var r2=btn.getBoundingClientRect();spawnParticles(r2.left+r2.width/2,r2.top+r2.height/2,'rgba(232,64,64,',16);
+  }
+  results.push({q:q.q,type:q.type,word:q.word,correct:correct,chosen:choice,answer:q.a});
+  document.getElementById('hint-btn').style.display='none';
+  document.getElementById('next-btn').style.display='block';
+  document.getElementById('next-btn').textContent=(current+1>=TOTAL)?'See Results →':'Next →';
+}
+
+function nextQuestion(){current++;if(current>=TOTAL){showResults();return;}renderQuestion();}
+
+function toggleHint(){
+  hintShown=!hintShown;
+  var hb=document.getElementById('hint-box');
+  if(hintShown){hb.classList.add('show');document.getElementById('hint-btn').textContent='💡 Hide Hint';}
+  else{hb.classList.remove('show');document.getElementById('hint-btn').textContent='💡 Show Hint';}
+}
+
+function showResults(){
+  confetti({particleCount:120,spread:100,origin:{y:.5},colors:['#f0c040','#1fcfb0','#a878f0','#e870a0']});
+  setTimeout(function(){confetti({particleCount:80,spread:80,angle:60,origin:{x:0,y:.6},colors:['#f0c040','#22c97a']});},400);
+  setTimeout(function(){confetti({particleCount:80,spread:80,angle:120,origin:{x:1,y:.6},colors:['#4ea6f0','#a878f0']});},700);
+  document.getElementById('quiz').classList.remove('show');
+  var res=document.getElementById('results');res.classList.add('show');
+  var pct=Math.round(score/TOTAL*100);
+  var grade=pct>=95?'🏆 Perfect Scholar!':pct>=80?'🗽 Liberty Champion':pct>=65?'📜 Diligent Learner':'📚 Keep Practicing!';
+  var gc=pct>=80?'#f0c040':pct>=65?'#1fcfb0':'#4ea6f0';
+  document.getElementById('results-score').textContent=score+'/'+TOTAL;
+  document.getElementById('results-score').style.color=gc;
+  document.getElementById('results-grade').textContent=grade;
+  document.getElementById('results-grade').style.color=gc;
+  document.getElementById('results-sub').textContent=pct+'% correct · Best streak: '+bestStreak;
+  var tb=document.getElementById('type-breakdown');
+  clearEl(tb);
+  Object.keys(TYPE_STYLES).forEach(function(type){
+    var ts=TYPE_STYLES[type];
+    var tr=results.filter(function(r){return r.type===type;});
+    if(!tr.length)return;
+    var c=tr.filter(function(r){return r.correct;}).length;
+    var cell=mk('div','tb-cell');
+    var typeDiv=mk('div','tb-type',ts.label);typeDiv.style.color=ts.color;
+    var scoreDiv=mk('div','tb-score',c+'/'+tr.length);
+    cell.appendChild(typeDiv);cell.appendChild(scoreDiv);
+    tb.appendChild(cell);
+  });
+  var rl=document.getElementById('review-list');
+  clearEl(rl);
+  results.forEach(function(r){
+    var div=mk('div','review-item');
+    var icon=mk('span','ri-icon',r.correct?'✅':'❌');
+    var content=mk('div');
+    var meta=mk('div','ri-meta');
+    var typeSpan=mk('span','',TYPE_STYLES[r.type].label+' — ');
+    var wordSpan=mk('span','ri-word',r.word);
+    meta.appendChild(typeSpan);meta.appendChild(wordSpan);
+    var qtext=mk('div','',r.q.replace(/\n/g,' '));
+    content.appendChild(meta);content.appendChild(qtext);
+    if(!r.correct){
+      var wrong=mk('div','ri-wrong-ans','You chose: '+r.chosen+' · Correct: '+r.answer);
+      content.appendChild(wrong);
+    }
+    div.appendChild(icon);div.appendChild(content);
+    rl.appendChild(div);
+  });
+}
+
+var fcIndex=0,fcFlipped=false;
+function showFlashcards(){
+  document.getElementById('start-screen').style.display='none';
+  document.getElementById('results').classList.remove('show');
+  document.getElementById('quiz').classList.remove('show');
+  document.getElementById('flashcard-screen').classList.add('show');
+  fcIndex=0;renderFlashcard();
+}
+function renderFlashcard(){
+  var w=WORDS[fcIndex];
+  fcFlipped=false;
+  document.getElementById('fc-card').classList.remove('flipped');
+  document.getElementById('fc-word').textContent=w.word;
+  document.getElementById('fc-pos').textContent=w.pos;
+  document.getElementById('fc-def').textContent=w.def;
+  document.getElementById('fc-example').textContent='"'+w.example+'"';
+  document.getElementById('fc-counter').textContent=(fcIndex+1)+' of '+WORDS.length;
+  document.getElementById('fc-progress-bar-fill').style.width=((fcIndex+1)/WORDS.length*100)+'%';
+  document.getElementById('fc-prev').disabled=(fcIndex===0);
+  document.getElementById('fc-next').disabled=(fcIndex===WORDS.length-1);
+}
+function flipCard(){fcFlipped=!fcFlipped;document.getElementById('fc-card').classList.toggle('flipped',fcFlipped);}
+function fcNav(dir){fcIndex=Math.max(0,Math.min(WORDS.length-1,fcIndex+dir));renderFlashcard();}
+</script>
+</body>
+</html>
