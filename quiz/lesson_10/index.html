@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lesson 10 – Fun and Games | Wordly Wise Quiz</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',sans-serif;background:#0d0520;color:#e2e8f0;min-height:100vh;overflow-x:hidden}
+  canvas{position:fixed;top:0;left:0;z-index:0;pointer-events:none}
+  #app{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:16px}
+  header{text-align:center;padding:24px 0 12px}
+  header h1{font-size:2rem;font-weight:800;background:linear-gradient(135deg,#a78bfa,#7c3aed);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  header p{color:#4c1d95;margin-top:6px;font-size:.95rem}
+  #home-link{display:inline-flex;align-items:center;gap:6px;color:#a78bfa;text-decoration:none;font-size:.9rem;margin-bottom:12px;opacity:.8;transition:opacity .2s}
+  #home-link:hover{opacity:1}
+  nav.mode-tabs{display:flex;gap:8px;justify-content:center;margin:16px 0}
+  nav.mode-tabs button{padding:8px 22px;border-radius:999px;border:2px solid #7c3aed;background:transparent;color:#a78bfa;font-size:.9rem;cursor:pointer;transition:all .2s}
+  nav.mode-tabs button.active{background:#7c3aed;color:#fff}
+  #flashcard-section{display:none}
+  .fc-controls{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+  .fc-controls button{padding:8px 18px;border-radius:8px;border:none;background:#1a0a38;color:#a78bfa;cursor:pointer;font-size:.9rem;transition:background .2s}
+  .fc-controls button:hover{background:#7c3aed}
+  #fc-counter{color:#5b21b6;font-size:.9rem}
+  .fc-scene{width:100%;max-width:520px;height:230px;margin:0 auto 18px;perspective:1000px;cursor:pointer}
+  .fc-card{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.4,0,.2,1)}
+  .fc-card.flipped{transform:rotateY(180deg)}
+  .fc-face{position:absolute;inset:0;border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+  .fc-front{background:linear-gradient(135deg,#1a0a38,#2e1065);border:2px solid #a78bfa40}
+  .fc-back{background:linear-gradient(135deg,#0d0520,#1a0a38);border:2px solid #a78bfa40;transform:rotateY(180deg)}
+  .fc-word{font-size:2rem;font-weight:800;color:#a78bfa}
+  .fc-pos{font-size:.85rem;color:#5b21b6;margin-top:4px}
+  .fc-hint{font-size:.8rem;color:#3b0764;margin-top:8px}
+  .fc-def{font-size:.95rem;color:#e2e8f0;text-align:center;line-height:1.6}
+  .fc-ex{font-size:.82rem;color:#5b21b6;margin-top:10px;font-style:italic;text-align:center}
+  #quiz-section{}
+  .quiz-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+  #progress-bar-wrap{width:100%;height:8px;background:#1a0a38;border-radius:999px;margin-bottom:16px;overflow:hidden}
+  #progress-bar{height:100%;background:linear-gradient(90deg,#7c3aed,#a78bfa);border-radius:999px;transition:width .4s}
+  #score-display{font-size:.9rem;color:#5b21b6}
+  #streak-display{font-size:.9rem;color:#a78bfa;font-weight:600}
+  .question-card{background:linear-gradient(135deg,#1a0a38,#1e0f40);border:1px solid #7c3aed40;border-radius:18px;padding:28px;margin-bottom:16px}
+  .q-type-badge{display:inline-block;padding:3px 12px;border-radius:999px;font-size:.75rem;font-weight:700;letter-spacing:.05em;margin-bottom:14px}
+  .q-word{font-size:1.5rem;font-weight:700;color:#a78bfa;margin-bottom:8px}
+  .q-text{font-size:1rem;color:#cbd5e1;margin-bottom:20px;line-height:1.6}
+  .choices{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media(max-width:520px){.choices{grid-template-columns:1fr}}
+  .choice-btn{padding:12px 16px;border-radius:12px;border:2px solid #1a0a38;background:#0d0520;color:#e2e8f0;font-size:.95rem;cursor:pointer;text-align:left;transition:all .2s;line-height:1.4}
+  .choice-btn:hover:not(:disabled){border-color:#a78bfa;background:#1a0a38}
+  .choice-btn.correct{border-color:#10b981;background:#064e3b;color:#6ee7b7}
+  .choice-btn.wrong{border-color:#ef4444;background:#450a0a;color:#fca5a5}
+  .choice-btn:disabled{cursor:default}
+  #hint-area{min-height:22px;margin-bottom:10px}
+  #hint-text{font-size:.85rem;color:#a78bfa;font-style:italic;display:none}
+  #hint-btn{padding:5px 14px;border-radius:8px;border:1px solid #a78bfa60;background:transparent;color:#a78bfa;font-size:.82rem;cursor:pointer}
+  #feedback-area{min-height:28px;margin-top:10px;font-size:.95rem;font-weight:600}
+  #feedback-area.correct{color:#10b981}
+  #feedback-area.wrong{color:#ef4444}
+  #next-btn{display:none;margin-top:14px;padding:10px 28px;border-radius:12px;border:none;background:linear-gradient(135deg,#7c3aed,#a78bfa);color:#fff;font-size:1rem;font-weight:700;cursor:pointer;transition:opacity .2s}
+  #next-btn:hover{opacity:.85}
+  #result-section{display:none;text-align:center;padding:32px 16px}
+  #result-section h2{font-size:2rem;font-weight:800;color:#a78bfa;margin-bottom:8px}
+  #result-section p{color:#5b21b6;margin-bottom:20px}
+  #final-score{font-size:3rem;font-weight:900;color:#a78bfa;margin:16px 0}
+  #result-section button{padding:12px 32px;border-radius:12px;border:none;background:linear-gradient(135deg,#7c3aed,#a78bfa);color:#fff;font-size:1rem;font-weight:700;cursor:pointer}
+  .particle{position:fixed;pointer-events:none;border-radius:50%;z-index:999;animation:particleFly .8s ease-out forwards}
+  @keyframes particleFly{to{transform:translate(var(--dx),var(--dy)) scale(0);opacity:0}}
+  .confetti-piece{position:fixed;pointer-events:none;z-index:999;animation:confettiFall 1s ease-in forwards}
+  @keyframes confettiFall{to{transform:translate(var(--dx),calc(var(--dy) + 80px)) rotate(720deg);opacity:0}}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<div id="app">
+  <a id="home-link" href="../index.html">&#8592; All Lessons</a>
+  <header>
+    <h1>&#x1F3AE; Lesson 10 &#8211; Fun and Games</h1>
+    <p>anticipate &bull; bankrupt &bull; brief &bull; brisk &bull; budget &bull; compete &bull; complicate &bull; effect &bull; err &bull; factor &bull; fad &bull; gripe &bull; knack &bull; leisure &bull; unique</p>
+  </header>
+  <nav class="mode-tabs">
+    <button id="tab-quiz" class="active" onclick="showMode('quiz')">Quiz Mode</button>
+    <button id="tab-flash" onclick="showMode('flash')">Flashcards</button>
+  </nav>
+
+  <div id="flashcard-section">
+    <div class="fc-controls">
+      <button onclick="fcPrev()">&#8592; Prev</button>
+      <span id="fc-counter">1 / 15</span>
+      <button onclick="fcNext()">Next &#8594;</button>
+      <button onclick="fcShuffle()">&#x1F500; Shuffle</button>
+    </div>
+    <div class="fc-scene" onclick="fcFlip()">
+      <div class="fc-card" id="fc-card">
+        <div class="fc-face fc-front">
+          <div class="fc-word" id="fc-word"></div>
+          <div class="fc-pos" id="fc-pos"></div>
+          <div class="fc-hint">Click to reveal definition</div>
+        </div>
+        <div class="fc-face fc-back">
+          <div class="fc-def" id="fc-def"></div>
+          <div class="fc-ex" id="fc-ex"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="quiz-section">
+    <div class="quiz-header">
+      <span id="score-display">Score: 0/0</span>
+      <span id="streak-display">Streak: 0 &#x1F525;</span>
+    </div>
+    <div id="progress-bar-wrap"><div id="progress-bar" style="width:0%"></div></div>
+    <div class="question-card">
+      <div id="q-badge" class="q-type-badge"></div>
+      <div class="q-word" id="q-word"></div>
+      <div class="q-text" id="q-text"></div>
+      <div id="hint-area">
+        <button id="hint-btn" onclick="showHint()">&#x1F4A1; Hint</button>
+        <span id="hint-text"></span>
+      </div>
+      <div class="choices" id="choices"></div>
+      <div id="feedback-area"></div>
+      <button id="next-btn" onclick="nextQuestion()">Next &#8594;</button>
+    </div>
+  </div>
+
+  <div id="result-section">
+    <h2>Round Complete!</h2>
+    <p>Here&#39;s how you did on this round of 20 questions.</p>
+    <div id="final-score"></div>
+    <p id="result-msg"></p>
+    <button onclick="startQuiz()">Play Again</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  var c=document.getElementById('bg'),ctx=c.getContext('2d'),W,H,stars=[];
+  function resize(){W=c.width=window.innerWidth;H=c.height=window.innerHeight;}
+  resize();window.addEventListener('resize',resize);
+  for(var i=0;i<180;i++)stars.push({x:Math.random()*9999,y:Math.random()*9999,r:Math.random()*1.4+.3,s:Math.random()*.4+.1});
+  function drawBg(){
+    ctx.clearRect(0,0,W,H);
+    var g=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,Math.max(W,H)*.75);
+    g.addColorStop(0,'#1a0a38');g.addColorStop(.5,'#0d0520');g.addColorStop(1,'#060210');
+    ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    stars.forEach(function(s){
+      s.x+=s.s;if(s.x>W)s.x=0;
+      ctx.beginPath();ctx.arc(s.x,s.y%H,s.r,0,Math.PI*2);
+      ctx.fillStyle='rgba(167,139,250,0.7)';ctx.fill();
+    });
+    requestAnimationFrame(drawBg);
+  }
+  drawBg();
+})();
+
+var WORDS=[
+  {word:'anticipate',pos:'v.',def:'1. To look forward to; to expect. 2. To be aware of and to provide for beforehand.',ex:'"We anticipated having a good time at the party."'},
+  {word:'bankrupt',pos:'adj./v.',def:'(adj.) 1. Unable to pay one\'s debts and freed by law from doing so. 2. Left without any worth or value. (v.) To leave without worth or value.',ex:'"The store owner was bankrupt after the business failed."'},
+  {word:'brief',pos:'adj./v./n.',def:'(adj.) Short; not long-lasting. (v.) To give a short explanation or set of instructions to. (n.) A statement giving the main points in a case.',ex:'"The guests had time for just a brief visit."'},
+  {word:'brisk',pos:'adj.',def:'1. Quick; active. 2. Stimulating; refreshing.',ex:'"The runners kept up a brisk pace at the start of the race."'},
+  {word:'budget',pos:'n./v.',def:'(n.) A plan for spending money during a certain period. (v.) To plan the use of carefully.',ex:'"The extravagant dinner caused the family to overspend their weekly food budget."'},
+  {word:'compete',pos:'v.',def:'To try to win against others. Competition (n.): the act of competing; a contest. Competitor (n.): one who competes.',ex:'"Five students competed for first prize."'},
+  {word:'complicate',pos:'v.',def:'To make difficult. Complicated (adj.): not easy or simple; having many different parts.',ex:'"An extra guest may complicate the seating arrangements."'},
+  {word:'effect',pos:'v./n.',def:'(v.) To make happen. (n.) A result. Effective (adj.): 1. Bringing about the desired result. 2. In operation. 3. Making a strong impression.',ex:'"The new principal will effect many changes."'},
+  {word:'err',pos:'v.',def:'To be wrong or to do wrong. Error (n.): a mistake. Erroneous (adj.): mistaken; wrong.',ex:'"I erred when I accused you of lying."'},
+  {word:'factor',pos:'n.',def:'Something that contributes to a result.',ex:'"Paying attention and studying diligently are two factors in getting good grades."'},
+  {word:'fad',pos:'n.',def:'Something that is very popular for a short time, then forgotten.',ex:'"Ankle bracelets were the fad one summer."'},
+  {word:'gripe',pos:'v./n.',def:'(v.) 1. To complain. 2. To annoy or irritate. (n.) A complaint.',ex:'"The children always gripe about having to get up early."'},
+  {word:'knack',pos:'n.',def:'A special talent or skill; ability to do something easily.',ex:'"My mother has a knack for making friends wherever she goes."'},
+  {word:'leisure',pos:'n.',def:'Free time not taken up with work. Leisurely (adj.): slow; relaxed.',ex:'"My father\'s sixty-hour work week allows little time for leisure."'},
+  {word:'unique',pos:'adj.',def:'The only one of its kind.',ex:'"The platypus, a mammal that lays eggs, is unique among animals."'}
+];
+
+var TYPE_STYLES={
+  synonym:{label:'SYNONYM',color:'#34d399',bg:'rgba(6,95,70,.4)'},
+  antonym:{label:'ANTONYM',color:'#f472b6',bg:'rgba(157,23,77,.35)'},
+  analogy:{label:'ANALOGY',color:'#a78bfa',bg:'rgba(109,40,217,.35)'},
+  simile:{label:'SIMILE',color:'#fbbf24',bg:'rgba(161,98,7,.35)'},
+  metaphor:{label:'METAPHOR',color:'#38bdf8',bg:'rgba(7,89,133,.35)'}
+};
+
+var QUESTIONS=[
+  // ── SYNONYMS (50) ──────────────────────────────────────────────────────────
+  {type:'synonym',word:'anticipate',q:'Which word is closest in meaning to ANTICIPATE (to look forward to)?',a:'expect',ch:['expect','dread','ignore','forget'],hint:'Think: to look ahead and see something coming — with an optimistic outlook'},
+  {type:'synonym',word:'anticipate',q:'Which word best replaces ANTICIPATE in "we anticipated a large crowd"?',a:'foresaw',ch:['foresaw','ignored','denied','feared'],hint:'Think: to see or sense something before it happens'},
+  {type:'synonym',word:'anticipate',q:'Which word means "to look forward to something"?',a:'anticipate',ch:['anticipate','dread','overlook','resist'],hint:'Think: to be excited about what is coming, not worried about it'},
+  {type:'synonym',word:'anticipate',q:'Which word is most similar to ANTICIPATE (to be aware of in advance and prepare)?',a:'foresee',ch:['foresee','ignore','forget','neglect'],hint:'Think: knowing something will happen before it does and getting ready'},
+  {type:'synonym',word:'bankrupt',q:'Which word is closest in meaning to BANKRUPT (adj.)?',a:'insolvent',ch:['insolvent','wealthy','profitable','solvent'],hint:'Think: unable to pay your debts — legally released from them'},
+  {type:'synonym',word:'bankrupt',q:'Which word best replaces BANKRUPT in "bankrupt of ideas"?',a:'devoid',ch:['devoid','full','rich','loaded'],hint:'Think: completely empty or drained of something valuable'},
+  {type:'synonym',word:'bankrupt',q:'Which word is most similar to BANKRUPT?',a:'ruined',ch:['ruined','prosperous','thriving','solvent'],hint:'Think: completely destroyed financially — nothing left'},
+  {type:'synonym',word:'brief',q:'Which word is closest in meaning to BRIEF (adj.)?',a:'short',ch:['short','lengthy','prolonged','extended'],hint:'Think: not lasting long or taking up much space'},
+  {type:'synonym',word:'brief',q:'Which word best replaces BRIEF in "a brief explanation"?',a:'concise',ch:['concise','lengthy','wordy','elaborate'],hint:'Think: using as few words as possible while covering the key points'},
+  {type:'synonym',word:'brief',q:'Which word means "short in duration"?',a:'brief',ch:['brief','lengthy','permanent','prolonged'],hint:'Think: a moment that passes quickly — the opposite of lasting a long time'},
+  {type:'synonym',word:'brief',q:'Which word is most similar to BRIEF in "a brief visit"?',a:'fleeting',ch:['fleeting','extended','lingering','lasting'],hint:'Think: something that barely happens before it is gone'},
+  {type:'synonym',word:'brisk',q:'Which word is closest in meaning to BRISK (quick; active)?',a:'lively',ch:['lively','sluggish','slow','idle'],hint:'Think: energetic and moving with purpose rather than dragging along'},
+  {type:'synonym',word:'brisk',q:'Which word best replaces BRISK in "a brisk walk"?',a:'energetic',ch:['energetic','leisurely','lazy','sluggish'],hint:'Think: moving at a fast, purposeful pace with energy'},
+  {type:'synonym',word:'brisk',q:'Which word means "stimulating and refreshing"?',a:'brisk',ch:['brisk','dull','stagnant','still'],hint:'Think: the kind of cool wind or movement that makes you feel awake and alive'},
+  {type:'synonym',word:'budget',q:'Which word is closest in meaning to BUDGET (noun)?',a:'plan',ch:['plan','surprise','excess','splurge'],hint:'Think: a carefully organized spending guide for a set period'},
+  {type:'synonym',word:'budget',q:'Which word best replaces BUDGET in "she budgeted her time carefully"?',a:'managed',ch:['managed','wasted','ignored','squandered'],hint:'Think: to allocate and control how resources are used'},
+  {type:'synonym',word:'budget',q:'Which word means "to plan the use of resources carefully"?',a:'budget',ch:['budget','splurge','waste','squander'],hint:'Think: dividing up what you have so each need gets its share'},
+  {type:'synonym',word:'compete',q:'Which word is closest in meaning to COMPETE?',a:'contend',ch:['contend','cooperate','surrender','yield'],hint:'Think: to strive against others for a prize or goal'},
+  {type:'synonym',word:'compete',q:'Which word best replaces COMPETE in "nations competed for gold medals"?',a:'rivaled',ch:['rivaled','surrendered','cooperated','yielded'],hint:'Think: to match or challenge another, trying to come out on top'},
+  {type:'synonym',word:'compete',q:'Which word means "to try to win against others"?',a:'compete',ch:['compete','cooperate','support','assist'],hint:'Think: entering a contest where only one side can win'},
+  {type:'synonym',word:'compete',q:'Which word is most similar to COMPETITOR?',a:'rival',ch:['rival','ally','partner','teammate'],hint:'Think: someone on the other side who is trying to beat you'},
+  {type:'synonym',word:'complicate',q:'Which word is closest in meaning to COMPLICATE?',a:'tangle',ch:['tangle','simplify','clarify','ease'],hint:'Think: to add difficulty or confusion to something'},
+  {type:'synonym',word:'complicate',q:'Which word best replaces COMPLICATE in "the new rules complicated things"?',a:'muddled',ch:['muddled','clarified','simplified','streamlined'],hint:'Think: made things more confusing and harder to follow'},
+  {type:'synonym',word:'complicate',q:'Which word is most similar to COMPLICATED?',a:'complex',ch:['complex','simple','easy','straightforward'],hint:'Think: having many parts that interact in difficult ways'},
+  {type:'synonym',word:'effect',q:'Which word is closest in meaning to EFFECT (noun: a result)?',a:'outcome',ch:['outcome','cause','source','origin'],hint:'Think: what happens as a result of something else'},
+  {type:'synonym',word:'effect',q:'Which word best replaces EFFECT in "the medicine had no effect"?',a:'impact',ch:['impact','cause','origin','source'],hint:'Think: the change or result produced by something'},
+  {type:'synonym',word:'effect',q:'Which word is most similar to EFFECTIVE?',a:'successful',ch:['successful','useless','ineffective','futile'],hint:'Think: achieving exactly the result that was desired'},
+  {type:'synonym',word:'err',q:'Which word is closest in meaning to ERR?',a:'blunder',ch:['blunder','succeed','excel','triumph'],hint:'Think: to make a mistake, whether small or large'},
+  {type:'synonym',word:'err',q:'Which word best replaces ERR in "I erred in my judgment"?',a:'mistook',ch:['mistook','succeeded','triumphed','excelled'],hint:'Think: to get something wrong despite your best attempt'},
+  {type:'synonym',word:'err',q:'Which word is most similar to ERRONEOUS?',a:'mistaken',ch:['mistaken','correct','accurate','valid'],hint:'Think: based on a mistake — not aligned with the facts'},
+  {type:'synonym',word:'factor',q:'Which word is closest in meaning to FACTOR?',a:'element',ch:['element','result','product','effect'],hint:'Think: one of the contributing pieces that lead to an outcome'},
+  {type:'synonym',word:'factor',q:'Which word best replaces FACTOR in "weather was a key factor in the outcome"?',a:'component',ch:['component','result','effect','outcome'],hint:'Think: a separate part that plays a role in producing a result'},
+  {type:'synonym',word:'factor',q:'Which word means "something that contributes to a result"?',a:'factor',ch:['factor','outcome','product','consequence'],hint:'Think: a building block that contributes to, not results from, something'},
+  {type:'synonym',word:'fad',q:'Which word is closest in meaning to FAD?',a:'craze',ch:['craze','classic','tradition','standard'],hint:'Think: sudden, intense, short-lived enthusiasm for something'},
+  {type:'synonym',word:'fad',q:'Which word best replaces FAD in "fidget spinners were a fad"?',a:'trend',ch:['trend','classic','staple','institution'],hint:'Think: something fashionable for a brief window of time'},
+  {type:'synonym',word:'fad',q:'Which word means "something popular for a short time, then forgotten"?',a:'fad',ch:['fad','tradition','classic','institution'],hint:'Think: here one summer and gone the next — nobody talks about it anymore'},
+  {type:'synonym',word:'gripe',q:'Which word is closest in meaning to GRIPE (verb: to complain)?',a:'grumble',ch:['grumble','praise','compliment','appreciate'],hint:'Think: expressing dissatisfaction in a low, persistent way'},
+  {type:'synonym',word:'gripe',q:'Which word best replaces GRIPE (noun: a complaint)?',a:'grievance',ch:['grievance','compliment','praise','approval'],hint:'Think: a specific cause of complaint — something you feel is wrong or unfair'},
+  {type:'synonym',word:'gripe',q:'Which word means "to annoy or irritate" (second meaning of GRIPE)?',a:'aggravate',ch:['aggravate','please','soothe','comfort'],hint:'Think: to bother or get under someone\'s skin'},
+  {type:'synonym',word:'knack',q:'Which word is closest in meaning to KNACK?',a:'talent',ch:['talent','difficulty','struggle','inability'],hint:'Think: a natural or developed ability to do something well'},
+  {type:'synonym',word:'knack',q:'Which word best replaces KNACK in "she has a knack for music"?',a:'aptitude',ch:['aptitude','inability','clumsiness','aversion'],hint:'Think: a natural tendency to be good at something without much effort'},
+  {type:'synonym',word:'knack',q:'Which word means "a special skill or ability to do something easily"?',a:'knack',ch:['knack','struggle','effort','difficulty'],hint:'Think: it comes naturally — you don\'t have to force it'},
+  {type:'synonym',word:'knack',q:'Which word is most similar to KNACK?',a:'gift',ch:['gift','flaw','weakness','handicap'],hint:'Think: something you were born with or developed that others envy'},
+  {type:'synonym',word:'leisure',q:'Which word is closest in meaning to LEISURE?',a:'recreation',ch:['recreation','labor','work','toil'],hint:'Think: time spent doing enjoyable things rather than working'},
+  {type:'synonym',word:'leisure',q:'Which word best replaces LEISURE in "a day of pure leisure"?',a:'relaxation',ch:['relaxation','labor','effort','industry'],hint:'Think: free time with no obligations — purely for rest and enjoyment'},
+  {type:'synonym',word:'leisure',q:'Which word is most similar to LEISURELY?',a:'unhurried',ch:['unhurried','rushed','brisk','hasty'],hint:'Think: taking your time with no pressure to move quickly'},
+  {type:'synonym',word:'unique',q:'Which word is closest in meaning to UNIQUE?',a:'singular',ch:['singular','ordinary','common','typical'],hint:'Think: one of a kind — there is nothing else exactly like it'},
+  {type:'synonym',word:'unique',q:'Which word best replaces UNIQUE in "a unique invention"?',a:'original',ch:['original','ordinary','imitative','familiar'],hint:'Think: never seen before — completely fresh and new'},
+  {type:'synonym',word:'unique',q:'Which word means "the only one of its kind"?',a:'unique',ch:['unique','common','standard','average'],hint:'Think: if you removed it, no exact copy would remain'},
+  {type:'synonym',word:'unique',q:'Which word is most similar to UNIQUE?',a:'unparalleled',ch:['unparalleled','typical','ordinary','run-of-the-mill'],hint:'Think: having no equal or comparison — standing completely alone'},
+
+  // ── ANTONYMS (35) ──────────────────────────────────────────────────────────
+  {type:'antonym',word:'anticipate',q:'Which word is most OPPOSITE in meaning to ANTICIPATE?',a:'dread',ch:['dread','expect','foresee','predict'],hint:'Think: dreading something coming rather than looking forward to it'},
+  {type:'antonym',word:'anticipate',q:'Which word is the best antonym for ANTICIPATE?',a:'ignore',ch:['ignore','foresee','await','expect'],hint:'Think: paying no attention to what is coming rather than looking forward to it'},
+  {type:'antonym',word:'bankrupt',q:'Which word is most OPPOSITE in meaning to BANKRUPT (adj.)?',a:'solvent',ch:['solvent','ruined','insolvent','broke'],hint:'Think: able to pay all your debts — financially sound'},
+  {type:'antonym',word:'bankrupt',q:'Which word is the best antonym for BANKRUPT?',a:'prosperous',ch:['prosperous','insolvent','ruined','penniless'],hint:'Think: thriving financially rather than unable to pay debts'},
+  {type:'antonym',word:'brief',q:'Which word is most OPPOSITE in meaning to BRIEF?',a:'lengthy',ch:['lengthy','short','concise','fleeting'],hint:'Think: going on and on rather than being over quickly'},
+  {type:'antonym',word:'brief',q:'Which word is the best antonym for BRIEF?',a:'prolonged',ch:['prolonged','concise','brief','short'],hint:'Think: stretched out over a long period rather than cut short'},
+  {type:'antonym',word:'brief',q:'Which word means the opposite of "short in duration"?',a:'extended',ch:['extended','fleeting','quick','concise'],hint:'Think: lasting a very long time rather than ending quickly'},
+  {type:'antonym',word:'brisk',q:'Which word is most OPPOSITE in meaning to BRISK (quick; active)?',a:'sluggish',ch:['sluggish','lively','energetic','active'],hint:'Think: slow and barely moving rather than quick and alert'},
+  {type:'antonym',word:'brisk',q:'Which word is the best antonym for BRISK?',a:'leisurely',ch:['leisurely','quick','energetic','lively'],hint:'Think: slow and relaxed rather than fast and purposeful'},
+  {type:'antonym',word:'brisk',q:'Which word means the opposite of "stimulating and refreshing"?',a:'stifling',ch:['stifling','brisk','lively','refreshing'],hint:'Think: heavy, oppressive, and draining rather than cool and invigorating'},
+  {type:'antonym',word:'budget',q:'Which word is most OPPOSITE in meaning to BUDGET (verb)?',a:'squander',ch:['squander','plan','allocate','manage'],hint:'Think: spending recklessly rather than tracking and controlling your resources'},
+  {type:'antonym',word:'budget',q:'Which word is the best antonym for BUDGET (verb)?',a:'overspend',ch:['overspend','allocate','plan','ration'],hint:'Think: going past your limits rather than staying within them'},
+  {type:'antonym',word:'compete',q:'Which word is most OPPOSITE in meaning to COMPETE?',a:'cooperate',ch:['cooperate','contend','rival','challenge'],hint:'Think: working together toward a shared goal rather than trying to beat each other'},
+  {type:'antonym',word:'compete',q:'Which word is the best antonym for COMPETE?',a:'surrender',ch:['surrender','contend','rival','vie'],hint:'Think: giving up the contest rather than fighting for victory'},
+  {type:'antonym',word:'complicate',q:'Which word is most OPPOSITE in meaning to COMPLICATE?',a:'simplify',ch:['simplify','tangle','muddle','confuse'],hint:'Think: making something easier to understand rather than harder'},
+  {type:'antonym',word:'complicate',q:'Which word is the best antonym for COMPLICATE?',a:'clarify',ch:['clarify','muddle','obscure','confuse'],hint:'Think: to make clear and understandable rather than confusing'},
+  {type:'antonym',word:'complicate',q:'Which word means the opposite of "to make difficult"?',a:'streamline',ch:['streamline','tangle','complicate','muddle'],hint:'Think: to remove unnecessary steps and make a process clean and efficient'},
+  {type:'antonym',word:'effect',q:'Which word is most OPPOSITE in meaning to EFFECT (noun: result)?',a:'cause',ch:['cause','outcome','result','consequence'],hint:'Think: what produces a result, rather than the result itself'},
+  {type:'antonym',word:'effect',q:'Which word is the best antonym for EFFECTIVE?',a:'useless',ch:['useless','successful','powerful','capable'],hint:'Think: producing no result at all, rather than the desired one'},
+  {type:'antonym',word:'err',q:'Which word is most OPPOSITE in meaning to ERR?',a:'succeed',ch:['succeed','blunder','mistake','stumble'],hint:'Think: getting it exactly right rather than getting it wrong'},
+  {type:'antonym',word:'err',q:'Which word is the best antonym for ERRONEOUS?',a:'accurate',ch:['accurate','mistaken','wrong','false'],hint:'Think: matching the facts perfectly rather than being based on a mistake'},
+  {type:'antonym',word:'factor',q:'Which word is most OPPOSITE in meaning to FACTOR (something that contributes to a result)?',a:'irrelevancy',ch:['irrelevancy','element','component','contributor'],hint:'Think: something that plays no part at all in producing the outcome'},
+  {type:'antonym',word:'factor',q:'Which word is the best antonym for FACTOR in "weather was a key factor"?',a:'coincidence',ch:['coincidence','element','variable','influence'],hint:'Think: something that happened by chance and played no real role in the result'},
+  {type:'antonym',word:'fad',q:'Which word is most OPPOSITE in meaning to FAD?',a:'classic',ch:['classic','craze','trend','fashion'],hint:'Think: something that endures decade after decade rather than vanishing after a season'},
+  {type:'antonym',word:'fad',q:'Which word is the best antonym for FAD?',a:'tradition',ch:['tradition','craze','trend','novelty'],hint:'Think: a practice passed down through generations, not forgotten after one summer'},
+  {type:'antonym',word:'fad',q:'Which word means the opposite of "popular for a short time, then forgotten"?',a:'institution',ch:['institution','trend','craze','novelty'],hint:'Think: something so established and enduring it has become part of the culture itself'},
+  {type:'antonym',word:'gripe',q:'Which word is most OPPOSITE in meaning to GRIPE (to complain)?',a:'praise',ch:['praise','grumble','moan','complain'],hint:'Think: expressing appreciation and approval rather than dissatisfaction'},
+  {type:'antonym',word:'gripe',q:'Which word is the best antonym for GRIPE (a complaint)?',a:'compliment',ch:['compliment','grievance','grumble','protest'],hint:'Think: something positive said rather than a negative complaint'},
+  {type:'antonym',word:'knack',q:'Which word is most OPPOSITE in meaning to KNACK?',a:'incompetence',ch:['incompetence','talent','skill','aptitude'],hint:'Think: a total inability to do something well rather than a natural ease with it'},
+  {type:'antonym',word:'knack',q:'Which word is the best antonym for KNACK?',a:'clumsiness',ch:['clumsiness','gift','talent','aptitude'],hint:'Think: fumbling and awkward rather than naturally adept'},
+  {type:'antonym',word:'leisure',q:'Which word is most OPPOSITE in meaning to LEISURE?',a:'labor',ch:['labor','recreation','rest','relaxation'],hint:'Think: hard work and effort rather than free time for enjoyment'},
+  {type:'antonym',word:'leisure',q:'Which word is the best antonym for LEISURE?',a:'toil',ch:['toil','recreation','rest','relaxation'],hint:'Think: exhausting effort rather than carefree free time'},
+  {type:'antonym',word:'leisure',q:'Which word means the opposite of "free time not taken up with work"?',a:'industry',ch:['industry','recreation','relaxation','leisure'],hint:'Think: the state of being constantly busy and productive — never at rest'},
+  {type:'antonym',word:'unique',q:'Which word is most OPPOSITE in meaning to UNIQUE?',a:'ordinary',ch:['ordinary','singular','rare','exceptional'],hint:'Think: just like everything else — nothing special about it'},
+  {type:'antonym',word:'unique',q:'Which word is the best antonym for UNIQUE?',a:'common',ch:['common','unparalleled','singular','original'],hint:'Think: found everywhere, easy to replace — the complete opposite of one of a kind'},
+
+  // ── ANALOGIES (40) ─────────────────────────────────────────────────────────
+  {type:'analogy',word:'anticipate',q:'ANTICIPATE is to FUTURE as REMEMBER is to ___',a:'past',ch:['past','future','present','moment'],hint:'Think: anticipate looks forward; remember looks backward'},
+  {type:'analogy',word:'anticipate',q:'HUNTER is to TRACKS as FORECASTER is to ___',a:'anticipate',ch:['anticipate','gripe','err','compete'],hint:'Think: a hunter reads tracks to predict prey; a forecaster reads signs to anticipate weather'},
+  {type:'analogy',word:'anticipate',q:'ANTICIPATE is to EXPECT as DREAD is to ___',a:'fear',ch:['fear','welcome','embrace','enjoy'],hint:'Think: anticipate describes expecting something good; dread describes expecting something bad'},
+  {type:'analogy',word:'bankrupt',q:'BANKRUPT is to WEALTH as EXHAUSTED is to ___',a:'energy',ch:['energy','money','time','rest'],hint:'Think: bankrupt means completely out of money; exhausted means completely out of energy'},
+  {type:'analogy',word:'bankrupt',q:'DEBT is to BANKRUPT as DROUGHT is to ___',a:'parched',ch:['parched','flooded','drenched','saturated'],hint:'Think: too much debt leads to bankruptcy; too little rain leads to something parched'},
+  {type:'analogy',word:'bankrupt',q:'BANKRUPT is to INSOLVENT as FRUGAL is to ___',a:'thrifty',ch:['thrifty','wasteful','extravagant','reckless'],hint:'Think: bankrupt and insolvent mean the same; frugal and thrifty mean the same'},
+  {type:'analogy',word:'brief',q:'BRIEF is to SHORT as LENGTHY is to ___',a:'long',ch:['long','quick','brief','concise'],hint:'Think: brief and short mean the same; lengthy and long mean the same'},
+  {type:'analogy',word:'brief',q:'BRIEF is to PROLONGED as FAD is to ___',a:'classic',ch:['classic','trend','craze','novelty'],hint:'Think: brief (short-lived) is opposite to prolonged; a fad is opposite to a classic'},
+  {type:'analogy',word:'brief',q:'NOVEL is to PAGES as BRIEF is to ___',a:'points',ch:['points','chapters','volumes','stories'],hint:'Think: a novel contains many pages; a brief contains only the main points'},
+  {type:'analogy',word:'brisk',q:'BRISK is to SLUGGISH as ENERGETIC is to ___',a:'tired',ch:['tired','active','lively','alert'],hint:'Think: brisk and energetic are similar; their opposites are sluggish and tired'},
+  {type:'analogy',word:'brisk',q:'BRISK is to PACE as REFRESHING is to ___',a:'breeze',ch:['breeze','heat','stillness','weight'],hint:'Think: we describe a pace as brisk and a wind as refreshing — both imply something invigorating'},
+  {type:'analogy',word:'budget',q:'BUDGET is to SPENDING as SCHEDULE is to ___',a:'time',ch:['time','money','effort','talent'],hint:'Think: a budget controls spending; a schedule controls time'},
+  {type:'analogy',word:'budget',q:'BUDGET is to OVERSPEND as PLAN is to ___',a:'deviate',ch:['deviate','follow','execute','complete'],hint:'Think: a budget is broken when you overspend; a plan is broken when you deviate from it'},
+  {type:'analogy',word:'compete',q:'COMPETE is to VICTORY as STUDY is to ___',a:'knowledge',ch:['knowledge','defeat','ignorance','failure'],hint:'Think: you compete in hopes of victory; you study in hopes of knowledge'},
+  {type:'analogy',word:'compete',q:'COMPETITOR is to RIVAL as ALLY is to ___',a:'partner',ch:['partner','rival','opponent','foe'],hint:'Think: a competitor IS your rival; an ally IS your partner'},
+  {type:'analogy',word:'compete',q:'COMPETE is to CONTEST as COLLABORATE is to ___',a:'project',ch:['project','contest','tournament','battle'],hint:'Think: you compete in a contest; you collaborate on a project'},
+  {type:'analogy',word:'complicate',q:'COMPLICATE is to SIMPLE as CLARIFY is to ___',a:'confusing',ch:['confusing','clear','obvious','easy'],hint:'Think: to complicate makes something NOT simple; to clarify makes something NOT confusing'},
+  {type:'analogy',word:'complicate',q:'KNOT is to ROPE as COMPLICATION is to ___',a:'plan',ch:['plan','knot','solution','success'],hint:'Think: a knot complicates a rope; a complication tangles up a plan'},
+  {type:'analogy',word:'complicate',q:'COMPLICATE is to DIFFICULT as SIMPLIFY is to ___',a:'easy',ch:['easy','hard','complex','tangled'],hint:'Think: to complicate something makes it difficult; to simplify something makes it easy'},
+  {type:'analogy',word:'effect',q:'EFFECT is to CAUSE as RESULT is to ___',a:'reason',ch:['reason','outcome','consequence','product'],hint:'Think: an effect follows a cause; a result follows a reason'},
+  {type:'analogy',word:'effect',q:'MEDICINE is to CURE as EFFORT is to ___',a:'effect',ch:['effect','cause','source','attempt'],hint:'Think: medicine produces a cure; effort produces an effect'},
+  {type:'analogy',word:'effect',q:'EFFECTIVE is to SUCCESS as INEFFECTIVE is to ___',a:'failure',ch:['failure','success','triumph','victory'],hint:'Think: an effective approach leads to success; an ineffective approach leads to failure'},
+  {type:'analogy',word:'err',q:'ERR is to MISTAKE as EXCEL is to ___',a:'achievement',ch:['achievement','error','failure','blunder'],hint:'Think: to err produces a mistake; to excel produces an achievement'},
+  {type:'analogy',word:'err',q:'ERRONEOUS is to WRONG as ACCURATE is to ___',a:'right',ch:['right','wrong','false','mistaken'],hint:'Think: erroneous and wrong mean the same; accurate and right mean the same'},
+  {type:'analogy',word:'factor',q:'FACTOR is to RESULT as INGREDIENT is to ___',a:'recipe',ch:['recipe','ingredient','factor','cause'],hint:'Think: a factor contributes to a result the way an ingredient contributes to a finished dish'},
+  {type:'analogy',word:'factor',q:'FACTOR is to OUTCOME as CAUSE is to ___',a:'effect',ch:['effect','factor','source','condition'],hint:'Think: a factor helps produce an outcome; a cause produces an effect'},
+  {type:'analogy',word:'fad',q:'FAD is to BRIEF as TRADITION is to ___',a:'enduring',ch:['enduring','brief','fleeting','temporary'],hint:'Think: a fad is brief by definition; a tradition is enduring by definition'},
+  {type:'analogy',word:'fad',q:'SUMMER is to FAD as CENTURY is to ___',a:'tradition',ch:['tradition','fad','craze','trend'],hint:'Think: a fad lasts a summer; a tradition lasts centuries'},
+  {type:'analogy',word:'fad',q:'FAD is to FORGOTTEN as CLASSIC is to ___',a:'remembered',ch:['remembered','forgotten','abandoned','discarded'],hint:'Think: fads are forgotten quickly; classics are remembered for generations'},
+  {type:'analogy',word:'gripe',q:'GRIPE is to COMPLAINT as PRAISE is to ___',a:'compliment',ch:['compliment','criticism','protest','complaint'],hint:'Think: a gripe IS a complaint; praise IS a compliment — both pairs are exact synonyms'},
+  {type:'analogy',word:'gripe',q:'GRIPE is to DISSATISFIED as CHEER is to ___',a:'pleased',ch:['pleased','upset','angry','frustrated'],hint:'Think: you gripe when you are dissatisfied; you cheer when you are pleased'},
+  {type:'analogy',word:'knack',q:'KNACK is to SKILL as FLAW is to ___',a:'weakness',ch:['weakness','strength','talent','ability'],hint:'Think: a knack is a skill or strength; a flaw is a weakness'},
+  {type:'analogy',word:'knack',q:'KNACK is to EASE as STRUGGLE is to ___',a:'difficulty',ch:['difficulty','ease','comfort','skill'],hint:'Think: a knack means you do something with ease; a struggle means you do it with difficulty'},
+  {type:'analogy',word:'knack',q:'ARTIST is to KNACK as ATHLETE is to ___',a:'talent',ch:['talent','knack','flaw','struggle'],hint:'Think: an artist is known for their knack; an athlete for their talent — both are natural abilities'},
+  {type:'analogy',word:'leisure',q:'LEISURE is to WORK as VACATION is to ___',a:'job',ch:['job','rest','relaxation','play'],hint:'Think: leisure is the opposite of work; vacation is the opposite of a job'},
+  {type:'analogy',word:'leisure',q:'LEISURE is to RELAXED as LABOR is to ___',a:'exhausted',ch:['exhausted','rested','leisurely','relaxed'],hint:'Think: leisure leaves you relaxed; hard labor leaves you exhausted'},
+  {type:'analogy',word:'leisure',q:'LEISURELY is to BRISK as SLOW is to ___',a:'fast',ch:['fast','slow','tired','calm'],hint:'Think: leisurely and brisk are antonyms; slow and fast are antonyms'},
+  {type:'analogy',word:'unique',q:'UNIQUE is to SINGULAR as COMMON is to ___',a:'ordinary',ch:['ordinary','singular','rare','exceptional'],hint:'Think: unique and singular mean the same; common and ordinary mean the same'},
+  {type:'analogy',word:'unique',q:'FINGERPRINT is to PERSON as UNIQUE IDEA is to ___',a:'inventor',ch:['inventor','factory','machine','pattern'],hint:'Think: a fingerprint identifies a person; a unique idea identifies a particular inventor\'s creativity'},
+  {type:'analogy',word:'unique',q:'UNIQUE is to ORIGINAL as ORDINARY is to ___',a:'imitative',ch:['imitative','exceptional','rare','original'],hint:'Think: unique things are original; ordinary things are imitative of everything that already exists'},
+
+  // ── SIMILES (35) ───────────────────────────────────────────────────────────
+  {type:'simile',word:'anticipate',q:'Complete the simile: She anticipated the results like ___',a:'a child awake before dawn on Christmas morning — ears straining for the first creak on the stair',ch:['a child awake before dawn on Christmas morning — ears straining for the first creak on the stair','a student who forgot the test was happening until she walked in the door','an adult who hears the news after everyone else and shrugs','a worker who arrives late and misses the announcement entirely'],hint:'Think: eager, wide-awake anticipation — every sense tuned to the coming moment'},
+  {type:'simile',word:'anticipate',q:'Complete the simile: The coach anticipated every opponent\'s move like ___',a:'a chess player who sees twelve moves ahead before lifting a piece',ch:['a chess player who sees twelve moves ahead before lifting a piece','a beginner who moves whatever piece is nearest without a plan','a player who stares at the board until the timer runs out','a gambler who chooses by flipping a coin'],hint:'Think: seeing possible futures and preparing for them before they arrive'},
+  {type:'simile',word:'anticipate',q:'Complete the simile: He anticipated the crowd\'s reaction like ___',a:'a comedian who knows exactly where the laugh will land before he delivers the line',ch:['a comedian who knows exactly where the laugh will land before he delivers the line','an actor who trips over his lines and recovers by accident','a speaker who forgets what he was going to say halfway through','a performer who is surprised every single time the audience laughs'],hint:'Think: not just predicting but preparing for what comes next with quiet confidence'},
+  {type:'simile',word:'bankrupt',q:'Complete the simile: After years of criticism, his confidence was as bankrupt as ___',a:'a store that has sold every item on its shelves and cannot restock',ch:['a store that has sold every item on its shelves and cannot restock','a warehouse so full of inventory that the doors can barely close','a shop stocked with everything a customer could ever want','a pantry that gets restocked every time one item runs low'],hint:'Think: completely emptied out — nothing left to draw on'},
+  {type:'simile',word:'bankrupt',q:'Complete the simile: The company went bankrupt as suddenly as ___',a:'a candle blown out by a single unexpected gust',ch:['a candle blown out by a single unexpected gust','a fire built carefully over hours until it is warm and steady','a lamp switched on when the electricity is restored','a flame sheltered in glass that burns for days without a flicker'],hint:'Think: a sudden, total ending with no gradual warning'},
+  {type:'simile',word:'brief',q:'Complete the simile: Fame for most toy inventors was as brief as ___',a:'a soap bubble — beautiful, fragile, and gone before you can point it out to someone else',ch:['a soap bubble — beautiful, fragile, and gone before you can point it out to someone else','a mountain carved by a glacier that stands ten thousand years','a tradition so old that no one alive remembers when it started','a river that flows steadily through every season without change'],hint:'Think: fleeting, beautiful, and impossible to hold onto once it begins to fade'},
+  {type:'simile',word:'brief',q:'Complete the simile: The toy\'s time at the top of the charts was as brief as ___',a:'a shooting star — blazing and brilliant and then completely dark',ch:['a shooting star — blazing and brilliant and then completely dark','a sunrise that lasts all day and gently becomes a golden afternoon','a lighthouse beam that sweeps the coast reliably every few seconds','a tide that goes out but always faithfully returns to the shore'],hint:'Think: spectacular but over almost before you could appreciate it'},
+  {type:'simile',word:'brief',q:'Complete the simile: The inventor\'s briefing lasted as briefly as ___',a:'a handshake — over almost before it has begun',ch:['a handshake — over almost before it has begun','a speech that runs past midnight and still has not reached its conclusion','a lecture that fills every seat and spills into the hallway','a meeting where everyone speaks for an hour before anything is decided'],hint:'Think: the shortest possible version of something that normally takes much longer'},
+  {type:'simile',word:'brisk',q:'Complete the simile: The game\'s opening pace was as brisk as ___',a:'the first five minutes of a race when every runner still has full energy',ch:['the first five minutes of a race when every runner still has full energy','the last mile of a marathon when legs are heavy and lungs are burning','the moment a runner crosses the finish line and collapses on the grass','the water break in the middle of a long training session'],hint:'Think: fast, energetic, full of early power before fatigue sets in'},
+  {type:'simile',word:'brisk',q:'Complete the simile: Her brisk efficiency in the meeting was like ___',a:'a surgeon who wastes no movement and finishes an hour ahead of schedule',ch:['a surgeon who wastes no movement and finishes an hour ahead of schedule','a speaker who takes forty minutes to introduce herself before her first point','a committee that meets to discuss whether to schedule a discussion','a chair who apologizes for the length and then adds another thirty minutes'],hint:'Think: precise, fast, no wasted motion — everything done at the right speed'},
+  {type:'simile',word:'budget',q:'Complete the simile: She managed her game-production budget like ___',a:'a tightrope walker who knows that every inch to either side ends in a fall',ch:['a tightrope walker who knows that every inch to either side ends in a fall','a child spending a holiday gift card with no plan and no limit','a traveler who buys whatever catches his eye without checking his wallet','a shopper who doubles every price in the store because the discount seems wrong'],hint:'Think: precise balance — any deviation in either direction has serious consequences'},
+  {type:'simile',word:'budget',q:'Complete the simile: The start-up company ran on a budget as tight as ___',a:'a new shoe that has not yet been broken in',ch:['a new shoe that has not yet been broken in','a suit tailored with extra room in case the wearer gains weight','a glove made two sizes too large to allow for thick winter liners','a costume that fits every member of the cast regardless of size'],hint:'Think: pressing in from every side — uncomfortably restrictive but holding its shape'},
+  {type:'simile',word:'compete',q:'Complete the simile: The toy companies competed as fiercely as ___',a:'gladiators in an arena where only one brand can leave with the season\'s profits',ch:['gladiators in an arena where only one brand can leave with the season\'s profits','old friends who take turns winning so no one is ever disappointed','teammates who share credit equally and help each other past the finish line','dancers at a recital who cheer for one another from the wings'],hint:'Think: no mercy, no sharing — the market is a winner-take-all contest'},
+  {type:'simile',word:'compete',q:'Complete the simile: She competed for the invention prize like ___',a:'a marathon runner who has trained for this one race for three years',ch:['a marathon runner who has trained for this one race for three years','a spectator who wanders onto the course not knowing a race is in progress','a volunteer who is only there to hand out water at the halfway point','a runner who signs up the morning of the race with no training'],hint:'Think: long preparation, total commitment — this moment is what everything was aimed at'},
+  {type:'simile',word:'complicate',q:'Complete the simile: The new copyright rules complicated the inventor\'s plan like ___',a:'a road closure that turns a ten-minute trip into a two-hour detour',ch:['a road closure that turns a ten-minute trip into a two-hour detour','a shortcut that shaves twenty minutes off an already easy journey','a highway with no traffic and a speed limit you are welcome to exceed','a map that gives you exactly the route you hoped for'],hint:'Think: a simple path suddenly made much longer and harder to navigate'},
+  {type:'simile',word:'complicate',q:'Complete the simile: Adding more rules to the game complicated it like ___',a:'extra knots tied on an already knotted rope',ch:['extra knots tied on an already knotted rope','a final polish that makes an already smooth surface easier to slide across','a coat of paint that hides the rough spots and unifies the whole design','a label that makes a confusing product instantly clear to any buyer'],hint:'Think: adding more complexity to what was already hard to untangle'},
+  {type:'simile',word:'effect',q:'Complete the simile: The advertisement had an effect on toy sales like ___',a:'a spark landing in dry grass — small in the beginning, enormous very quickly',ch:['a spark landing in dry grass — small in the beginning, enormous very quickly','a bucket of water poured carefully over a fire that has nearly gone out','a gentle rain that slowly raises the level of a very deep reservoir','a single brick added carefully to a wall that is already nearly complete'],hint:'Think: a small action triggering an outsized, rapidly-spreading result'},
+  {type:'simile',word:'effect',q:'Complete the simile: The new safety rule effected a change in the factory like ___',a:'a new conductor arriving to an orchestra — everything adjusts to a different rhythm',ch:['a new conductor arriving to an orchestra — everything adjusts to a different rhythm','a single musician who plays the wrong note and is quickly corrected','a melody that sounds identical whether the conductor is present or not','a symphony that proceeds exactly as it did before, note for note'],hint:'Think: a single authoritative force reshaping how the whole organization moves'},
+  {type:'simile',word:'err',q:'Complete the simile: The company erred in its forecast like ___',a:'a navigator who reads a map upside down and announces they are headed north',ch:['a navigator who reads a map upside down and announces they are headed north','a pilot who checks all instruments twice before announcing altitude','a captain who anchors in the harbor and waits for better weather','a scout who studies the terrain and returns with an accurate report'],hint:'Think: confident in a conclusion that is completely wrong because the input was flawed'},
+  {type:'simile',word:'err',q:'Complete the simile: To err in business strategy is as costly as ___',a:'a ship\'s captain who plots the wrong heading and only notices three days out to sea',ch:['a ship\'s captain who plots the wrong heading and only notices three days out to sea','a navigator who double-checks every coordinate before leaving the harbor','a pilot who adjusts course the moment instruments suggest a drift','a captain who calls for updates every hour and corrects immediately'],hint:'Think: the longer you travel in the wrong direction, the more it costs to return'},
+  {type:'simile',word:'factor',q:'Complete the simile: Timing was a factor in the toy\'s success like ___',a:'the wind is a factor in a kite — invisible until it lifts everything or brings it crashing down',ch:['the wind is a factor in a kite — invisible until it lifts everything or brings it crashing down','the string on a kite — always present, always visible, always in full control','the tail on a kite — decorative and noticeable but not responsible for flight','the kite\'s color — attractive but entirely unrelated to whether it rises or falls'],hint:'Think: an invisible force that determines the outcome without being the obvious star'},
+  {type:'simile',word:'factor',q:'Complete the simile: The inventor identified every factor in the game\'s success as carefully as ___',a:'a scientist listing every variable before beginning an experiment',ch:['a scientist listing every variable before beginning an experiment','a poet who writes whatever comes to mind and trusts it to be right','a painter who skips the sketch and goes straight to the final canvas','a chef who adds ingredients by feel rather than by any measured recipe'],hint:'Think: systematic, careful accounting of everything that plays a role'},
+  {type:'simile',word:'fad',q:'Complete the simile: The new game caught on as quickly as a fad ___',a:'spreading through a middle school the Monday after a popular kid discovers it',ch:['spreading through a middle school the Monday after a popular kid discovers it','growing steadily in popularity over decades until every household has a copy','building a loyal following one careful convert at a time over many years','earning its place in history through consistent quality and quiet staying power'],hint:'Think: explosive, immediate, tied entirely to social contagion rather than lasting value'},
+  {type:'simile',word:'fad',q:'Complete the simile: The toy died out as quickly as a fad ___',a:'abandoned the moment the next thing arrived — no one could even remember why they had wanted it',ch:['abandoned the moment the next thing arrived — no one could even remember why they had wanted it','retired after decades of use, still fondly remembered by everyone who played with it','passed on from generation to generation like a family recipe or a well-loved story','replaced only after it had served its purpose so completely that nothing was left to improve'],hint:'Think: vanishing without a trace the instant something newer appears'},
+  {type:'simile',word:'fad',q:'Complete the simile: Chasing fads in the toy business is like ___',a:'trying to catch a wave — by the time you paddle into position, it has already passed beneath you',ch:['trying to catch a wave — by the time you paddle into position, it has already passed beneath you','surfing a long, perfect swell that carries you all the way to shore without effort','swimming in a steady current that always flows in the same reliable direction','floating on a calm surface where nothing moves and nothing surprises you'],hint:'Think: speed matters — the opportunity is gone almost before it is visible'},
+  {type:'simile',word:'gripe',q:'Complete the simile: His constant gripes about the rules were like ___',a:'a dripping faucet — minor each time, but impossible to ignore after a while',ch:['a dripping faucet — minor each time, but impossible to ignore after a while','a burst pipe that floods everything immediately and demands instant action','a perfectly sealed tap that allows nothing through no matter what the pressure','a fountain that adds to the atmosphere without causing any inconvenience'],hint:'Think: small and persistent — each instance is minor but the accumulation wears you down'},
+  {type:'simile',word:'gripe',q:'Complete the simile: She delivered her gripe as calmly as ___',a:'a lawyer presenting a brief — measured, organized, and entirely without drama',ch:['a lawyer presenting a brief — measured, organized, and entirely without drama','an actor building toward a climactic scene with maximum emotional effect','a child having a tantrum in the cereal aisle on a Saturday morning','a protester shouting at the top of their voice until the crowd responds'],hint:'Think: a complaint delivered with professional restraint and precise language'},
+  {type:'simile',word:'knack',q:'Complete the simile: She had a knack for inventing games like ___',a:'a chef who opens the fridge, sees five random ingredients, and produces a masterpiece',ch:['a chef who opens the fridge, sees five random ingredients, and produces a masterpiece','a student who needs the recipe written out in full before beginning any dish','a cook who reads every review before deciding whether to add salt','an assistant who prefers to watch someone else cook before ever trying it alone'],hint:'Think: creative instinct that turns ordinary materials into something remarkable without apparent effort'},
+  {type:'simile',word:'knack',q:'Complete the simile: His knack for explaining complicated rules was like ___',a:'a translator who hears a tangle of words and instantly returns perfect clarity',ch:['a translator who hears a tangle of words and instantly returns perfect clarity','a student who rereads the passage six times and still is not sure what it means','a speaker who replaces every simple word with a longer and harder one','a teacher who leaves out the key step and cannot understand why nobody follows'],hint:'Think: something difficult made effortless through natural ability'},
+  {type:'simile',word:'knack',q:'Complete the simile: The veteran inventor\'s knack for spotting winning ideas was like ___',a:'a truffle hunter\'s nose — unerring, inexplicable, and far better than any technology',ch:['a truffle hunter\'s nose — unerring, inexplicable, and far better than any technology','a metal detector that beeps for everything including bottle caps and loose change','a compass that works only when it is already pointing in the right direction','a map that shows every road including the ones that no longer exist'],hint:'Think: an instinct so finely tuned it works when logic and analysis would fail'},
+  {type:'simile',word:'leisure',q:'Complete the simile: Their weekend leisure felt as rare as ___',a:'a clear day in a city that has been covered in fog for a month',ch:['a clear day in a city that has been covered in fog for a month','a daily alarm that goes off at the same time every morning without fail','a scheduled break that falls at the same reliable point in every working week','a sunset that happens every evening whether or not anyone is watching'],hint:'Think: something beautiful that almost never comes, making it precious when it does'},
+  {type:'simile',word:'leisure',q:'Complete the simile: He moved through his leisure time like ___',a:'a river through a wide, flat plain — unhurried, spreading gently into every corner',ch:['a river through a wide, flat plain — unhurried, spreading gently into every corner','a mountain stream that tumbles down rapids and never slows for a breath','a waterfall that drops fifty feet in under a second and crashes at the bottom','a rainstorm that passes in fifteen minutes and leaves everything rearranged'],hint:'Think: slow, meandering, in no hurry to arrive anywhere in particular'},
+  {type:'simile',word:'leisure',q:'Complete the simile: Finding time for leisure after a busy product launch was like ___',a:'surfacing for air after a very long dive — urgently needed and deeply satisfying',ch:['surfacing for air after a very long dive — urgently needed and deeply satisfying','stepping into a pool you were not expecting to get wet in','wading through water that is colder than it looked from the shore','splashing through a puddle in shoes that were not meant to get wet'],hint:'Think: a necessary break from a sustained effort — relief and restoration combined'},
+  {type:'simile',word:'unique',q:'Complete the simile: The inventor\'s idea was as unique as ___',a:'a fingerprint — no two alike in all the world, and no way to fake one',ch:['a fingerprint — no two alike in all the world, and no way to fake one','a factory stamp placed on every product to show it came from the same machine','a serial number shared by items that rolled off the same production line','a design copied so many times that the original cannot be traced'],hint:'Think: absolutely individual — not similar to anything else, identifiable as only itself'},
+  {type:'simile',word:'unique',q:'Complete the simile: The toy\'s design was as unique as ___',a:'a one-of-a-kind sculpture — the moment you copied it, the original was no longer unique',ch:['a one-of-a-kind sculpture — the moment you copied it, the original was no longer unique','a template used to stamp out thousands of identical pieces','a mold that produces the same shape every single time it is used','a blueprint copied and distributed to every factory in the country'],hint:'Think: not just different but the absolute only one — irreproducible and irreplaceable'},
+
+  // ── METAPHORS (35) ─────────────────────────────────────────────────────────
+  {type:'metaphor',word:'anticipate',q:'Which sentence is a metaphor using ANTICIPATE?',a:'The inventor\'s excitement was a hound on a scent — nose down, already anticipating the prize before the hunt had begun.',ch:['The inventor\'s excitement was a hound on a scent — nose down, already anticipating the prize before the hunt had begun.','He was as eager as a hunting dog that already anticipated the prize.','The inventor anticipated the prize the way a hound anticipates the scent.','Like a dog that has caught the scent, the inventor anticipated success before the hunt was over.'],hint:'Think: calling the inventor\'s excitement directly a hound — no like or as — already anticipating'},
+  {type:'metaphor',word:'anticipate',q:'Which sentence is a metaphor using ANTICIPATE?',a:'Hope is a forecast — always anticipating the sunshine even when the clouds are piling up.',ch:['Hope is a forecast — always anticipating the sunshine even when the clouds are piling up.','Hope is like a weather forecast that anticipates sunshine even when clouds gather.','He anticipated the best the way a hopeful forecaster predicts sunshine despite clouds.','She anticipated success the way a sunny forecast anticipates a beautiful afternoon.'],hint:'Think: calling hope directly a forecast — no like or as — it IS the prediction of something good'},
+  {type:'metaphor',word:'anticipate',q:'Which sentence is a metaphor using ANTICIPATE?',a:'Every good game designer is a mind reader — anticipating what the player will try before the player knows it themselves.',ch:['Every good game designer is a mind reader — anticipating what the player will try before the player knows it themselves.','A good game designer anticipates the player\'s moves like a mind reader would.','The designer was as good at anticipating players\' choices as a skilled mind reader.','Like a mind reader, the designer anticipated moves that players had not yet considered.'],hint:'Think: calling the designer directly a mind reader — anticipating others\' thoughts is the defining skill'},
+  {type:'metaphor',word:'bankrupt',q:'Which sentence is a metaphor using BANKRUPT?',a:'The fad was a sunset — dazzling for a moment, then bankrupt of color, leaving only the dark.',ch:['The fad was a sunset — dazzling for a moment, then bankrupt of color, leaving only the dark.','The fad faded as quickly as a sunset, bankrupt of color almost before it arrived.','Like a sunset, the fad was bankrupt of its brilliant colors by the time night fell.','The fad disappeared like a sunset — brilliant first, then bankrupt of all its brightness.'],hint:'Think: calling the fad directly a sunset — it IS the visual experience of going suddenly bankrupt of color'},
+  {type:'metaphor',word:'bankrupt',q:'Which sentence is a metaphor using BANKRUPT?',a:'The company was a hollow shell — bankrupt not just of money but of ideas, leadership, and will.',ch:['The company was a hollow shell — bankrupt not just of money but of ideas, leadership, and will.','The company was as bankrupt of ideas as a hollow shell with nothing left inside.','Like a hollow shell, the bankrupt company had nothing left inside it.','The company reminded us of a hollow shell — empty and bankrupt in every possible way.'],hint:'Think: calling the company directly a hollow shell — the company IS the empty container, bankrupt of everything'},
+  {type:'metaphor',word:'brief',q:'Which sentence is a metaphor using BRIEF?',a:'Every fad is a comet — brief, brilliant, and impossible to hold.',ch:['Every fad is a comet — brief, brilliant, and impossible to hold.','Every fad is as brief as a comet passing through the sky.','Like a comet, a fad has only a brief time in the spotlight.','A fad comes and goes as briefly as a comet crossing the night sky.'],hint:'Think: calling every fad directly a comet — the fad IS the brief, dazzling object passing through the sky'},
+  {type:'metaphor',word:'brief',q:'Which sentence is a metaphor using BRIEF?',a:'The toy\'s fame was a spark — brief, bright, and swallowed by the dark before anyone had quite finished admiring it.',ch:['The toy\'s fame was a spark — brief, bright, and swallowed by the dark before anyone had quite finished admiring it.','The toy\'s fame was as brief as a spark — gone almost as soon as it appeared.','Like a spark, the toy\'s fame was brief and bright before disappearing.','The toy\'s fame was so brief it was like watching a spark ignite and go out.'],hint:'Think: calling the toy\'s fame directly a spark — the fame IS the brief, bright combustion'},
+  {type:'metaphor',word:'brief',q:'Which sentence is a metaphor using BRIEF?',a:'Her briefing to the board was a knife — brief, precise, and cutting straight to the point.',ch:['Her briefing to the board was a knife — brief, precise, and cutting straight to the point.','Her briefing was as brief and precise as a sharp knife cutting to the point.','Like a knife, her presentation was brief and got straight to what mattered.','She briefed the board as quickly as a knife cuts — brief and straight to the point.'],hint:'Think: calling the briefing directly a knife — the presentation IS the cutting instrument'},
+  {type:'metaphor',word:'brisk',q:'Which sentence is a metaphor using BRISK?',a:'The new CEO was a cold front — brisk, energizing, and leaving everyone sharper and more focused in her wake.',ch:['The new CEO was a cold front — brisk, energizing, and leaving everyone sharper and more focused in her wake.','The new CEO was as brisk as a cold front that refreshed everyone it passed through.','Like a cold front, the CEO was brisk and left everyone feeling more focused.','She was brisk in her style, like a cold front that sweeps through and refreshes the air.'],hint:'Think: calling the CEO directly a cold front — she IS the brisk weather event that changes the atmosphere'},
+  {type:'metaphor',word:'brisk',q:'Which sentence is a metaphor using BRISK?',a:'Holiday shopping season was a brisk tide — pulling everyone in before they could decide whether they wanted to go.',ch:['Holiday shopping season was a brisk tide — pulling everyone in before they could decide whether they wanted to go.','Holiday shopping season was as brisk as a tide that pulls everyone toward the shore.','Like a brisk tide, the holiday shopping season swept everyone up in its current.','The holiday shopping season moved briskly, like a tide pulling shoppers toward the stores.'],hint:'Think: calling the shopping season directly a tide — it IS the brisk current that pulls people along'},
+  {type:'metaphor',word:'budget',q:'Which sentence is a metaphor using BUDGET?',a:'The company\'s budget was a fence — every dollar on the wrong side of it was a loss that could not be undone.',ch:['The company\'s budget was a fence — every dollar on the wrong side of it was a loss that could not be undone.','The budget was like a fence — cross it and you have gone too far.','Like a fence, the budget marked the boundary between safe spending and dangerous excess.','The budget functioned like a fence, keeping the company\'s expenses within the safe zone.'],hint:'Think: calling the budget directly a fence — the number IS the boundary that separates safety from ruin'},
+  {type:'metaphor',word:'budget',q:'Which sentence is a metaphor using BUDGET?',a:'Their advertising budget was a loaded cannon — not much use if you aimed it wrong.',ch:['Their advertising budget was a loaded cannon — not much use if you aimed it wrong.','Their advertising budget was like a cannon — powerful if aimed correctly.','Like a cannon, their budget was only useful if pointed at the right target.','Their budget, like a loaded cannon, had to be aimed properly to have any effect.'],hint:'Think: calling the budget directly a cannon — the money IS the weapon, and aim determines outcome'},
+  {type:'metaphor',word:'compete',q:'Which sentence is a metaphor using COMPETE?',a:'The holiday toy market was a gladiatorial arena — every brand a competitor fighting for the child\'s final attention.',ch:['The holiday toy market was a gladiatorial arena — every brand a competitor fighting for the child\'s final attention.','The holiday toy market was like a gladiatorial arena where brands competed for children\'s attention.','Like gladiators, toy companies competed in the holiday market for the children\'s choice.','The toy market was so competitive it resembled a gladiatorial arena where only one could win.'],hint:'Think: calling the market directly an arena — the commercial space IS the battlefield where competitors fight'},
+  {type:'metaphor',word:'compete',q:'Which sentence is a metaphor using COMPETE?',a:'Every inventor was a runner on the same track — competing not just for the prize but for the right to stay in the race.',ch:['Every inventor was a runner on the same track — competing not just for the prize but for the right to stay in the race.','Every inventor competed like a runner on the same track, fighting for position.','Like runners, inventors competed with one another for the chance to win.','Each inventor competed as fiercely as a runner who knows only the first finisher will be noticed.'],hint:'Think: calling each inventor directly a runner — the person IS the competitor in the foot race, not compared to one'},
+  {type:'metaphor',word:'complicate',q:'Which sentence is a metaphor using COMPLICATE?',a:'Adding a third manufacturer was a wrench thrown into the gears — complicating a process that had been running smoothly.',ch:['Adding a third manufacturer was a wrench thrown into the gears — complicating a process that had been running smoothly.','Adding a third manufacturer was like throwing a wrench into well-running gears.','Like a wrench in the gears, the third manufacturer complicated the process.','The third manufacturer was as disruptive as a wrench thrown into the machinery.'],hint:'Think: calling the new manufacturer directly a wrench — the decision IS the thing that jams the mechanism'},
+  {type:'metaphor',word:'complicate',q:'Which sentence is a metaphor using COMPLICATE?',a:'The patent dispute was a tangle of wire — the more they pulled at it, the more complicated it became.',ch:['The patent dispute was a tangle of wire — the more they pulled at it, the more complicated it became.','The patent dispute was as complicated as a tangle of wire that gets worse when you pull it.','Like a tangle of wire, the patent dispute became more complicated the more they tried to resolve it.','The dispute was so complicated it felt like pulling a tangle of wire that only tightened.'],hint:'Think: calling the dispute directly a tangle — the legal conflict IS the knotted wire that resists untangling'},
+  {type:'metaphor',word:'effect',q:'Which sentence is a metaphor using EFFECT?',a:'The right advertisement is a key — it effects an opening in the consumer\'s attention that nothing else can unlock.',ch:['The right advertisement is a key — it effects an opening in the consumer\'s attention that nothing else can unlock.','The right advertisement is like a key that effects an opening in the consumer\'s attention.','Like a key, the right advertisement effects an unlocking of attention in the consumer.','The advertisement worked like a key, effecting an opening that no other approach could make.'],hint:'Think: calling the advertisement directly a key — the ad IS the key, and it effects an opening'},
+  {type:'metaphor',word:'effect',q:'Which sentence is a metaphor using EFFECT?',a:'A skilled inventor\'s pitch is a stone dropped in still water — the effects spread outward long after the stone has sunk.',ch:['A skilled inventor\'s pitch is a stone dropped in still water — the effects spread outward long after the stone has sunk.','A skilled inventor\'s pitch is like a stone dropped in water — the effects ripple outward.','Like a stone in still water, the pitch sent effects rippling outward in every direction.','The pitch spread its effects the way a stone sends ripples across still water.'],hint:'Think: calling the pitch directly a stone — the presentation IS the stone, and its effects are the ripples'},
+  {type:'metaphor',word:'err',q:'Which sentence is a metaphor using ERR?',a:'To err in a product launch is to fire a cannon in the wrong direction — the energy is real, but the target was never yours to hit.',ch:['To err in a product launch is to fire a cannon in the wrong direction — the energy is real, but the target was never yours to hit.','To err in a product launch is like firing a cannon in the wrong direction.','Like a misfired cannon, erring in a product launch sends energy in the wrong direction.','An error in a product launch is as costly as a cannon shot aimed at the wrong target.'],hint:'Think: calling the error directly the act of misfiring — no like or as, just the equation itself'},
+  {type:'metaphor',word:'err',q:'Which sentence is a metaphor using ERR?',a:'Their erroneous forecast was a false map — confidently drawn, cheerfully followed, and pointing nowhere near the destination.',ch:['Their erroneous forecast was a false map — confidently drawn, cheerfully followed, and pointing nowhere near the destination.','Their erroneous forecast was like a false map that confidently pointed in the wrong direction.','Like a false map, their erroneous forecast led them away from rather than toward success.','The forecast was so erroneous it functioned like a map drawn for the wrong country.'],hint:'Think: calling the forecast directly a false map — the error IS the misdirection, confidently delivered'},
+  {type:'metaphor',word:'factor',q:'Which sentence is a metaphor using FACTOR?',a:'Timing is not just a factor — it is the tide, and you either launch with it or you are left stranded on the sand.',ch:['Timing is not just a factor — it is the tide, and you either launch with it or you are left stranded on the sand.','Timing is like a tide — a crucial factor in whether your launch succeeds.','Like a tide, timing is the kind of factor that determines whether you float or strand.','Timing is such a crucial factor that it is almost like a tide pulling products to success or failure.'],hint:'Think: calling timing directly the tide — not a factor in the normal sense but the tide itself'},
+  {type:'metaphor',word:'factor',q:'Which sentence is a metaphor using FACTOR?',a:'Price was the silent factor at every meeting — an invisible hand on the scale that tipped every decision.',ch:['Price was the silent factor at every meeting — an invisible hand on the scale that tipped every decision.','Price was like a silent factor — an invisible force that influenced every decision made.','Like a hidden weight on a scale, price was the factor that tipped every decision.','Price was such a powerful factor in every meeting that it was like an invisible hand on the scale.'],hint:'Think: calling price directly a hand — the abstract factor IS the physical agent tipping the balance'},
+  {type:'metaphor',word:'fad',q:'Which sentence is a metaphor using FAD?',a:'Every fad is a bonfire on the beach — the crowd gathers fast, burns through the night, and by morning there is only ash.',ch:['Every fad is a bonfire on the beach — the crowd gathers fast, burns through the night, and by morning there is only ash.','Every fad is like a bonfire — it draws a crowd and burns brightly before going out.','Like a beach bonfire, a fad draws everyone in quickly and burns through its fuel fast.','A fad is as brief as a beach bonfire — exciting while it lasts but gone by morning.'],hint:'Think: calling every fad directly a bonfire — the fad IS the fire, and it burns itself out exactly like one'},
+  {type:'metaphor',word:'fad',q:'Which sentence is a metaphor using FAD?',a:'The toy that captured the world\'s attention was not a classic — it was a shooting star, a fad that lit up and burned out in a single season.',ch:['The toy that captured the world\'s attention was not a classic — it was a shooting star, a fad that lit up and burned out in a single season.','The toy was like a shooting star fad — bright for a moment and then gone.','Like a shooting star, the toy was the kind of fad that lights up and disappears quickly.','The toy burned out as fast as a shooting star, confirming what many suspected about its fad status.'],hint:'Think: calling the toy directly a shooting star and then a fad — the toy IS the brief celestial event'},
+  {type:'metaphor',word:'fad',q:'Which sentence is a metaphor using FAD?',a:'Fashion is a river of fads — always moving, always bringing something new downstream, always carrying the old things away.',ch:['Fashion is a river of fads — always moving, always bringing something new downstream, always carrying the old things away.','Fashion is like a river of fads, always carrying new things in and old things away.','Like a river, fashion brings fads downstream and carries them away when they are spent.','Fashion moves like a river — fads arrive from upstream and are carried away just as quickly.'],hint:'Think: calling fashion directly a river — the entire industry IS the flowing water, and fads are what it carries'},
+  {type:'metaphor',word:'gripe',q:'Which sentence is a metaphor using GRIPE?',a:'His gripe was a stuck gear — grinding against every smooth operation, slowing what should have moved freely.',ch:['His gripe was a stuck gear — grinding against every smooth operation, slowing what should have moved freely.','His gripe was like a stuck gear that ground against the smooth operation of the team.','Like a stuck gear, his constant gripes slowed down what should have moved freely.','His gripe functioned like a stuck gear, grinding against the otherwise smooth process.'],hint:'Think: calling the gripe directly a stuck gear — the complaint IS the mechanical obstruction'},
+  {type:'metaphor',word:'gripe',q:'Which sentence is a metaphor using GRIPE?',a:'The employees\' gripes were a signal flare — ignored for months, then suddenly impossible to overlook when they lit the sky.',ch:['The employees\' gripes were a signal flare — ignored for months, then suddenly impossible to overlook when they lit the sky.','The employees\' gripes were like signal flares that eventually became impossible to ignore.','Like signal flares, the gripes were ignored for months before they lit up the sky.','Their gripes were as hard to ignore as a signal flare once they finally sent them up.'],hint:'Think: calling the gripes directly a signal flare — the complaints ARE the distress signal, ignored then impossible to miss'},
+  {type:'metaphor',word:'knack',q:'Which sentence is a metaphor using KNACK?',a:'She had a knack for the business that was a compass needle — always finding true north while others spun in circles.',ch:['She had a knack for the business that was a compass needle — always finding true north while others spun in circles.','She had a knack for finding the right direction like a compass needle always pointing north.','Like a compass needle, her knack for business always pointed her in the right direction.','Her knack for business was as reliable as a compass needle that always finds true north.'],hint:'Think: calling her knack directly a compass needle — the skill IS the navigation instrument'},
+  {type:'metaphor',word:'knack',q:'Which sentence is a metaphor using KNACK?',a:'His knack for spotting trends was a sixth sense — processing what others could not see and delivering verdicts before the data arrived.',ch:['His knack for spotting trends was a sixth sense — processing what others could not see and delivering verdicts before the data arrived.','His knack for spotting trends was like a sixth sense that gave him data before anyone else had it.','Like a sixth sense, his knack for trend-spotting gave him information that others simply could not access.','He had such a knack for spotting trends that it was almost as if he possessed a sixth sense.'],hint:'Think: calling the knack directly a sixth sense — the skill IS the extra-perceptual ability, not merely like one'},
+  {type:'metaphor',word:'knack',q:'Which sentence is a metaphor using KNACK?',a:'Her knack for game design was a skeleton key — opening every locked door between an idea and a finished product.',ch:['Her knack for game design was a skeleton key — opening every locked door between an idea and a finished product.','Her knack for game design was like a skeleton key that opened every locked door.','Like a skeleton key, her knack for design could open any obstacle between idea and product.','She had such a knack for design that it functioned like a skeleton key, opening everything.'],hint:'Think: calling her knack directly a skeleton key — the skill IS the master key that unlocks all obstacles'},
+  {type:'metaphor',word:'leisure',q:'Which sentence is a metaphor using LEISURE?',a:'Free time was a foreign country to her — leisure was a language she had never been taught to speak.',ch:['Free time was a foreign country to her — leisure was a language she had never been taught to speak.','Free time was as foreign to her as a country she had never visited and whose language she did not know.','Like a foreign country, her free time was a kind of leisure she found difficult to navigate.','She approached her leisure time the way a traveler approaches a foreign country — unfamiliar and unpracticed.'],hint:'Think: calling free time directly a foreign country and leisure a language — leisure IS the unknown territory'},
+  {type:'metaphor',word:'leisure',q:'Which sentence is a metaphor using LEISURE?',a:'Sunday afternoon was the only pocket of leisure in a week that was otherwise a grinding machine.',ch:['Sunday afternoon was the only pocket of leisure in a week that was otherwise a grinding machine.','Sunday afternoon provided her with leisure in a week that was as relentless as a grinding machine.','Like a brief pocket of air in a week that ground her down, Sunday afternoon offered leisure.','Her Sunday leisure was as welcome as a rest stop in a week as relentless as a grinding machine.'],hint:'Think: calling the week directly a grinding machine — the non-leisure time IS the mechanized, relentless process'},
+  {type:'metaphor',word:'leisure',q:'Which sentence is a metaphor using LEISURE?',a:'For the veteran toy inventor, leisure was a well — deep, refreshing, and visited only when the creative supply had run dry.',ch:['For the veteran toy inventor, leisure was a well — deep, refreshing, and visited only when the creative supply had run dry.','For the inventor, leisure was like a well — visited when creativity ran dry and left refreshed.','Like a well, leisure was something the inventor returned to when she needed to restore her creative supply.','Her leisure time was so refreshing it was like drawing water from a very deep and cool well.'],hint:'Think: calling leisure directly a well — the free time IS the water source that replenishes creative work'},
+  {type:'metaphor',word:'unique',q:'Which sentence is a metaphor using UNIQUE?',a:'A truly original game is a unicorn — unique, hunted by every company, and almost certainly a myth until you actually find one.',ch:['A truly original game is a unicorn — unique, hunted by every company, and almost certainly a myth until you actually find one.','A truly original game is as unique as a unicorn — something every company hunts for but rarely finds.','Like a unicorn, a truly original game is unique and incredibly rare.','A truly original game is so unique it might as well be a unicorn for all the luck companies have finding one.'],hint:'Think: calling the original game directly a unicorn — the rare product IS the mythical creature'},
+  {type:'metaphor',word:'unique',q:'Which sentence is a metaphor using UNIQUE?',a:'Her design was a fingerprint — unique, unreplicable, and belonging to no one but her.',ch:['Her design was a fingerprint — unique, unreplicable, and belonging to no one but her.','Her design was as unique as a fingerprint — impossible to copy exactly.','Like a fingerprint, her design was unique and could not be replicated by anyone else.','The design was so unique it was almost like a fingerprint — completely impossible to duplicate.'],hint:'Think: calling her design directly a fingerprint — the creation IS the unique biological identifier'}
+];
+
+// ── QUIZ STATE ────────────────────────────────────────────────────────────────
+var pool=[],idx=0,score=0,total=0,streak=0,answered=false;
+
+function shuffle(a){var b=a.slice();for(var i=b.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=b[i];b[i]=b[j];b[j]=t;}return b;}
+
+function startQuiz(){
+  pool=shuffle(QUESTIONS).slice(0,20);
+  idx=0;score=0;total=0;streak=0;answered=false;
+  document.getElementById('result-section').style.display='none';
+  document.getElementById('quiz-section').style.display='';
+  renderQuestion();
+}
+
+function renderQuestion(){
+  var q=pool[idx];
+  document.getElementById('progress-bar').style.width=(idx/20*100)+'%';
+  document.getElementById('score-display').textContent='Score: '+score+'/'+total;
+  document.getElementById('streak-display').textContent='Streak: '+streak+' 🔥';
+  var badge=document.getElementById('q-badge');
+  var ts=TYPE_STYLES[q.type];
+  badge.textContent=ts.label;badge.style.color=ts.color;badge.style.background=ts.bg;
+  document.getElementById('q-word').textContent=q.word.toUpperCase();
+  document.getElementById('q-text').textContent=q.q;
+  document.getElementById('hint-text').style.display='none';
+  document.getElementById('hint-text').textContent=q.hint;
+  document.getElementById('hint-btn').style.display='inline-block';
+  document.getElementById('feedback-area').textContent='';
+  document.getElementById('feedback-area').className='';
+  document.getElementById('next-btn').style.display='none';
+  answered=false;
+  var choices=document.getElementById('choices');
+  clearEl(choices);
+  shuffle(q.ch).forEach(function(c){
+    var btn=mk('button','choice-btn',c);
+    btn.addEventListener('click',function(){handleAnswer(c,q,btn);});
+    choices.appendChild(btn);
+  });
+}
+
+function handleAnswer(chosen,q,btn){
+  if(answered)return;
+  answered=true;total++;
+  document.getElementById('choices').querySelectorAll('.choice-btn').forEach(function(b){
+    b.disabled=true;
+    if(b.textContent===q.a)b.classList.add('correct');
+  });
+  var fb=document.getElementById('feedback-area');
+  if(chosen===q.a){
+    score++;streak++;btn.classList.add('correct');
+    fb.textContent='Correct! ⭐';fb.className='correct';
+    burst(btn,true);if(streak>=3)confetti();
+  }else{
+    streak=0;btn.classList.add('wrong');
+    fb.textContent='Not quite — the answer is: '+q.a;fb.className='wrong';
+    burst(btn,false);
+  }
+  document.getElementById('score-display').textContent='Score: '+score+'/'+total;
+  document.getElementById('streak-display').textContent='Streak: '+streak+' 🔥';
+  document.getElementById('next-btn').style.display='inline-block';
+}
+
+function nextQuestion(){idx++;if(idx>=20){showResult();return;}renderQuestion();}
+
+function showResult(){
+  document.getElementById('quiz-section').style.display='none';
+  var rs=document.getElementById('result-section');rs.style.display='block';
+  document.getElementById('final-score').textContent=score+'/20';
+  var pct=score/20,msg='';
+  if(pct>=.9)msg='Outstanding! You have a real knack for these words! 🎮';
+  else if(pct>=.7)msg='Great work! Keep competing for that perfect score! 🏆';
+  else if(pct>=.5)msg='Good effort! Review and try again — no fad, this takes practice! 📚';
+  else msg='Keep going — every champion started somewhere! 💪';
+  document.getElementById('result-msg').textContent=msg;
+}
+
+function showHint(){
+  document.getElementById('hint-text').textContent=pool[idx].hint;
+  document.getElementById('hint-text').style.display='inline';
+  document.getElementById('hint-btn').style.display='none';
+}
+
+var fcWords=[],fcIdx=0;
+function initFlashcards(){fcWords=WORDS.slice();fcIdx=0;renderCard();}
+function renderCard(){
+  var w=fcWords[fcIdx];
+  document.getElementById('fc-word').textContent=w.word;
+  document.getElementById('fc-pos').textContent=w.pos;
+  document.getElementById('fc-def').textContent=w.def;
+  document.getElementById('fc-ex').textContent=w.ex;
+  document.getElementById('fc-counter').textContent=(fcIdx+1)+' / '+fcWords.length;
+  document.getElementById('fc-card').classList.remove('flipped');
+}
+function fcFlip(){document.getElementById('fc-card').classList.toggle('flipped');}
+function fcNext(){fcIdx=(fcIdx+1)%fcWords.length;renderCard();}
+function fcPrev(){fcIdx=(fcIdx-1+fcWords.length)%fcWords.length;renderCard();}
+function fcShuffle(){fcWords=shuffle(fcWords);fcIdx=0;renderCard();}
+
+function showMode(mode){
+  var qs=document.getElementById('quiz-section');
+  var fs=document.getElementById('flashcard-section');
+  var rs=document.getElementById('result-section');
+  var tq=document.getElementById('tab-quiz');
+  var tf=document.getElementById('tab-flash');
+  if(mode==='quiz'){
+    fs.style.display='none';rs.style.display='none';qs.style.display='';
+    tq.classList.add('active');tf.classList.remove('active');
+  }else{
+    qs.style.display='none';rs.style.display='none';fs.style.display='';
+    tf.classList.add('active');tq.classList.remove('active');
+    initFlashcards();
+  }
+}
+
+function clearEl(el){while(el.firstChild)el.removeChild(el.firstChild);}
+function mk(tag,cls,txt){var el=document.createElement(tag);if(cls)el.className=cls;if(txt!==undefined)el.textContent=txt;return el;}
+
+function burst(el,correct){
+  var rect=el.getBoundingClientRect();
+  var cx=rect.left+rect.width/2,cy=rect.top+rect.height/2;
+  var colors=correct?['#a78bfa','#7c3aed','#c4b5fd','#ddd6fe']:['#ef4444','#fca5a5','#dc2626'];
+  for(var i=0;i<10;i++){
+    var p=document.createElement('div');p.className='particle';
+    var angle=Math.random()*Math.PI*2,dist=40+Math.random()*50;
+    p.style.cssText='left:'+cx+'px;top:'+cy+'px;width:8px;height:8px;background:'+colors[Math.floor(Math.random()*colors.length)]+';--dx:'+Math.cos(angle)*dist+'px;--dy:'+Math.sin(angle)*dist+'px;';
+    document.body.appendChild(p);
+    setTimeout(function(pp){document.body.removeChild(pp);},800,p);
+  }
+}
+function confetti(){
+  var colors=['#a78bfa','#7c3aed','#c4b5fd','#f472b6','#38bdf8','#fbbf24'];
+  for(var i=0;i<22;i++){
+    var c=document.createElement('div');c.className='confetti-piece';
+    var x=Math.random()*window.innerWidth,size=6+Math.random()*8;
+    var dx=(Math.random()-.5)*120,dy=-(80+Math.random()*120);
+    c.style.cssText='left:'+x+'px;top:'+(-size)+'px;width:'+size+'px;height:'+size+'px;background:'+colors[Math.floor(Math.random()*colors.length)]+';border-radius:'+Math.random()*4+'px;--dx:'+dx+'px;--dy:'+dy+'px;';
+    document.body.appendChild(c);
+    setTimeout(function(cc){document.body.removeChild(cc);},1000,c);
+  }
+}
+
+startQuiz();
+</script>
+</body>
+</html>

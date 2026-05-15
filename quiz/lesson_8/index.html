@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lesson 8 – Sacagawea's Great Adventure | Wordly Wise Quiz</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',sans-serif;background:#071410;color:#e2e8f0;min-height:100vh;overflow-x:hidden}
+  canvas{position:fixed;top:0;left:0;z-index:0;pointer-events:none}
+  #app{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:16px}
+  header{text-align:center;padding:24px 0 12px}
+  header h1{font-size:2rem;font-weight:800;background:linear-gradient(135deg,#34d399,#047857);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  header p{color:#065f46;margin-top:6px;font-size:.95rem}
+  #home-link{display:inline-flex;align-items:center;gap:6px;color:#34d399;text-decoration:none;font-size:.9rem;margin-bottom:12px;opacity:.8;transition:opacity .2s}
+  #home-link:hover{opacity:1}
+  nav.mode-tabs{display:flex;gap:8px;justify-content:center;margin:16px 0}
+  nav.mode-tabs button{padding:8px 22px;border-radius:999px;border:2px solid #047857;background:transparent;color:#34d399;font-size:.9rem;cursor:pointer;transition:all .2s}
+  nav.mode-tabs button.active{background:#047857;color:#fff}
+  #flashcard-section{display:none}
+  .fc-controls{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+  .fc-controls button{padding:8px 18px;border-radius:8px;border:none;background:#0a2a1e;color:#34d399;cursor:pointer;font-size:.9rem;transition:background .2s}
+  .fc-controls button:hover{background:#047857}
+  #fc-counter{color:#065f46;font-size:.9rem}
+  .fc-scene{width:100%;max-width:520px;height:230px;margin:0 auto 18px;perspective:1000px;cursor:pointer}
+  .fc-card{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.4,0,.2,1)}
+  .fc-card.flipped{transform:rotateY(180deg)}
+  .fc-face{position:absolute;inset:0;border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+  .fc-front{background:linear-gradient(135deg,#0a2a1e,#065f46);border:2px solid #34d39940}
+  .fc-back{background:linear-gradient(135deg,#071410,#0a2a1e);border:2px solid #34d39940;transform:rotateY(180deg)}
+  .fc-word{font-size:2rem;font-weight:800;color:#34d399}
+  .fc-pos{font-size:.85rem;color:#065f46;margin-top:4px}
+  .fc-hint{font-size:.8rem;color:#064e3b;margin-top:8px}
+  .fc-def{font-size:.95rem;color:#e2e8f0;text-align:center;line-height:1.6}
+  .fc-ex{font-size:.82rem;color:#065f46;margin-top:10px;font-style:italic;text-align:center}
+  #quiz-section{}
+  .quiz-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+  #progress-bar-wrap{width:100%;height:8px;background:#0a2a1e;border-radius:999px;margin-bottom:16px;overflow:hidden}
+  #progress-bar{height:100%;background:linear-gradient(90deg,#047857,#34d399);border-radius:999px;transition:width .4s}
+  #score-display{font-size:.9rem;color:#065f46}
+  #streak-display{font-size:.9rem;color:#34d399;font-weight:600}
+  .question-card{background:linear-gradient(135deg,#0a1f14,#0a2a1e);border:1px solid #04785740;border-radius:18px;padding:28px;margin-bottom:16px}
+  .q-type-badge{display:inline-block;padding:3px 12px;border-radius:999px;font-size:.75rem;font-weight:700;letter-spacing:.05em;margin-bottom:14px}
+  .q-word{font-size:1.5rem;font-weight:700;color:#34d399;margin-bottom:8px}
+  .q-text{font-size:1rem;color:#cbd5e1;margin-bottom:20px;line-height:1.6}
+  .choices{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media(max-width:520px){.choices{grid-template-columns:1fr}}
+  .choice-btn{padding:12px 16px;border-radius:12px;border:2px solid #0a2a1e;background:#071410;color:#e2e8f0;font-size:.95rem;cursor:pointer;text-align:left;transition:all .2s;line-height:1.4}
+  .choice-btn:hover:not(:disabled){border-color:#34d399;background:#0a1f14}
+  .choice-btn.correct{border-color:#10b981;background:#064e3b;color:#6ee7b7}
+  .choice-btn.wrong{border-color:#ef4444;background:#450a0a;color:#fca5a5}
+  .choice-btn:disabled{cursor:default}
+  #hint-area{min-height:22px;margin-bottom:10px}
+  #hint-text{font-size:.85rem;color:#34d399;font-style:italic;display:none}
+  #hint-btn{padding:5px 14px;border-radius:8px;border:1px solid #34d39960;background:transparent;color:#34d399;font-size:.82rem;cursor:pointer}
+  #feedback-area{min-height:28px;margin-top:10px;font-size:.95rem;font-weight:600}
+  #feedback-area.correct{color:#10b981}
+  #feedback-area.wrong{color:#ef4444}
+  #next-btn{display:none;margin-top:14px;padding:10px 28px;border-radius:12px;border:none;background:linear-gradient(135deg,#047857,#34d399);color:#fff;font-size:1rem;font-weight:700;cursor:pointer;transition:opacity .2s}
+  #next-btn:hover{opacity:.85}
+  #result-section{display:none;text-align:center;padding:32px 16px}
+  #result-section h2{font-size:2rem;font-weight:800;color:#34d399;margin-bottom:8px}
+  #result-section p{color:#065f46;margin-bottom:20px}
+  #final-score{font-size:3rem;font-weight:900;color:#34d399;margin:16px 0}
+  #result-section button{padding:12px 32px;border-radius:12px;border:none;background:linear-gradient(135deg,#047857,#34d399);color:#fff;font-size:1rem;font-weight:700;cursor:pointer}
+  .particle{position:fixed;pointer-events:none;border-radius:50%;z-index:999;animation:particleFly .8s ease-out forwards}
+  @keyframes particleFly{to{transform:translate(var(--dx),var(--dy)) scale(0);opacity:0}}
+  .confetti-piece{position:fixed;pointer-events:none;z-index:999;animation:confettiFall 1s ease-in forwards}
+  @keyframes confettiFall{to{transform:translate(var(--dx),calc(var(--dy) + 80px)) rotate(720deg);opacity:0}}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<div id="app">
+  <a id="home-link" href="../index.html">&#8592; All Lessons</a>
+  <header>
+    <h1>&#x1F9ED; Lesson 8 – Sacagawea&#39;s Great Adventure</h1>
+    <p>accompany &bull; beneficial &bull; captive &bull; convenient &bull; ecstasy &bull; expanse &bull; expedition &bull; inept &bull; interpret &bull; invaluable &bull; linger &bull; retrieve &bull; skirmish &bull; supplement &bull; territory</p>
+  </header>
+  <nav class="mode-tabs">
+    <button id="tab-quiz" class="active" onclick="showMode('quiz')">Quiz Mode</button>
+    <button id="tab-flash" onclick="showMode('flash')">Flashcards</button>
+  </nav>
+
+  <div id="flashcard-section">
+    <div class="fc-controls">
+      <button onclick="fcPrev()">&#8592; Prev</button>
+      <span id="fc-counter">1 / 15</span>
+      <button onclick="fcNext()">Next &#8594;</button>
+      <button onclick="fcShuffle()">&#x1F500; Shuffle</button>
+    </div>
+    <div class="fc-scene" onclick="fcFlip()">
+      <div class="fc-card" id="fc-card">
+        <div class="fc-face fc-front">
+          <div class="fc-word" id="fc-word"></div>
+          <div class="fc-pos" id="fc-pos"></div>
+          <div class="fc-hint">Click to reveal definition</div>
+        </div>
+        <div class="fc-face fc-back">
+          <div class="fc-def" id="fc-def"></div>
+          <div class="fc-ex" id="fc-ex"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="quiz-section">
+    <div class="quiz-header">
+      <span id="score-display">Score: 0/0</span>
+      <span id="streak-display">Streak: 0 &#x1F525;</span>
+    </div>
+    <div id="progress-bar-wrap"><div id="progress-bar" style="width:0%"></div></div>
+    <div class="question-card">
+      <div id="q-badge" class="q-type-badge"></div>
+      <div class="q-word" id="q-word"></div>
+      <div class="q-text" id="q-text"></div>
+      <div id="hint-area">
+        <button id="hint-btn" onclick="showHint()">&#x1F4A1; Hint</button>
+        <span id="hint-text"></span>
+      </div>
+      <div class="choices" id="choices"></div>
+      <div id="feedback-area"></div>
+      <button id="next-btn" onclick="nextQuestion()">Next &#8594;</button>
+    </div>
+  </div>
+
+  <div id="result-section">
+    <h2>Round Complete!</h2>
+    <p>Here&#39;s how you did on this round of 20 questions.</p>
+    <div id="final-score"></div>
+    <p id="result-msg"></p>
+    <button onclick="startQuiz()">Play Again</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  var c=document.getElementById('bg'),ctx=c.getContext('2d'),W,H,stars=[];
+  function resize(){W=c.width=window.innerWidth;H=c.height=window.innerHeight;}
+  resize();window.addEventListener('resize',resize);
+  for(var i=0;i<180;i++)stars.push({x:Math.random()*9999,y:Math.random()*9999,r:Math.random()*1.4+.3,s:Math.random()*.4+.1});
+  function drawBg(){
+    ctx.clearRect(0,0,W,H);
+    var g=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,Math.max(W,H)*.75);
+    g.addColorStop(0,'#0a2a1e');g.addColorStop(.5,'#071410');g.addColorStop(1,'#030d09');
+    ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    stars.forEach(function(s){
+      s.x+=s.s;if(s.x>W)s.x=0;
+      ctx.beginPath();ctx.arc(s.x,s.y%H,s.r,0,Math.PI*2);
+      ctx.fillStyle='rgba(52,211,153,0.7)';ctx.fill();
+    });
+    requestAnimationFrame(drawBg);
+  }
+  drawBg();
+})();
+
+var WORDS=[
+  {word:'accompany',pos:'v.',def:'1. To go along with; to be together. 2. To play a musical instrument for or with.',ex:'"Thunder often accompanies lightning."'},
+  {word:'beneficial',pos:'adj.',def:'Being of use; helpful; favorable.',ex:'"A balanced diet is beneficial to one\'s health."'},
+  {word:'captive',pos:'n./adj.',def:'(n.) One that is held prisoner. (adj.) Unable to escape or get away.',ex:'"The captives were closely guarded."'},
+  {word:'convenient',pos:'adj.',def:'Suitable for one\'s needs; making life easier or more comfortable.',ex:'"The bus stop is convenient because it\'s close to my house."'},
+  {word:'ecstasy',pos:'n.',def:'A strong feeling of emotion, especially joy.',ex:'"Fans screamed in ecstasy when their idol appeared on stage."'},
+  {word:'expanse',pos:'n.',def:'A wide, open area or surface; a stretch.',ex:'"Wheat grows on the broad expanse of the Kansas prairie."'},
+  {word:'expedition',pos:'n.',def:'1. A long journey by a group to explore or do battle. 2. A group that makes such a journey.',ex:'"The expedition into the Brazilian rain forest lasted nearly a year."'},
+  {word:'inept',pos:'adj.',def:'1. Clumsily or awkwardly expressed; not suitable for the occasion. 2. Lacking in skill or ability.',ex:'"An inept handler damaged the contents of the crate."'},
+  {word:'interpret',pos:'v.',def:'1. To translate into another language. 2. To explain the meaning of. 3. To understand in one\'s own way.',ex:'"Josef offered to interpret the dream."'},
+  {word:'invaluable',pos:'adj.',def:'Too valuable to measure; priceless.',ex:'"The students\' help in organizing the boycott was invaluable."'},
+  {word:'linger',pos:'v.',def:'To be slow in leaving or going away.',ex:'"The students lingered in the hall, reluctant to go out into the cold."'},
+  {word:'retrieve',pos:'v.',def:'1. To get back; to recover. 2. To find and bring back.',ex:'"The puppy retrieves sticks the children throw in the pond."'},
+  {word:'skirmish',pos:'n./v.',def:'(n.) A minor fight or battle. (v.) To take part in such a fight.',ex:'"Apart from a few skirmishes, both sides kept the cease-fire that had been agreed to."'},
+  {word:'supplement',pos:'n./v.',def:'(n.) Something added to make up for something missing. (v.) To add to.',ex:'"Those who eat a well-balanced diet probably do not need vitamin supplements."'},
+  {word:'territory',pos:'n.',def:'1. A particular area of land. 2. A land area under control of a particular group or government.',ex:'"The island of Guam is a territory of the United States."'}
+];
+
+var TYPE_STYLES={
+  synonym:{label:'SYNONYM',color:'#34d399',bg:'rgba(6,95,70,.4)'},
+  antonym:{label:'ANTONYM',color:'#f472b6',bg:'rgba(157,23,77,.35)'},
+  analogy:{label:'ANALOGY',color:'#a78bfa',bg:'rgba(109,40,217,.35)'},
+  simile:{label:'SIMILE',color:'#fbbf24',bg:'rgba(161,98,7,.35)'},
+  metaphor:{label:'METAPHOR',color:'#38bdf8',bg:'rgba(7,89,133,.35)'}
+};
+
+var QUESTIONS=[
+  // ── SYNONYMS (50) ──────────────────────────────────────────────────────────
+  {type:'synonym',word:'accompany',q:'Which word is closest in meaning to ACCOMPANY?',a:'escort',ch:['escort','abandon','leave','flee'],hint:'Think: to go along with someone as a companion'},
+  {type:'synonym',word:'accompany',q:'Which word best replaces ACCOMPANY?',a:'join',ch:['join','separate','desert','depart'],hint:'Think: to come together with someone on a journey'},
+  {type:'synonym',word:'accompany',q:'Which word is a synonym for ACCOMPANY?',a:'attend',ch:['attend','avoid','ignore','forsake'],hint:'Think: to be present with someone at an event or place'},
+  {type:'synonym',word:'beneficial',q:'Which word is closest in meaning to BENEFICIAL?',a:'helpful',ch:['helpful','harmful','useless','dangerous'],hint:'Think: something that does you good'},
+  {type:'synonym',word:'beneficial',q:'Which word best replaces BENEFICIAL?',a:'useful',ch:['useful','worthless','damaging','pointless'],hint:'Think: having a practical, positive effect'},
+  {type:'synonym',word:'beneficial',q:'Which word is a synonym for BENEFICIAL?',a:'favorable',ch:['favorable','harmful','adverse','damaging'],hint:'Think: leading to a good outcome'},
+  {type:'synonym',word:'beneficial',q:'Which word means the same as BENEFICIAL?',a:'advantageous',ch:['advantageous','detrimental','harmful','negative'],hint:'Think: giving you an edge or benefit'},
+  {type:'synonym',word:'captive',q:'Which word is closest in meaning to CAPTIVE?',a:'prisoner',ch:['prisoner','guard','soldier','explorer'],hint:'Think: someone who is held against their will'},
+  {type:'synonym',word:'captive',q:'Which word best replaces CAPTIVE?',a:'hostage',ch:['hostage','guard','protector','rescuer'],hint:'Think: someone taken and held by force'},
+  {type:'synonym',word:'captive',q:'Which word is a synonym for CAPTIVE (adj.)?',a:'confined',ch:['confined','free','liberated','released'],hint:'Think: unable to leave, held in a restricted place'},
+  {type:'synonym',word:'convenient',q:'Which word is closest in meaning to CONVENIENT?',a:'handy',ch:['handy','awkward','inconvenient','difficult'],hint:'Think: easy to use and right where you need it'},
+  {type:'synonym',word:'convenient',q:'Which word best replaces CONVENIENT?',a:'practical',ch:['practical','impractical','burdensome','awkward'],hint:'Think: sensible and easy to work with'},
+  {type:'synonym',word:'convenient',q:'Which word is a synonym for CONVENIENT?',a:'accessible',ch:['accessible','remote','difficult','inconvenient'],hint:'Think: easy to reach or get to'},
+  {type:'synonym',word:'ecstasy',q:'Which word is closest in meaning to ECSTASY?',a:'joy',ch:['joy','misery','sorrow','despair'],hint:'Think: an intense, overwhelming positive feeling'},
+  {type:'synonym',word:'ecstasy',q:'Which word best replaces ECSTASY?',a:'bliss',ch:['bliss','agony','grief','sadness'],hint:'Think: perfect happiness and delight'},
+  {type:'synonym',word:'ecstasy',q:'Which word is a synonym for ECSTASY?',a:'delight',ch:['delight','gloom','anguish','dread'],hint:'Think: a feeling of great pleasure'},
+  {type:'synonym',word:'ecstasy',q:'Which word means the same as ECSTASY?',a:'rapture',ch:['rapture','misery','pain','despair'],hint:'Think: an emotion so strong it lifts you off your feet'},
+  {type:'synonym',word:'expanse',q:'Which word is closest in meaning to EXPANSE?',a:'stretch',ch:['stretch','corner','edge','point'],hint:'Think: a wide, open area that goes on and on'},
+  {type:'synonym',word:'expanse',q:'Which word best replaces EXPANSE?',a:'breadth',ch:['breadth','narrowness','confinement','border'],hint:'Think: the full width of an open area'},
+  {type:'synonym',word:'expanse',q:'Which word is a synonym for EXPANSE?',a:'vastness',ch:['vastness','tightness','limit','boundary'],hint:'Think: the quality of being enormously wide and open'},
+  {type:'synonym',word:'expedition',q:'Which word is closest in meaning to EXPEDITION?',a:'journey',ch:['journey','retreat','halt','stay'],hint:'Think: a long trip taken for a purpose'},
+  {type:'synonym',word:'expedition',q:'Which word best replaces EXPEDITION?',a:'voyage',ch:['voyage','retreat','rest','return'],hint:'Think: a long journey, often over water or through unknown land'},
+  {type:'synonym',word:'expedition',q:'Which word is a synonym for EXPEDITION?',a:'quest',ch:['quest','retreat','surrender','withdrawal'],hint:'Think: a journey with a specific goal to achieve'},
+  {type:'synonym',word:'inept',q:'Which word is closest in meaning to INEPT?',a:'clumsy',ch:['clumsy','skilled','graceful','expert'],hint:'Think: lacking coordination or doing things badly'},
+  {type:'synonym',word:'inept',q:'Which word best replaces INEPT?',a:'awkward',ch:['awkward','capable','skillful','adept'],hint:'Think: uncomfortable and poorly done'},
+  {type:'synonym',word:'inept',q:'Which word is a synonym for INEPT?',a:'incompetent',ch:['incompetent','capable','skilled','talented'],hint:'Think: simply not able to do something properly'},
+  {type:'synonym',word:'interpret',q:'Which word is closest in meaning to INTERPRET?',a:'translate',ch:['translate','confuse','ignore','misread'],hint:'Think: to put words from one language into another'},
+  {type:'synonym',word:'interpret',q:'Which word best replaces INTERPRET?',a:'explain',ch:['explain','confuse','scramble','hide'],hint:'Think: to make the meaning clear to others'},
+  {type:'synonym',word:'interpret',q:'Which word is a synonym for INTERPRET?',a:'decode',ch:['decode','scramble','encode','confuse'],hint:'Think: to figure out what a message really means'},
+  {type:'synonym',word:'interpret',q:'Which word means the same as INTERPRET?',a:'understand',ch:['understand','confuse','ignore','misread'],hint:'Think: to make sense of something in your own way'},
+  {type:'synonym',word:'invaluable',q:'Which word is closest in meaning to INVALUABLE?',a:'priceless',ch:['priceless','worthless','cheap','useless'],hint:'Think: so valuable you cannot put a number on it'},
+  {type:'synonym',word:'invaluable',q:'Which word best replaces INVALUABLE?',a:'irreplaceable',ch:['irreplaceable','worthless','common','ordinary'],hint:'Think: impossible to replace with anything else'},
+  {type:'synonym',word:'invaluable',q:'Which word is a synonym for INVALUABLE?',a:'precious',ch:['precious','cheap','valueless','disposable'],hint:'Think: of the greatest possible worth'},
+  {type:'synonym',word:'linger',q:'Which word is closest in meaning to LINGER?',a:'dawdle',ch:['dawdle','rush','hurry','sprint'],hint:'Think: to move slowly and delay leaving'},
+  {type:'synonym',word:'linger',q:'Which word best replaces LINGER?',a:'loiter',ch:['loiter','hurry','dash','flee'],hint:'Think: to hang around without moving on'},
+  {type:'synonym',word:'linger',q:'Which word is a synonym for LINGER?',a:'tarry',ch:['tarry','hasten','rush','depart'],hint:'Think: an old word for staying and being slow to go'},
+  {type:'synonym',word:'linger',q:'Which word means the same as LINGER?',a:'delay',ch:['delay','rush','sprint','hurry'],hint:'Think: to put off leaving or going somewhere'},
+  {type:'synonym',word:'retrieve',q:'Which word is closest in meaning to RETRIEVE?',a:'recover',ch:['recover','lose','abandon','discard'],hint:'Think: to get something back that was lost or taken'},
+  {type:'synonym',word:'retrieve',q:'Which word best replaces RETRIEVE?',a:'fetch',ch:['fetch','drop','discard','leave'],hint:'Think: to go and bring something back'},
+  {type:'synonym',word:'retrieve',q:'Which word is a synonym for RETRIEVE?',a:'reclaim',ch:['reclaim','surrender','lose','give up'],hint:'Think: to take back what rightfully belongs to you'},
+  {type:'synonym',word:'skirmish',q:'Which word is closest in meaning to SKIRMISH?',a:'clash',ch:['clash','celebration','parade','ceremony'],hint:'Think: a brief, minor conflict between two sides'},
+  {type:'synonym',word:'skirmish',q:'Which word best replaces SKIRMISH?',a:'scuffle',ch:['scuffle','feast','truce','peace'],hint:'Think: a small, rough physical struggle'},
+  {type:'synonym',word:'skirmish',q:'Which word is a synonym for SKIRMISH?',a:'conflict',ch:['conflict','celebration','gathering','truce'],hint:'Think: a minor disagreement that turns into a fight'},
+  {type:'synonym',word:'supplement',q:'Which word is closest in meaning to SUPPLEMENT (v.)?',a:'augment',ch:['augment','reduce','remove','subtract'],hint:'Think: to make something larger or more complete'},
+  {type:'synonym',word:'supplement',q:'Which word best replaces SUPPLEMENT?',a:'boost',ch:['boost','reduce','diminish','lessen'],hint:'Think: to add to something to make it better'},
+  {type:'synonym',word:'supplement',q:'Which word is a synonym for SUPPLEMENT?',a:'enhance',ch:['enhance','reduce','weaken','subtract'],hint:'Think: to improve something by adding to it'},
+  {type:'synonym',word:'territory',q:'Which word is closest in meaning to TERRITORY?',a:'region',ch:['region','border','edge','boundary'],hint:'Think: a defined area of land'},
+  {type:'synonym',word:'territory',q:'Which word best replaces TERRITORY?',a:'domain',ch:['domain','border','edge','limit'],hint:'Think: an area that belongs to or is controlled by someone'},
+  {type:'synonym',word:'territory',q:'Which word is a synonym for TERRITORY?',a:'land',ch:['land','border','line','ocean'],hint:'Think: ground that belongs to a group or government'},
+  {type:'synonym',word:'territory',q:'Which word means the same as TERRITORY?',a:'area',ch:['area','boundary','edge','line'],hint:'Think: a particular zone or stretch of ground'},
+
+  // ── ANTONYMS (35) ──────────────────────────────────────────────────────────
+  {type:'antonym',word:'captive',q:'Which word is OPPOSITE in meaning to CAPTIVE?',a:'free',ch:['free','confined','imprisoned','trapped'],hint:'Think: able to go anywhere without restriction'},
+  {type:'antonym',word:'beneficial',q:'Which word is OPPOSITE in meaning to BENEFICIAL?',a:'harmful',ch:['harmful','helpful','useful','favorable'],hint:'Think: something that causes damage rather than good'},
+  {type:'antonym',word:'convenient',q:'Which word is OPPOSITE in meaning to CONVENIENT?',a:'inconvenient',ch:['inconvenient','handy','practical','accessible'],hint:'Think: causing difficulty or requiring extra effort'},
+  {type:'antonym',word:'ecstasy',q:'Which word is OPPOSITE in meaning to ECSTASY?',a:'misery',ch:['misery','joy','bliss','delight'],hint:'Think: a state of extreme unhappiness and suffering'},
+  {type:'antonym',word:'inept',q:'Which word is OPPOSITE in meaning to INEPT?',a:'skilled',ch:['skilled','clumsy','awkward','incompetent'],hint:'Think: highly capable and trained in what you do'},
+  {type:'antonym',word:'invaluable',q:'Which word is OPPOSITE in meaning to INVALUABLE?',a:'worthless',ch:['worthless','priceless','precious','rare'],hint:'Think: having no value at all'},
+  {type:'antonym',word:'linger',q:'Which word is OPPOSITE in meaning to LINGER?',a:'hurry',ch:['hurry','dawdle','loiter','tarry'],hint:'Think: to move quickly rather than slowly stay behind'},
+  {type:'antonym',word:'retrieve',q:'Which word is OPPOSITE in meaning to RETRIEVE?',a:'lose',ch:['lose','recover','fetch','reclaim'],hint:'Think: to fail to hold onto something you had'},
+  {type:'antonym',word:'supplement',q:'Which word is OPPOSITE in meaning to SUPPLEMENT?',a:'reduce',ch:['reduce','boost','augment','enhance'],hint:'Think: to take away rather than add to something'},
+  {type:'antonym',word:'accompany',q:'Which word is OPPOSITE in meaning to ACCOMPANY?',a:'abandon',ch:['abandon','join','escort','attend'],hint:'Think: to leave someone behind instead of going with them'},
+  {type:'antonym',word:'skirmish',q:'Which word is OPPOSITE in meaning to SKIRMISH?',a:'peace',ch:['peace','clash','conflict','scuffle'],hint:'Think: a state of no fighting and complete calm'},
+  {type:'antonym',word:'expanse',q:'Which word is OPPOSITE in meaning to EXPANSE?',a:'confinement',ch:['confinement','breadth','vastness','stretch'],hint:'Think: a small, closed-in space with no room to spread out'},
+  {type:'antonym',word:'captive',q:'Which word is OPPOSITE in meaning to CAPTIVE?',a:'liberated',ch:['liberated','imprisoned','confined','trapped'],hint:'Think: set free from captivity or control'},
+  {type:'antonym',word:'beneficial',q:'Which word is OPPOSITE in meaning to BENEFICIAL?',a:'detrimental',ch:['detrimental','helpful','useful','positive'],hint:'Think: causing harm or damage rather than improvement'},
+  {type:'antonym',word:'convenient',q:'Which word is OPPOSITE in meaning to CONVENIENT?',a:'awkward',ch:['awkward','handy','easy','practical'],hint:'Think: uncomfortable, difficult to use, or poorly placed'},
+  {type:'antonym',word:'ecstasy',q:'Which word is OPPOSITE in meaning to ECSTASY?',a:'despair',ch:['despair','joy','rapture','bliss'],hint:'Think: a feeling of complete hopelessness and sadness'},
+  {type:'antonym',word:'inept',q:'Which word is OPPOSITE in meaning to INEPT?',a:'competent',ch:['competent','awkward','clumsy','fumbling'],hint:'Think: able and qualified to do the job well'},
+  {type:'antonym',word:'invaluable',q:'Which word is OPPOSITE in meaning to INVALUABLE?',a:'useless',ch:['useless','precious','priceless','rare'],hint:'Think: serving no purpose and helping no one'},
+  {type:'antonym',word:'linger',q:'Which word is OPPOSITE in meaning to LINGER?',a:'rush',ch:['rush','dawdle','delay','loiter'],hint:'Think: to move with great speed and urgency'},
+  {type:'antonym',word:'retrieve',q:'Which word is OPPOSITE in meaning to RETRIEVE?',a:'discard',ch:['discard','recover','fetch','reclaim'],hint:'Think: to throw something away instead of getting it back'},
+  {type:'antonym',word:'supplement',q:'Which word is OPPOSITE in meaning to SUPPLEMENT?',a:'diminish',ch:['diminish','augment','boost','enhance'],hint:'Think: to make smaller or less instead of adding'},
+  {type:'antonym',word:'accompany',q:'Which word is OPPOSITE in meaning to ACCOMPANY?',a:'desert',ch:['desert','join','escort','attend'],hint:'Think: to leave someone alone when they needed you'},
+  {type:'antonym',word:'skirmish',q:'Which word is OPPOSITE in meaning to SKIRMISH?',a:'truce',ch:['truce','clash','battle','conflict'],hint:'Think: an agreement to stop fighting'},
+  {type:'antonym',word:'expanse',q:'Which word is OPPOSITE in meaning to EXPANSE?',a:'narrowness',ch:['narrowness','breadth','vastness','openness'],hint:'Think: being tightly squeezed rather than wide open'},
+  {type:'antonym',word:'interpret',q:'Which word is OPPOSITE in meaning to INTERPRET?',a:'misunderstand',ch:['misunderstand','translate','explain','decode'],hint:'Think: to get the meaning completely wrong'},
+  {type:'antonym',word:'inept',q:'Which word is OPPOSITE in meaning to INEPT?',a:'capable',ch:['capable','awkward','bumbling','clumsy'],hint:'Think: having the ability and skill to do something well'},
+  {type:'antonym',word:'beneficial',q:'Which word is OPPOSITE in meaning to BENEFICIAL?',a:'useless',ch:['useless','helpful','favorable','positive'],hint:'Think: providing no benefit or advantage whatsoever'},
+  {type:'antonym',word:'captive',q:'Which word is OPPOSITE in meaning to CAPTIVE (adj.)?',a:'unconstrained',ch:['unconstrained','imprisoned','trapped','confined'],hint:'Think: able to move and act with total freedom'},
+  {type:'antonym',word:'convenient',q:'Which word is OPPOSITE in meaning to CONVENIENT?',a:'burdensome',ch:['burdensome','handy','accessible','easy'],hint:'Think: adding difficulty and trouble rather than making things easier'},
+  {type:'antonym',word:'ecstasy',q:'Which word is OPPOSITE in meaning to ECSTASY?',a:'agony',ch:['agony','bliss','rapture','delight'],hint:'Think: intense physical or mental suffering'},
+  {type:'antonym',word:'retrieve',q:'Which word is OPPOSITE in meaning to RETRIEVE?',a:'abandon',ch:['abandon','recover','reclaim','fetch'],hint:'Think: to leave something behind and not bother getting it back'},
+  {type:'antonym',word:'linger',q:'Which word is OPPOSITE in meaning to LINGER?',a:'hasten',ch:['hasten','loiter','tarry','delay'],hint:'Think: to move with speed and purpose rather than slowly staying'},
+  {type:'antonym',word:'supplement',q:'Which word is OPPOSITE in meaning to SUPPLEMENT?',a:'subtract',ch:['subtract','add','boost','augment'],hint:'Think: to take away rather than to add'},
+  {type:'antonym',word:'accompany',q:'Which word is OPPOSITE in meaning to ACCOMPANY?',a:'leave behind',ch:['leave behind','escort','join','follow'],hint:'Think: to go without someone who needed you there'},
+  {type:'antonym',word:'invaluable',q:'Which word is OPPOSITE in meaning to INVALUABLE?',a:'expendable',ch:['expendable','priceless','precious','irreplaceable'],hint:'Think: something easily replaced and not worth keeping'},
+
+  // ── ANALOGIES (40) ─────────────────────────────────────────────────────────
+  {type:'analogy',word:'captive',q:'CAPTIVE is to PRISON as BIRD is to ___',a:'cage',ch:['cage','nest','tree','sky'],hint:'Think: what structure confines each creature against its will'},
+  {type:'analogy',word:'expedition',q:'EXPEDITION is to EXPLORER as VOYAGE is to ___',a:'sailor',ch:['sailor','farmer','soldier','merchant'],hint:'Think: each journey matches which type of traveler'},
+  {type:'analogy',word:'territory',q:'TERRITORY is to MAP as EXPANSE is to ___',a:'horizon',ch:['horizon','border','fence','wall'],hint:'Think: each thing shows the far limits of a wide space'},
+  {type:'analogy',word:'beneficial',q:'BENEFICIAL is to HARMFUL as CONVENIENT is to ___',a:'inconvenient',ch:['inconvenient','handy','useful','easy'],hint:'Think: each pair contains direct opposites'},
+  {type:'analogy',word:'supplement',q:'SUPPLEMENT is to DIET as ADD is to ___',a:'recipe',ch:['recipe','hunger','appetite','plate'],hint:'Think: what you add ingredients to in each case'},
+  {type:'analogy',word:'interpret',q:'INTERPRET is to LANGUAGE as DECODE is to ___',a:'cipher',ch:['cipher','voice','word','letter'],hint:'Think: what you work through to find the hidden meaning'},
+  {type:'analogy',word:'linger',q:'LINGER is to LEAVE as HESITATE is to ___',a:'decide',ch:['decide','pause','wait','delay'],hint:'Think: the first word delays what the second word finally does'},
+  {type:'analogy',word:'retrieve',q:'RETRIEVE is to FETCH as RECOVER is to ___',a:'reclaim',ch:['reclaim','lose','abandon','discard'],hint:'Think: each pair means getting something back in different ways'},
+  {type:'analogy',word:'skirmish',q:'SKIRMISH is to BATTLE as ARGUMENT is to ___',a:'war',ch:['war','handshake','chat','greeting'],hint:'Think: the smaller version compared to the much larger version'},
+  {type:'analogy',word:'ecstasy',q:'ECSTASY is to JOY as AGONY is to ___',a:'pain',ch:['pain','bliss','pleasure','delight'],hint:'Think: each word is an extreme form of which feeling'},
+  {type:'analogy',word:'inept',q:'INEPT is to FUMBLE as ADEPT is to ___',a:'succeed',ch:['succeed','stumble','fail','drop'],hint:'Think: what each level of skill tends to lead to'},
+  {type:'analogy',word:'invaluable',q:'INVALUABLE is to TREASURE as WORTHLESS is to ___',a:'junk',ch:['junk','gem','gold','jewel'],hint:'Think: each value level matches which type of object'},
+  {type:'analogy',word:'expedition',q:'EXPEDITION is to PACIFIC as JOURNEY is to ___',a:'destination',ch:['destination','origin','start','beginning'],hint:'Think: each trip is defined by where it is heading'},
+  {type:'analogy',word:'accompany',q:'ACCOMPANY is to PIANIST as TRANSLATE is to ___',a:'interpreter',ch:['interpreter','singer','author','artist'],hint:'Think: which professional performs each action as their main job'},
+  {type:'analogy',word:'territory',q:'TERRITORY is to BORDER as EXPANSE is to ___',a:'edge',ch:['edge','center','middle','heart'],hint:'Think: what defines the outer limits of each type of space'},
+  {type:'analogy',word:'beneficial',q:'BENEFICIAL is to MEDICINE as HARMFUL is to ___',a:'poison',ch:['poison','water','herb','vitamin'],hint:'Think: which substance helps vs which substance hurts'},
+  {type:'analogy',word:'linger',q:'LINGER is to GOODBYE as DAWDLE is to ___',a:'errand',ch:['errand','sprint','hurry','dash'],hint:'Think: each slow action delays the completion of what task'},
+  {type:'analogy',word:'retrieve',q:'RETRIEVE is to DOG as RECOVER is to ___',a:'patient',ch:['patient','hunter','soldier','farmer'],hint:'Think: who performs each act of getting something back'},
+  {type:'analogy',word:'skirmish',q:'SKIRMISH is to CEASE-FIRE as ARGUMENT is to ___',a:'apology',ch:['apology','shout','fight','insult'],hint:'Think: what brings each type of conflict to an end'},
+  {type:'analogy',word:'ecstasy',q:'ECSTASY is to WINNER as MISERY is to ___',a:'loser',ch:['loser','champion','athlete','runner'],hint:'Think: each emotion is most felt by which competitor'},
+  {type:'analogy',word:'inept',q:'INEPT is to BUNGLER as EXPERT is to ___',a:'specialist',ch:['specialist','beginner','fumbler','novice'],hint:'Think: each skill level names what kind of professional'},
+  {type:'analogy',word:'invaluable',q:'INVALUABLE is to SACAGAWEA as BURDEN is to ___',a:'dead weight',ch:['dead weight','treasure','gem','asset'],hint:'Think: Sacagawea was invaluable; the opposite of that is what?'},
+  {type:'analogy',word:'interpret',q:'INTERPRET is to MEANING as MAP is to ___',a:'direction',ch:['direction','weight','color','texture'],hint:'Think: what each thing helps you find'},
+  {type:'analogy',word:'expedition',q:'EXPEDITION is to LEWIS AND CLARK as VOYAGE is to ___',a:'Magellan',ch:['Magellan','Sacagawea','Columbus','Cook'],hint:'Think: each great journey is associated with which famous name'},
+  {type:'analogy',word:'supplement',q:'SUPPLEMENT is to VITAMIN as BOOST is to ___',a:'energy drink',ch:['energy drink','subtraction','removal','depletion'],hint:'Think: each thing provides an extra shot of what is needed'},
+  {type:'analogy',word:'territory',q:'TERRITORY is to SHOSHONE as DOMAIN is to ___',a:'ruler',ch:['ruler','enemy','stranger','traveler'],hint:'Think: each land area is defined by who controls it'},
+  {type:'analogy',word:'captive',q:'CAPTIVE is to RESCUED as LOST is to ___',a:'found',ch:['found','taken','captured','missing'],hint:'Think: each word names the state before its opposite resolves it'},
+  {type:'analogy',word:'accompany',q:'ACCOMPANY is to SHADOW as FOLLOW is to ___',a:'leader',ch:['leader','stranger','enemy','rival'],hint:'Think: a shadow accompanies its owner the way a follower accompanies what'},
+  {type:'analogy',word:'convenient',q:'CONVENIENT is to BUS STOP as INCONVENIENT is to ___',a:'distant station',ch:['distant station','nearby shop','close café','local park'],hint:'Think: which location makes getting somewhere easy vs which makes it hard'},
+  {type:'analogy',word:'ecstasy',q:'ECSTASY is to SCREAMING FANS as CALM is to ___',a:'quiet audience',ch:['quiet audience','loud crowd','cheering mob','excited group'],hint:'Think: which type of audience matches each emotional state'},
+  {type:'analogy',word:'inept',q:'INEPT is to CLUMSY as GRACEFUL is to ___',a:'adept',ch:['adept','fumbling','awkward','bumbling'],hint:'Think: each movement quality matches which level of skill'},
+  {type:'analogy',word:'linger',q:'LINGER is to SLOW as SPRINT is to ___',a:'fast',ch:['fast','delayed','lazy','unhurried'],hint:'Think: each action describes which speed'},
+  {type:'analogy',word:'retrieve',q:'RETRIEVE is to LOST ITEM as RESCUE is to ___',a:'captive',ch:['captive','map','supply','route'],hint:'Think: each action gets back which type of thing'},
+  {type:'analogy',word:'skirmish',q:'SKIRMISH is to SOLDIERS as SPAT is to ___',a:'siblings',ch:['siblings','generals','armies','nations'],hint:'Think: a minor conflict between which small group of people'},
+  {type:'analogy',word:'expanse',q:'EXPANSE is to OCEAN as CONFINED is to ___',a:'cell',ch:['cell','field','prairie','sky'],hint:'Think: which space is wide open vs which is tiny and enclosed'},
+  {type:'analogy',word:'interpret',q:'INTERPRET is to SIGN LANGUAGE as TRANSLATE is to ___',a:'French',ch:['French','gesture','symbol','image'],hint:'Think: interpret handles which type of communication, translate handles which'},
+  {type:'analogy',word:'expedition',q:'EXPEDITION is to MONTHS as DAY TRIP is to ___',a:'hours',ch:['hours','years','decades','centuries'],hint:'Think: each type of journey takes how long'},
+  {type:'analogy',word:'beneficial',q:'BENEFICIAL is to EXERCISE as HARMFUL is to ___',a:'smoking',ch:['smoking','walking','stretching','resting'],hint:'Think: which habit is good for health vs which damages it'},
+  {type:'analogy',word:'supplement',q:'SUPPLEMENT is to FOOD SUPPLY as REINFORCEMENT is to ___',a:'army',ch:['army','recipe','farm','kitchen'],hint:'Think: what gets added to each when more is needed'},
+  {type:'analogy',word:'captive',q:'CAPTIVE is to CAPTOR as STUDENT is to ___',a:'teacher',ch:['teacher','classmate','textbook','test'],hint:'Think: who holds authority over each person'},
+
+  // ── SIMILES (35) ────────────────────────────────────────────────────────────
+  {type:'simile',word:'accompany',q:'Which sentence uses ACCOMPANY in a simile correctly?',a:'She accompanied the expedition like a compass accompanies a sailor — essential and always present.',ch:['She accompanied the expedition like a compass accompanies a sailor — essential and always present.','She accompanied nothing like a closed map.','Accompany was as still as a sleeping river.','She accompanied him as if absent from the journey.'],hint:'Think: comparing the presence of a person to something always needed'},
+  {type:'simile',word:'beneficial',q:'Which sentence uses BENEFICIAL in a simile correctly?',a:'Sacagawea\'s knowledge of native plants was as beneficial as a fully stocked medicine chest.',ch:['Sacagawea\'s knowledge of native plants was as beneficial as a fully stocked medicine chest.','The beneficial thing was like an empty bag.','She was beneficial like a broken tool.','Beneficial was as harmful as a sharp knife.'],hint:'Think: comparing something helpful to a well-equipped resource'},
+  {type:'simile',word:'captive',q:'Which sentence uses CAPTIVE in a simile correctly?',a:'The audience sat captive as the storyteller spoke, like birds frozen on a branch by a hawk\'s shadow.',ch:['The audience sat captive as the storyteller spoke, like birds frozen on a branch by a hawk\'s shadow.','The captive moved freely like a river rushing to the sea.','Captive was as open as a summer field.','She moved like a captive who had no chains.'],hint:'Think: comparing spellbound attention to creatures unable to move'},
+  {type:'simile',word:'convenient',q:'Which sentence uses CONVENIENT in a simile correctly?',a:'Having Sacagawea along was as convenient as having a map that could speak.',ch:['Having Sacagawea along was as convenient as having a map that could speak.','Convenient was as difficult as hiking through a blizzard.','She was convenient like a locked treasure chest.','The route was convenient as if it were far and treacherous.'],hint:'Think: comparing ease of travel to a perfect tool that guides you'},
+  {type:'simile',word:'ecstasy',q:'Which sentence uses ECSTASY in a simile correctly?',a:'Her ecstasy at reuniting with her brother was like a river finding the sea after years apart.',ch:['Her ecstasy at reuniting with her brother was like a river finding the sea after years apart.','Her ecstasy was as cold as a winter storm.','She felt ecstasy like someone discovering bad news.','Ecstasy was as quiet as a stone at the bottom of a lake.'],hint:'Think: comparing intense joy to two things joyfully reuniting in nature'},
+  {type:'simile',word:'expanse',q:'Which sentence uses EXPANSE in a simile correctly?',a:'The Pacific lay before her like an expanse of living silver, endless and breathing.',ch:['The Pacific lay before her like an expanse of living silver, endless and breathing.','The expanse was as narrow as a footpath.','She crossed the expanse like stepping through a doorway.','Expanse was as confined as a locked room.'],hint:'Think: comparing the ocean to something vast and shimmering'},
+  {type:'simile',word:'expedition',q:'Which sentence uses EXPEDITION in a simile correctly?',a:'The Lewis and Clark expedition moved like a slow river pushing toward the unknown.',ch:['The Lewis and Clark expedition moved like a slow river pushing toward the unknown.','The expedition stood still like a stopped clock.','Expedition was as short as a quick walk around the block.','The expedition retreated like a tide coming back to shore.'],hint:'Think: comparing a long, purposeful journey to a force of nature moving forward'},
+  {type:'simile',word:'inept',q:'Which sentence uses INEPT in a simile correctly?',a:'Charbonneau\'s handling of the canoe was as inept as a child trying to juggle boulders.',ch:['Charbonneau\'s handling of the canoe was as inept as a child trying to juggle boulders.','He was inept like a champion swimmer in still water.','His handling was as inept as an expert craftsman\'s finest work.','Inept was as graceful as a hawk gliding on the wind.'],hint:'Think: comparing clumsy handling to someone attempting something clearly beyond them'},
+  {type:'simile',word:'interpret',q:'Which sentence uses INTERPRET in a simile correctly?',a:'Sacagawea interpreted the Shoshone words like a bridge carrying meaning safely from one shore to another.',ch:['Sacagawea interpreted the Shoshone words like a bridge carrying meaning safely from one shore to another.','She interpreted as if no words existed between the two sides.','Interpret was as confusing as a silent wall.','She interpreted like someone who knew no language at all.'],hint:'Think: comparing the act of translating to a structure that connects two separated places'},
+  {type:'simile',word:'invaluable',q:'Which sentence uses INVALUABLE in a simile correctly?',a:'Her knowledge was as invaluable as a lighthouse in a fog-thick sea.',ch:['Her knowledge was as invaluable as a lighthouse in a fog-thick sea.','She was invaluable like a cracked compass with no needle.','Invaluable was as worthless as a broken lock.','Her help was invaluable like something easily replaced.'],hint:'Think: comparing something essential and guiding to a beacon in dangerous conditions'},
+  {type:'simile',word:'linger',q:'Which sentence uses LINGER in a simile correctly?',a:'The memory of home lingered in her heart like smoke that stays long after a fire goes out.',ch:['The memory of home lingered in her heart like smoke that stays long after a fire goes out.','She lingered like a runner crossing a finish line at full speed.','Linger was as swift as a hawk diving for prey.','She lingered like someone with nowhere to go and nothing to remember.'],hint:'Think: comparing a persistent memory to something that stays in the air long after its source is gone'},
+  {type:'simile',word:'retrieve',q:'Which sentence uses RETRIEVE in a simile correctly?',a:'She retrieved the records from the river like a hawk retrieving something snatched by the wind.',ch:['She retrieved the records from the river like a hawk retrieving something snatched by the wind.','She retrieved nothing like a dog with empty jaws.','Retrieve was as easy as forgetting where things were.','She retrieved the papers as if they had never been lost.'],hint:'Think: comparing fast, purposeful recovery to a bird\'s precise retrieval'},
+  {type:'simile',word:'skirmish',q:'Which sentence uses SKIRMISH in a simile correctly?',a:'The argument at camp was like a skirmish — brief, loud, and over before anyone knew who won.',ch:['The argument at camp was like a skirmish — brief, loud, and over before anyone knew who won.','The skirmish was as quiet as snowfall on a frozen river.','The battle lasted like a skirmish lasts all year.','She skirmished like someone who never took a side.'],hint:'Think: comparing a short disagreement to a brief military clash'},
+  {type:'simile',word:'supplement',q:'Which sentence uses SUPPLEMENT in a simile correctly?',a:'She supplemented the food supplies like a gardener adding compost to thin soil.',ch:['She supplemented the food supplies like a gardener adding compost to thin soil.','She supplemented like someone who removed everything from the pack.','Supplement was as empty as a bare pantry.','She supplemented the supplies as if taking everything away.'],hint:'Think: comparing adding to food stores to enriching the ground so things can grow'},
+  {type:'simile',word:'territory',q:'Which sentence uses TERRITORY in a simile correctly?',a:'The Shoshone territory was as familiar to Sacagawea as the back of her own hand.',ch:['The Shoshone territory was as familiar to Sacagawea as the back of her own hand.','Territory was as unknown to her as a foreign language.','She crossed the territory like someone lost in a maze.','Territory was as unfamiliar as a distant star.'],hint:'Think: comparing deep knowledge of a place to knowing something intimate and personal'},
+  {type:'simile',word:'accompany',q:'Complete the simile: The baby on Sacagawea\'s back accompanied her like ___',a:'a small sun that followed wherever she went',ch:['a small sun that followed wherever she went','a heavy stone dragging her to the ground','a locked door blocking every path','a storm cloud gathering on the horizon'],hint:'Think: something that stays close and brings light to every moment'},
+  {type:'simile',word:'beneficial',q:'Complete the simile: Her skill with medicinal plants was as beneficial as ___',a:'a doctor traveling alongside the expedition',ch:['a doctor traveling alongside the expedition','a broken compass pointing the wrong way','an empty bag with a hole in the bottom','a map with every river crossed out'],hint:'Think: a living resource that could heal and help'},
+  {type:'simile',word:'ecstasy',q:'Complete the simile: Seeing her brother again filled Sacagawea with ecstasy, like ___',a:'sunlight flooding a room that had been dark for years',ch:['sunlight flooding a room that had been dark for years','a cold wind shutting every door at once','a river running dry before reaching the sea','a candle going out in the middle of the night'],hint:'Think: something that fills up a long-dark space with warmth and brightness'},
+  {type:'simile',word:'expanse',q:'Complete the simile: The wide expanse of the Pacific was like ___',a:'the sky had fallen and become water',ch:['the sky had fallen and become water','a small pond in a crowded city park','a narrow stream threading through tall rocks','a cup of water balanced on a fingertip'],hint:'Think: something so vast it feels like two infinite things merged into one'},
+  {type:'simile',word:'invaluable',q:'Complete the simile: Sacagawea\'s presence was as invaluable as ___',a:'a key to a door no one else could open',ch:['a key to a door no one else could open','a lock with no keyhole to fit','an empty bottle thrown into a dry river','a broken tool with no replacement'],hint:'Think: something unique that gives access where nothing else could'},
+  {type:'simile',word:'retrieve',q:'Complete the simile: She dove into the current to retrieve the papers like ___',a:'an otter snatching something before the river could carry it away',ch:['an otter snatching something before the river could carry it away','a stone sinking slowly to the riverbed','a leaf drifting lazily downstream','a fish sleeping in the deep dark water'],hint:'Think: a quick, nimble creature that acts fast in water'},
+  {type:'simile',word:'territory',q:'Complete the simile: Moving through Shoshone territory, Sacagawea read the landscape like ___',a:'a scholar reads a beloved and well-worn book',ch:['a scholar reads a beloved and well-worn book','a stranger stumbles through a darkened room','a visitor stares at an unfamiliar foreign menu','a child sounds out words they have never seen'],hint:'Think: reading something you know so well the meaning comes instantly'},
+  {type:'simile',word:'expedition',q:'Complete the simile: The expedition pushed forward into unknown land like ___',a:'a single thread being drawn through an endless cloth',ch:['a single thread being drawn through an endless cloth','a wide river retreating into the mountains','a door slamming shut against a storm','a clock that stops when no one is watching'],hint:'Think: something fragile but steady moving through something vast'},
+  {type:'simile',word:'linger',q:'Complete the simile: The smell of the evening campfire lingered like ___',a:'a story that refuses to end even after the last page',ch:['a story that refuses to end even after the last page','a river that disappears before reaching the sea','a door swinging quickly shut in a breeze','a candle that goes dark the moment it is lit'],hint:'Think: something that stays present long after it should have faded'},
+  {type:'simile',word:'interpret',q:'Complete the simile: She interpreted the Shoshone chief\'s words as carefully as ___',a:'a jeweler examines a diamond for hidden flaws',ch:['a jeweler examines a diamond for hidden flaws','a child scribbles quickly without looking','a sleeper mumbles in a half-dreaming state','a rock stands still as the river rushes past'],hint:'Think: examining something precious with slow, precise attention'},
+  {type:'simile',word:'skirmish',q:'Complete the simile: The short clash at the river\'s edge was like a skirmish compared to ___',a:'the long and bloody battles of the Civil War',ch:['the long and bloody battles of the Civil War','a single whispered argument between two friends','a gentle handshake at a peaceful meeting','a brief pause in a quiet conversation'],hint:'Think: a minor conflict measured against something truly massive and destructive'},
+  {type:'simile',word:'captive',q:'Complete the simile: Far from home, Sacagawea sometimes felt as captive as ___',a:'a wild bird placed in a golden cage',ch:['a wild bird placed in a golden cage','a hawk soaring over an open mountain range','a fish swimming freely in an open river','an eagle circling above an empty sky'],hint:'Think: a creature with a wild nature forced into constraint'},
+  {type:'simile',word:'supplement',q:'Complete the simile: The roots and berries she collected supplemented the food like ___',a:'hidden chapters added to the end of an unfinished book',ch:['hidden chapters added to the end of an unfinished book','a page torn from the middle of a story','a cover placed on a book with nothing inside','a title with no story to follow it'],hint:'Think: adding new material that completes something that was not quite enough'},
+  {type:'simile',word:'convenient',q:'Complete the simile: The Hidatsa village proved as convenient for wintering as ___',a:'a warm harbor where ships can shelter from a storm',ch:['a warm harbor where ships can shelter from a storm','an open field swept by a freezing northern wind','a cliff face with no path leading down','a river in full flood with no way across'],hint:'Think: a protected place that makes a hard situation manageable'},
+  {type:'simile',word:'inept',q:'Complete the simile: Without Sacagawea\'s plant knowledge, the crew would have been as inept at medicine as ___',a:'a carpenter trying to perform surgery with a saw',ch:['a carpenter trying to perform surgery with a saw','a doctor who has studied healing for twenty years','a healer who knows every root and leaf by sight','a nurse who works calmly in an emergency'],hint:'Think: someone using completely the wrong tool for a job that requires skill'},
+
+  // ── METAPHORS (35) ──────────────────────────────────────────────────────────
+  {type:'metaphor',word:'accompany',q:'Which sentence uses ACCOMPANY as a metaphor?',a:'Courage accompanied her every step — a silent guardian walking beside her through the wilderness.',ch:['Courage accompanied her every step — a silent guardian walking beside her through the wilderness.','Courage went with her like a faithful friend.','She moved with courage as if it were a companion.','Courage was as constant as a shadow by her side.'],hint:'A metaphor calls something directly another thing without using like or as'},
+  {type:'metaphor',word:'beneficial',q:'Which sentence uses BENEFICIAL as a metaphor?',a:'Her plant knowledge was the expedition\'s pharmacy, beneficial beyond any price Lewis and Clark could have paid.',ch:['Her plant knowledge was the expedition\'s pharmacy, beneficial beyond any price Lewis and Clark could have paid.','Her knowledge was as beneficial as a pharmacy.','Her plant skill helped them like a medicine cabinet.','Her knowledge was beneficial the way a doctor is beneficial.'],hint:'Think: calling her knowledge directly a pharmacy — the thing itself, not a comparison'},
+  {type:'metaphor',word:'captive',q:'Which sentence uses CAPTIVE as a metaphor?',a:'The audience was captive in the storyteller\'s hands, every soul sealed tight in the amber of her words.',ch:['The audience was captive in the storyteller\'s hands, every soul sealed tight in the amber of her words.','The audience sat captive like insects in amber.','They were as captive as listeners who cannot leave.','The story held them as a captor holds a prisoner.'],hint:'Think: directly calling the audience captive and their attention an amber that seals them'},
+  {type:'metaphor',word:'convenient',q:'Which sentence uses CONVENIENT as a metaphor?',a:'The Hidatsa village was a convenient shelter — the expedition\'s lucky harbor in a winter sea.',ch:['The Hidatsa village was a convenient shelter — the expedition\'s lucky harbor in a winter sea.','The village was as convenient as a harbor.','They found the village convenient like sailors find a port.','The village offered convenience the way a harbor offers safety.'],hint:'Think: calling the village directly a harbor without using like or as'},
+  {type:'metaphor',word:'ecstasy',q:'Which sentence uses ECSTASY as a metaphor?',a:'Her reunion with her brother was an ecstasy of light — years of darkness suddenly burned away.',ch:['Her reunion with her brother was an ecstasy of light — years of darkness suddenly burned away.','The reunion filled her with ecstasy like sunlight fills a room.','She felt ecstasy as if light had entered the dark.','The reunion was as joyful as a room filled with warm light.'],hint:'Think: calling the reunion directly an ecstasy of light — light and joy become one thing'},
+  {type:'metaphor',word:'expanse',q:'Which sentence uses EXPANSE as a metaphor?',a:'The Pacific was a breathing expanse of silver — the world\'s last word, written in water.',ch:['The Pacific was a breathing expanse of silver — the world\'s last word, written in water.','The Pacific stretched out like an expanse of silver.','The ocean was as wide as any expanse she had seen.','The Pacific spread before her like a great wide sea.'],hint:'Think: calling the ocean directly a breathing expanse — merging ocean, silver, and language'},
+  {type:'metaphor',word:'expedition',q:'Which sentence uses EXPEDITION as a metaphor?',a:'Life is the greatest expedition, each year a new territory to explore.',ch:['Life is the greatest expedition, each year a new territory to explore.','Life is like an expedition through unknown lands.','Living feels as adventurous as a long expedition.','Life is as long and difficult as a great expedition.'],hint:'Think: calling life directly an expedition without using like or as'},
+  {type:'metaphor',word:'inept',q:'Which sentence uses INEPT as a metaphor?',a:'Charbonneau was the expedition\'s one inept nail — loose in the planks, threatening to sink the whole boat.',ch:['Charbonneau was the expedition\'s one inept nail — loose in the planks, threatening to sink the whole boat.','Charbonneau was as inept as a loose nail in a plank.','His clumsiness was like a nail not properly hammered in.','He was inept the way a nail is inept if driven in crooked.'],hint:'Think: calling Charbonneau directly a loose nail — the inept element that endangers everything'},
+  {type:'metaphor',word:'interpret',q:'Which sentence uses INTERPRET as a metaphor?',a:'Sacagawea was the expedition\'s living dictionary, interpreting not just words but entire worlds.',ch:['Sacagawea was the expedition\'s living dictionary, interpreting not just words but entire worlds.','She interpreted like a living dictionary of language.','Her skill was as useful as a dictionary that could speak.','She interpreted the way a dictionary defines words.'],hint:'Think: calling her directly a living dictionary — she IS the tool, not compared to it'},
+  {type:'metaphor',word:'invaluable',q:'Which sentence uses INVALUABLE as a metaphor?',a:'Sacagawea was the expedition\'s north star — invaluable, constant, and always pointing the way forward.',ch:['Sacagawea was the expedition\'s north star — invaluable, constant, and always pointing the way forward.','She was as invaluable as a north star to the expedition.','She guided them like a north star guiding lost travelers.','Her value was as great as a star guiding a ship at night.'],hint:'Think: calling her directly a north star — both invaluable guide and fixed point in one'},
+  {type:'metaphor',word:'linger',q:'Which sentence uses LINGER as a metaphor?',a:'Grief was a lingering fog that never quite cleared from the corners of her memory.',ch:['Grief was a lingering fog that never quite cleared from the corners of her memory.','Grief lingered like fog in the valleys.','Her sadness was as lingering as morning fog.','Grief stayed with her the way fog stays in low places.'],hint:'Think: calling grief directly a lingering fog — the feeling becomes the weather'},
+  {type:'metaphor',word:'retrieve',q:'Which sentence uses RETRIEVE as a metaphor?',a:'With both hands she retrieved the past — every root, every trail, every word of her mother tongue.',ch:['With both hands she retrieved the past — every root, every trail, every word of her mother tongue.','She retrieved her past like digging through old memories.','Her past was retrieved as if it had been buried and found.','She found her past the way a person retrieves lost things.'],hint:'Think: calling the act of finding her identity directly a retrieval — hands reaching into memory'},
+  {type:'metaphor',word:'skirmish',q:'Which sentence uses SKIRMISH as a metaphor?',a:'Their disagreement was a skirmish of glances — no words spoken, but both sides understood the outcome.',ch:['Their disagreement was a skirmish of glances — no words spoken, but both sides understood the outcome.','They argued in glances like combatants in a skirmish.','The disagreement was as brief as a skirmish.','Their eyes met the way soldiers meet in a quick skirmish.'],hint:'Think: calling a silent exchange of looks directly a skirmish fought without words'},
+  {type:'metaphor',word:'supplement',q:'Which sentence uses SUPPLEMENT as a metaphor?',a:'Her presence was a supplement of courage — filling the gaps where the expedition\'s confidence ran thin.',ch:['Her presence was a supplement of courage — filling the gaps where the expedition\'s confidence ran thin.','Her courage supplemented the expedition like a vitamin fills a deficiency.','She was as helpful as a supplement added to a weakened supply.','Her bravery boosted them the way vitamins supplement a weak diet.'],hint:'Think: calling her presence directly a supplement — filling what was missing'},
+  {type:'metaphor',word:'territory',q:'Which sentence uses TERRITORY as a metaphor?',a:'Memory is a vast territory, and Sacagawea\'s was the most valuable map the expedition carried.',ch:['Memory is a vast territory, and Sacagawea\'s was the most valuable map the expedition carried.','Memory is like a territory that one explores over time.','Her memories were as useful as a map of familiar land.','She used her memory the way an explorer uses a map of known territory.'],hint:'Think: calling memory directly a territory that can be explored and mapped'},
+  {type:'metaphor',word:'accompany',q:'Which sentence is a metaphor using ACCOMPANY?',a:'History accompanied every footstep of the expedition, a weight of stories carried on every shoulder.',ch:['History accompanied every footstep of the expedition, a weight of stories carried on every shoulder.','History went with them like a heavy pack.','The expedition carried history as if it were a burden.','History was as heavy as the packs they carried on their backs.'],hint:'Think: calling history directly a companion and weight simultaneously — without using like or as'},
+  {type:'metaphor',word:'beneficial',q:'Which sentence is a metaphor using BENEFICIAL?',a:'Her presence was a beneficial sun — warming every cold moment and helping the expedition grow.',ch:['Her presence was a beneficial sun — warming every cold moment and helping the expedition grow.','Her presence was as beneficial as sunshine.','She helped them like the sun helps plants grow.','Her beneficial effect was as warming as a sunny day.'],hint:'Think: calling her presence directly a sun — not compared to one, but called one'},
+  {type:'metaphor',word:'captive',q:'Which sentence is a metaphor using CAPTIVE?',a:'Taken from her family, Sacagawea was captivity itself — a girl whose whole life was held in another\'s hands.',ch:['Taken from her family, Sacagawea was captivity itself — a girl whose whole life was held in another\'s hands.','Sacagawea was as captive as a bird in a cage.','She was held like a captive unable to escape.','She was captive the way anyone taken against their will is captive.'],hint:'Think: calling her directly captivity itself — making the person the very idea of captivity'},
+  {type:'metaphor',word:'convenient',q:'Which sentence is a metaphor using CONVENIENT?',a:'Charbonneau was a convenient door to Sacagawea\'s knowledge — you passed through him to reach something far greater.',ch:['Charbonneau was a convenient door to Sacagawea\'s knowledge — you passed through him to reach something far greater.','Charbonneau was as convenient as a door leading somewhere useful.','He was convenient like a doorway into a room of knowledge.','He helped them reach Sacagawea\'s knowledge the way a door helps you enter a room.'],hint:'Think: calling Charbonneau directly a door — an opening to something beyond him'},
+  {type:'metaphor',word:'ecstasy',q:'Which sentence is a metaphor using ECSTASY?',a:'Her reunion with her brother was an ecstasy of thunder and rain — everything breaking open at once.',ch:['Her reunion with her brother was an ecstasy of thunder and rain — everything breaking open at once.','The reunion filled her with ecstasy like rain fills a dry riverbed.','She felt ecstasy as if thunder had broken the silence of her years apart.','It was as joyful as a storm finally arriving after a long drought.'],hint:'Think: calling the reunion directly a storm of ecstasy — joy becomes weather without using like or as'},
+  {type:'metaphor',word:'expanse',q:'Which sentence is a metaphor using EXPANSE?',a:'The river was a living expanse of memory — every bend another moment of her childhood returned to her.',ch:['The river was a living expanse of memory — every bend another moment of her childhood returned to her.','The river was as wide as an expanse of forgotten memories.','The river reminded her of the past like an expanse connecting her to what she had lost.','The river spread before her like an expanse of mirror reflecting her childhood.'],hint:'Think: calling the river directly an expanse of memory — place and recollection become one'},
+  {type:'metaphor',word:'expedition',q:'Which sentence is a metaphor using EXPEDITION?',a:'Childhood is an expedition into the self, each year a new river crossed and never re-crossed.',ch:['Childhood is an expedition into the self, each year a new river crossed and never re-crossed.','"Childhood is like an expedition into unknown lands.','Growing up feels as adventurous as an expedition.','Childhood is as long and difficult as a great expedition.'],hint:'Think: calling childhood directly an expedition — the life stage becomes the journey'},
+  {type:'metaphor',word:'inept',q:'Which sentence is a metaphor using INEPT?',a:'Fear made him inept clay, easily shaped into mistakes by the pressure of the moment.',ch:['Fear made him inept clay, easily shaped into mistakes by the pressure of the moment.','Fear made him inept, like clay being shaped wrongly.','He was as inept as clay in the hands of a poor sculptor.','Fear shaped him into mistakes the way a sculptor shapes soft clay.'],hint:'Think: calling him directly inept clay — a material that takes the wrong form under pressure'},
+  {type:'metaphor',word:'interpret',q:'Which sentence is a metaphor using INTERPRET?',a:'A great teacher is an interpreter of the future, reading students today to understand who they will become.',ch:['A great teacher is an interpreter of the future, reading students today to understand who they will become.','A teacher interprets students like a translator interprets languages.','Teaching is as meaningful as interpreting between two languages.','A teacher reads students the way an interpreter reads words.'],hint:'Think: calling a teacher directly an interpreter — making them the function itself'},
+  {type:'metaphor',word:'invaluable',q:'Which sentence is a metaphor using INVALUABLE?',a:'Sacagawea was an invaluable compass — the one fixed point from which all other directions could be found.',ch:['Sacagawea was an invaluable compass — the one fixed point from which all other directions could be found.','She was as invaluable as a compass to explorers.','She guided them like an invaluable compass showing the way.','Her value was as great as a compass to travelers in unknown land.'],hint:'Think: calling her directly a compass — merging her value and her guiding function into one image'},
+  {type:'metaphor',word:'linger',q:'Which sentence is a metaphor using LINGER?',a:'The scent of the Pacific lingered in her dreams — a salty ghost that visited her long after the expedition ended.',ch:['The scent of the Pacific lingered in her dreams — a salty ghost that visited her long after the expedition ended.','The ocean\'s smell lingered like a ghost in her memory.','Its scent lingered as if a ghost had passed through her dreams.','The salty smell was as lingering as a ghost that refuses to leave.'],hint:'Think: calling the lingering scent directly a ghost that visits without like or as'},
+  {type:'metaphor',word:'retrieve',q:'Which sentence is a metaphor using RETRIEVE?',a:'Writing history is an act of retrieval — pulling the past from silence before it sinks beyond reach.',ch:['Writing history is an act of retrieval — pulling the past from silence before it sinks beyond reach.','Writing history is like retrieving the past from a river.','Historians retrieve the past the way a diver retrieves sunken objects.','History writing is as difficult as retrieving things from deep water.'],hint:'Think: calling historical writing directly an act of retrieval — the discipline IS the rescue mission'},
+  {type:'metaphor',word:'skirmish',q:'Which sentence is a metaphor using SKIRMISH?',a:'Each day on the trail was a skirmish with nature, fought in rain and wind and relentless cold.',ch:['Each day on the trail was a skirmish with nature, fought in rain and wind and relentless cold.','Each day was like a small fight against the weather.','The trail felt like a series of skirmishes against natural obstacles.','Nature battled them each day as in a series of skirmishes.'],hint:'Think: calling each day directly a skirmish — not comparing but equating'},
+  {type:'metaphor',word:'supplement',q:'Which sentence is a metaphor using SUPPLEMENT?',a:'Her courage was a daily supplement that kept the expedition\'s spirit from running low.',ch:['Her courage was a daily supplement that kept the expedition\'s spirit from running low.','Her courage supplemented the team like a vitamin boosts health.','She boosted their spirits as if she were a daily dose of courage.','She added to their courage the way vitamins supplement a poor diet.'],hint:'Think: calling her courage directly a supplement — essential and regularly consumed'},
+  {type:'metaphor',word:'territory',q:'Which sentence is a metaphor using TERRITORY?',a:'Language is territory — and Sacagawea commanded more of it than anyone else on the trail.',ch:['Language is territory — and Sacagawea commanded more of it than anyone else on the trail.','Language is like a territory that must be explored.','Speaking many languages is as useful as knowing many territories.','She had command of languages the way a chief commands territory.'],hint:'Think: calling language directly territory — something to occupy, control, and navigate'},
+  {type:'metaphor',word:'accompany',q:'Which sentence is a metaphor using ACCOMPANY?',a:'Doubt was her constant companion — accompanying every step she took through the unknown.',ch:['Doubt was her constant companion — accompanying every step she took through the unknown.','She was accompanied by doubt as a shadow follows a person.','Doubt followed her like a ghost through the wilderness.','Her worries accompanied her the way a dog follows its owner.'],hint:'Think: calling doubt directly her companion — a personified presence that travels alongside her'},
+  {type:'metaphor',word:'beneficial',q:'Which sentence is a metaphor using BENEFICIAL?',a:'Her plant knowledge was a living medicine chest — a beneficial treasury the expedition carried on two legs.',ch:['Her plant knowledge was a living medicine chest — a beneficial treasury the expedition carried on two legs.','Her plant knowledge was beneficial like a well-stocked first-aid kit.','She was as beneficial as a doctor traveling with the group.','Her knowledge helped them the way medicine helps the sick.'],hint:'Think: calling her knowledge directly a treasury or medicine chest — a container of valuable things'},
+  {type:'metaphor',word:'ecstasy',q:'Which sentence is a metaphor using ECSTASY?',a:'The moment the Pacific came into view, the whole company was engulfed in ecstasy — a wave that washed every hardship away.',ch:['The moment the Pacific came into view, the whole company was engulfed in ecstasy — a wave that washed every hardship away.','They felt ecstasy as powerful as an ocean wave crashing over them.','Their joy was like a tidal wave of relief and happiness.','Their ecstasy was as overwhelming as a flood after a long drought.'],hint:'Think: calling their ecstasy directly a wave that engulfs — no like or as'},
+  {type:'metaphor',word:'expanse',q:'Which sentence is a metaphor using EXPANSE?',a:'The Great Plains were a sea of grass — an endless expanse that swallowed the horizon whole.',ch:['The Great Plains were a sea of grass — an endless expanse that swallowed the horizon whole.','The Plains stretched out like an expanse of ocean before them.','The expanse of the Plains seemed as wide as any ocean.','The Plains reminded them of an enormous sea without water.'],hint:'Think: calling the Plains directly a sea — not comparing with like but stating it IS'},
+  {type:'metaphor',word:'captive',q:'Which sentence is a metaphor using CAPTIVE?',a:'Her past was a cage — even when the locks were gone, the captive inside still trembled at open doors.',ch:['Her past was a cage — even when the locks were gone, the captive inside still trembled at open doors.','Her past made her feel as captive as a bird in a cage.','Her history held her like a prisoner in chains.','She was as captive to her past as a caged bird to its bars.'],hint:'Think: calling her past directly a cage — her entire history IS the imprisonment'},
+  {type:'simile',word:'accompany',q:'Complete the simile: Clark\'s dog Seaman accompanied the expedition like ___',a:'a steadfast soldier who never deserts his post no matter the danger',ch:['a steadfast soldier who never deserts his post no matter the danger','a housecat that wanders off whenever something more interesting appears','a stray that follows for a meal and then disappears','a nervous traveler who turns back at the first sign of trouble'],hint:'Think: loyal, unwavering presence through all hardships'},
+  {type:'simile',word:'beneficial',q:'Complete the simile: The supply of dried corn she packed was as beneficial as ___',a:'a spare engine carried on a voyage into uncharted waters',ch:['a spare engine carried on a voyage into uncharted waters','a heavy anchor dragging behind a fast-moving ship','a leaky barrel that spills more than it holds','a fraying rope on the highest part of a sailing mast'],hint:'Think: a backup resource that keeps everything moving when the primary fails'},
+  {type:'simile',word:'ecstasy',q:'Complete the simile: Seeing her brother after years apart, Sacagawea felt ecstasy like ___',a:'sunlight breaking through clouds after a month of cold gray storms',ch:['sunlight breaking through clouds after a month of cold gray storms','a steady drizzle on an already soggy morning','the dull ache of waking too early on a work day','a mild afternoon that is neither cold nor warm'],hint:'Think: sudden, overwhelming brightness and warmth after prolonged darkness'},
+  {type:'simile',word:'linger',q:'Complete the simile: The memory of her homeland lingered like ___',a:'the last note of a song that echoes long after the singer has gone',ch:['the last note of a song that echoes long after the singer has gone','a shout that disappears the moment it leaves your mouth','a quick handshake forgotten before you reach the door','a dream so vivid it fades completely by breakfast'],hint:'Think: something beautiful that persists in the mind well after the moment has passed'},
+  {type:'simile',word:'retrieve',q:'Complete the simile: She dove into the river to retrieve the supplies as fearlessly as ___',a:'a retriever plunges into an icy lake without a moment\'s hesitation',ch:['a retriever plunges into an icy lake without a moment\'s hesitation','a cat that dips one cautious paw before backing away from the edge','someone who stands on the bank debating whether the water is too cold','a timid swimmer who wades in slowly up to the knees'],hint:'Think: instinctive, immediate action with no fear of cold or danger']
+];
+
+// ── QUIZ STATE ────────────────────────────────────────────────────────────────
+var pool=[],idx=0,score=0,total=0,streak=0,answered=false;
+
+function shuffle(a){var b=a.slice();for(var i=b.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=b[i];b[i]=b[j];b[j]=t;}return b;}
+
+function startQuiz(){
+  pool=shuffle(QUESTIONS).slice(0,20);
+  idx=0;score=0;total=0;streak=0;answered=false;
+  document.getElementById('result-section').style.display='none';
+  document.getElementById('quiz-section').style.display='';
+  renderQuestion();
+}
+
+function renderQuestion(){
+  var q=pool[idx];
+  document.getElementById('progress-bar').style.width=(idx/20*100)+'%';
+  document.getElementById('score-display').textContent='Score: '+score+'/'+total;
+  document.getElementById('streak-display').textContent='Streak: '+streak+' 🔥';
+  var badge=document.getElementById('q-badge');
+  var ts=TYPE_STYLES[q.type];
+  badge.textContent=ts.label;badge.style.color=ts.color;badge.style.background=ts.bg;
+  document.getElementById('q-word').textContent=q.word.toUpperCase();
+  document.getElementById('q-text').textContent=q.q;
+  document.getElementById('hint-text').style.display='none';
+  document.getElementById('hint-text').textContent=q.hint;
+  document.getElementById('hint-btn').style.display='inline-block';
+  document.getElementById('feedback-area').textContent='';
+  document.getElementById('feedback-area').className='';
+  document.getElementById('next-btn').style.display='none';
+  answered=false;
+  var choices=document.getElementById('choices');
+  clearEl(choices);
+  shuffle(q.ch).forEach(function(c){
+    var btn=mk('button','choice-btn',c);
+    btn.addEventListener('click',function(){handleAnswer(c,q,btn);});
+    choices.appendChild(btn);
+  });
+}
+
+function handleAnswer(chosen,q,btn){
+  if(answered)return;
+  answered=true;total++;
+  document.getElementById('choices').querySelectorAll('.choice-btn').forEach(function(b){
+    b.disabled=true;
+    if(b.textContent===q.a)b.classList.add('correct');
+  });
+  var fb=document.getElementById('feedback-area');
+  if(chosen===q.a){
+    score++;streak++;btn.classList.add('correct');
+    fb.textContent='Correct! ⭐';fb.className='correct';
+    burst(btn,true);if(streak>=3)confetti();
+  }else{
+    streak=0;btn.classList.add('wrong');
+    fb.textContent='Not quite — the answer is: '+q.a;fb.className='wrong';
+    burst(btn,false);
+  }
+  document.getElementById('score-display').textContent='Score: '+score+'/'+total;
+  document.getElementById('streak-display').textContent='Streak: '+streak+' 🔥';
+  document.getElementById('next-btn').style.display='inline-block';
+}
+
+function nextQuestion(){idx++;if(idx>=20){showResult();return;}renderQuestion();}
+
+function showResult(){
+  document.getElementById('quiz-section').style.display='none';
+  var rs=document.getElementById('result-section');rs.style.display='block';
+  document.getElementById('final-score').textContent=score+'/20';
+  var pct=score/20,msg='';
+  if(pct>=.9)msg='Outstanding! Sacagawea would be proud! 🌟';
+  else if(pct>=.7)msg='Great work! Keep exploring these words! 🧭';
+  else if(pct>=.5)msg='Good effort! Review and try again! 📚';
+  else msg='Keep going — every great expedition starts somewhere! 💪';
+  document.getElementById('result-msg').textContent=msg;
+}
+
+function showHint(){
+  document.getElementById('hint-text').textContent=pool[idx].hint;
+  document.getElementById('hint-text').style.display='inline';
+  document.getElementById('hint-btn').style.display='none';
+}
+
+var fcWords=[],fcIdx=0;
+function initFlashcards(){fcWords=WORDS.slice();fcIdx=0;renderCard();}
+function renderCard(){
+  var w=fcWords[fcIdx];
+  document.getElementById('fc-word').textContent=w.word;
+  document.getElementById('fc-pos').textContent=w.pos;
+  document.getElementById('fc-def').textContent=w.def;
+  document.getElementById('fc-ex').textContent=w.ex;
+  document.getElementById('fc-counter').textContent=(fcIdx+1)+' / '+fcWords.length;
+  document.getElementById('fc-card').classList.remove('flipped');
+}
+function fcFlip(){document.getElementById('fc-card').classList.toggle('flipped');}
+function fcNext(){fcIdx=(fcIdx+1)%fcWords.length;renderCard();}
+function fcPrev(){fcIdx=(fcIdx-1+fcWords.length)%fcWords.length;renderCard();}
+function fcShuffle(){fcWords=shuffle(fcWords);fcIdx=0;renderCard();}
+
+function showMode(mode){
+  var qs=document.getElementById('quiz-section');
+  var fs=document.getElementById('flashcard-section');
+  var rs=document.getElementById('result-section');
+  var tq=document.getElementById('tab-quiz');
+  var tf=document.getElementById('tab-flash');
+  if(mode==='quiz'){
+    fs.style.display='none';rs.style.display='none';qs.style.display='';
+    tq.classList.add('active');tf.classList.remove('active');
+  }else{
+    qs.style.display='none';rs.style.display='none';fs.style.display='';
+    tf.classList.add('active');tq.classList.remove('active');
+    initFlashcards();
+  }
+}
+
+function clearEl(el){while(el.firstChild)el.removeChild(el.firstChild);}
+function mk(tag,cls,txt){var el=document.createElement(tag);if(cls)el.className=cls;if(txt!==undefined)el.textContent=txt;return el;}
+
+function burst(el,correct){
+  var rect=el.getBoundingClientRect();
+  var cx=rect.left+rect.width/2,cy=rect.top+rect.height/2;
+  var colors=correct?['#34d399','#047857','#6ee7b7','#a7f3d0']:['#ef4444','#fca5a5','#dc2626'];
+  for(var i=0;i<10;i++){
+    var p=document.createElement('div');p.className='particle';
+    var angle=Math.random()*Math.PI*2,dist=40+Math.random()*50;
+    p.style.cssText='left:'+cx+'px;top:'+cy+'px;width:8px;height:8px;background:'+colors[Math.floor(Math.random()*colors.length)]+';--dx:'+Math.cos(angle)*dist+'px;--dy:'+Math.sin(angle)*dist+'px;';
+    document.body.appendChild(p);
+    setTimeout(function(pp){document.body.removeChild(pp);},800,p);
+  }
+}
+function confetti(){
+  var colors=['#34d399','#047857','#6ee7b7','#f472b6','#a78bfa','#fbbf24'];
+  for(var i=0;i<22;i++){
+    var c=document.createElement('div');c.className='confetti-piece';
+    var x=Math.random()*window.innerWidth,size=6+Math.random()*8;
+    var dx=(Math.random()-.5)*120,dy=-(80+Math.random()*120);
+    c.style.cssText='left:'+x+'px;top:'+(-size)+'px;width:'+size+'px;height:'+size+'px;background:'+colors[Math.floor(Math.random()*colors.length)]+';border-radius:'+Math.random()*4+'px;--dx:'+dx+'px;--dy:'+dy+'px;';
+    document.body.appendChild(c);
+    setTimeout(function(cc){document.body.removeChild(cc);},1000,c);
+  }
+}
+
+startQuiz();
+</script>
+</body>
+</html>

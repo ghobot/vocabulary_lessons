@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lesson 6 – The Story of Silk | Wordly Wise Quiz</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',sans-serif;background:#0c1a20;color:#e2e8f0;min-height:100vh;overflow-x:hidden}
+  canvas{position:fixed;top:0;left:0;z-index:0;pointer-events:none}
+  #app{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:16px}
+  header{text-align:center;padding:24px 0 12px}
+  header h1{font-size:2rem;font-weight:800;background:linear-gradient(135deg,#22d3ee,#0e7490);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  header p{color:#94a3b8;margin-top:6px;font-size:.95rem}
+  #home-link{display:inline-flex;align-items:center;gap:6px;color:#22d3ee;text-decoration:none;font-size:.9rem;margin-bottom:12px;opacity:.8;transition:opacity .2s}
+  #home-link:hover{opacity:1}
+  nav.mode-tabs{display:flex;gap:8px;justify-content:center;margin:16px 0}
+  nav.mode-tabs button{padding:8px 22px;border-radius:999px;border:2px solid #0e7490;background:transparent;color:#22d3ee;font-size:.9rem;cursor:pointer;transition:all .2s}
+  nav.mode-tabs button.active{background:#0e7490;color:#fff}
+  /* FLASHCARD */
+  #flashcard-section{display:none}
+  .fc-controls{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+  .fc-controls button{padding:8px 18px;border-radius:8px;border:none;background:#164e63;color:#22d3ee;cursor:pointer;font-size:.9rem;transition:background .2s}
+  .fc-controls button:hover{background:#0e7490}
+  #fc-counter{color:#94a3b8;font-size:.9rem}
+  .fc-scene{width:100%;max-width:520px;height:230px;margin:0 auto 18px;perspective:1000px;cursor:pointer}
+  .fc-card{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.4,0,.2,1)}
+  .fc-card.flipped{transform:rotateY(180deg)}
+  .fc-face{position:absolute;inset:0;border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+  .fc-front{background:linear-gradient(135deg,#164e63,#0e7490);border:2px solid #22d3ee40}
+  .fc-back{background:linear-gradient(135deg,#0c1a20,#164e63);border:2px solid #22d3ee40;transform:rotateY(180deg)}
+  .fc-word{font-size:2rem;font-weight:800;color:#22d3ee}
+  .fc-pos{font-size:.85rem;color:#94a3b8;margin-top:4px}
+  .fc-hint{font-size:.8rem;color:#64748b;margin-top:8px}
+  .fc-def{font-size:.95rem;color:#e2e8f0;text-align:center;line-height:1.6}
+  .fc-ex{font-size:.82rem;color:#94a3b8;margin-top:10px;font-style:italic;text-align:center}
+  /* QUIZ */
+  #quiz-section{}
+  .quiz-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+  #progress-bar-wrap{width:100%;height:8px;background:#1e3a4a;border-radius:999px;margin-bottom:16px;overflow:hidden}
+  #progress-bar{height:100%;background:linear-gradient(90deg,#0e7490,#22d3ee);border-radius:999px;transition:width .4s}
+  #score-display{font-size:.9rem;color:#94a3b8}
+  #streak-display{font-size:.9rem;color:#22d3ee;font-weight:600}
+  .question-card{background:linear-gradient(135deg,#0f2d3a,#164e63);border:1px solid #0e749060;border-radius:18px;padding:28px;margin-bottom:16px}
+  .q-type-badge{display:inline-block;padding:3px 12px;border-radius:999px;font-size:.75rem;font-weight:700;letter-spacing:.05em;margin-bottom:14px}
+  .q-word{font-size:1.5rem;font-weight:700;color:#22d3ee;margin-bottom:8px}
+  .q-text{font-size:1rem;color:#cbd5e1;margin-bottom:20px;line-height:1.6}
+  .choices{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media(max-width:520px){.choices{grid-template-columns:1fr}}
+  .choice-btn{padding:12px 16px;border-radius:12px;border:2px solid #1e3a4a;background:#0c1a20;color:#e2e8f0;font-size:.95rem;cursor:pointer;text-align:left;transition:all .2s;line-height:1.4}
+  .choice-btn:hover:not(:disabled){border-color:#22d3ee;background:#0f2d3a}
+  .choice-btn.correct{border-color:#10b981;background:#064e3b;color:#6ee7b7}
+  .choice-btn.wrong{border-color:#ef4444;background:#450a0a;color:#fca5a5}
+  .choice-btn:disabled{cursor:default}
+  #hint-area{min-height:22px;margin-bottom:10px}
+  #hint-text{font-size:.85rem;color:#fbbf24;font-style:italic;display:none}
+  #hint-btn{padding:5px 14px;border-radius:8px;border:1px solid #fbbf2460;background:transparent;color:#fbbf24;font-size:.82rem;cursor:pointer}
+  #feedback-area{min-height:28px;margin-top:10px;font-size:.95rem;font-weight:600}
+  #feedback-area.correct{color:#10b981}
+  #feedback-area.wrong{color:#ef4444}
+  #next-btn{display:none;margin-top:14px;padding:10px 28px;border-radius:12px;border:none;background:linear-gradient(135deg,#0e7490,#22d3ee);color:#fff;font-size:1rem;font-weight:700;cursor:pointer;transition:opacity .2s}
+  #next-btn:hover{opacity:.85}
+  /* RESULTS */
+  #result-section{display:none;text-align:center;padding:32px 16px}
+  #result-section h2{font-size:2rem;font-weight:800;color:#22d3ee;margin-bottom:8px}
+  #result-section p{color:#94a3b8;margin-bottom:20px}
+  #final-score{font-size:3rem;font-weight:900;color:#22d3ee;margin:16px 0}
+  #result-section button{padding:12px 32px;border-radius:12px;border:none;background:linear-gradient(135deg,#0e7490,#22d3ee);color:#fff;font-size:1rem;font-weight:700;cursor:pointer}
+  /* particles */
+  .particle{position:fixed;pointer-events:none;border-radius:50%;z-index:999;animation:particleFly .8s ease-out forwards}
+  @keyframes particleFly{to{transform:translate(var(--dx),var(--dy)) scale(0);opacity:0}}
+  .confetti-piece{position:fixed;pointer-events:none;z-index:999;animation:confettiFall 1s ease-in forwards}
+  @keyframes confettiFall{to{transform:translate(var(--dx),calc(var(--dy) + 80px)) rotate(720deg);opacity:0}}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<div id="app">
+  <a id="home-link" href="../index.html">&#8592; All Lessons</a>
+  <header>
+    <h1>&#x1F41B; Lesson 6 – The Story of Silk</h1>
+    <p>apparel &bull; appreciate &bull; continuous &bull; dissolve &bull; domesticate &bull; emerge &bull; fiber &bull; function &bull; hatch &bull; inhibit &bull; minute &bull; motion &bull; sheathe &bull; shed &bull; transfer</p>
+  </header>
+  <nav class="mode-tabs">
+    <button id="tab-quiz" class="active" onclick="showMode('quiz')">Quiz Mode</button>
+    <button id="tab-flash" onclick="showMode('flash')">Flashcards</button>
+  </nav>
+
+  <!-- FLASHCARD SECTION -->
+  <div id="flashcard-section">
+    <div class="fc-controls">
+      <button onclick="fcPrev()">&#8592; Prev</button>
+      <span id="fc-counter">1 / 15</span>
+      <button onclick="fcNext()">Next &#8594;</button>
+      <button onclick="fcShuffle()">&#x1F500; Shuffle</button>
+    </div>
+    <div class="fc-scene" onclick="fcFlip()">
+      <div class="fc-card" id="fc-card">
+        <div class="fc-face fc-front">
+          <div class="fc-word" id="fc-word"></div>
+          <div class="fc-pos" id="fc-pos"></div>
+          <div class="fc-hint">Click to reveal definition</div>
+        </div>
+        <div class="fc-face fc-back">
+          <div class="fc-def" id="fc-def"></div>
+          <div class="fc-ex" id="fc-ex"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUIZ SECTION -->
+  <div id="quiz-section">
+    <div class="quiz-header">
+      <span id="score-display">Score: 0/0</span>
+      <span id="streak-display">Streak: 0 &#x1F525;</span>
+    </div>
+    <div id="progress-bar-wrap"><div id="progress-bar" style="width:0%"></div></div>
+    <div class="question-card" id="question-card">
+      <div id="q-badge" class="q-type-badge"></div>
+      <div class="q-word" id="q-word"></div>
+      <div class="q-text" id="q-text"></div>
+      <div id="hint-area">
+        <button id="hint-btn" onclick="showHint()">&#x1F4A1; Hint</button>
+        <span id="hint-text"></span>
+      </div>
+      <div class="choices" id="choices"></div>
+      <div id="feedback-area"></div>
+      <button id="next-btn" onclick="nextQuestion()">Next &#8594;</button>
+    </div>
+  </div>
+
+  <!-- RESULTS SECTION -->
+  <div id="result-section" id="result-section">
+    <h2>Round Complete!</h2>
+    <p>Here&#39;s how you did on this round of 20 questions.</p>
+    <div id="final-score"></div>
+    <p id="result-msg"></p>
+    <button onclick="startQuiz()">Play Again</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  var c=document.getElementById('bg'),ctx=c.getContext('2d'),W,H,stars=[];
+  function resize(){W=c.width=window.innerWidth;H=c.height=window.innerHeight;}
+  resize();window.addEventListener('resize',resize);
+  for(var i=0;i<180;i++)stars.push({x:Math.random()*9999,y:Math.random()*9999,r:Math.random()*1.4+.3,s:Math.random()*.4+.1});
+  function drawBg(){
+    ctx.clearRect(0,0,W,H);
+    var g=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,Math.max(W,H)*.75);
+    g.addColorStop(0,'#0d3040');g.addColorStop(.5,'#071820');g.addColorStop(1,'#030c10');
+    ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    stars.forEach(function(s){
+      s.x+=s.s;if(s.x>W)s.x=0;
+      ctx.beginPath();ctx.arc(s.x,s.y%H,s.r,0,Math.PI*2);
+      ctx.fillStyle='rgba(34,211,238,0.7)';ctx.fill();
+    });
+    requestAnimationFrame(drawBg);
+  }
+  drawBg();
+})();
+
+var WORDS=[
+  {word:'apparel',pos:'n.',def:'The things that are worn by a person; clothing.',ex:'"Partygoers dressed in their finest apparel for New Year\'s Eve."'},
+  {word:'appreciate',pos:'v.',def:'1. To see the worth or quality of. 2. To increase in value.',ex:'"I appreciate handmade gifts my friends made for me."'},
+  {word:'continuous',pos:'adj.',def:'Going on without stopping.',ex:'"The continuous flow of traffic makes it impossible to cross the street here."'},
+  {word:'dissolve',pos:'v.',def:'1. To make or become liquid. 2. To bring or come to an end.',ex:'"Sugar dissolves easily in warm water."'},
+  {word:'domesticate',pos:'v.',def:'To tame; to bring plants or animals under human control.',ex:'"Some people claim that they can domesticate skunks and that they make good pets."'},
+  {word:'emerge',pos:'v.',def:'1. To come into view; to appear. 2. To become known.',ex:'"A large brown bear emerged from the cave."'},
+  {word:'fiber',pos:'n.',def:'1. A thin, threadlike part of animal hair or plant tissue. 2. Body cells that form muscles and nerves. 3. A food substance that provides bulk but is not digested.',ex:'"Cotton, wool, and rayon fibers can all be spun into yarn to make cloth."'},
+  {word:'function',pos:'v./n.',def:'(v.) To serve a purpose. (n.) The special purpose something is used for; an important ceremony or gathering.',ex:'"One function of a dictionary is to define words."'},
+  {word:'hatch',pos:'v./n.',def:'(v.) 1. To come or bring forth from an egg. 2. To think up. (n.) A small opening with a door or cover.',ex:'"A little yellow chick hatched last night."'},
+  {word:'inhibit',pos:'v.',def:'To prevent from doing something or to prevent from happening.',ex:'"Oil inhibits the formation of rust on metal."'},
+  {word:'minute',pos:'adj.',def:'Very small; tiny.',ex:'"A minute speck of dust in one\'s eye can be very annoying."'},
+  {word:'motion',pos:'n./v.',def:'(n.) 1. Movement. 2. A suggestion on which members at a meeting must vote. (v.) To signal.',ex:'"The motion of the train almost put me to sleep."'},
+  {word:'sheathe',pos:'v.',def:'To cover with something that protects.',ex:'"Metal workers will sheathe the ship\'s bottom with copper plates."'},
+  {word:'shed',pos:'v.',def:'1. To lose; to give up. 2. To cause to flow. 3. To throw off water without letting it soak through. 4. To send out or give off.',ex:'"Cats shed hair in the summer."'},
+  {word:'transfer',pos:'v./n.',def:'(v.) To move, carry, send, or change from one person or place to another. (n.) The act of transferring; a ticket used for transferring between buses or trains.',ex:'"Transfer your notes to a fresh notebook."'}
+];
+
+var TYPE_STYLES={
+  synonym:{label:'SYNONYM',color:'#22d3ee',bg:'rgba(14,116,144,.35)'},
+  antonym:{label:'ANTONYM',color:'#f472b6',bg:'rgba(157,23,77,.35)'},
+  analogy:{label:'ANALOGY',color:'#a78bfa',bg:'rgba(109,40,217,.35)'},
+  simile:{label:'SIMILE',color:'#fbbf24',bg:'rgba(161,98,7,.35)'},
+  metaphor:{label:'METAPHOR',color:'#34d399',bg:'rgba(6,78,59,.35)'}
+};
+
+var QUESTIONS=[
+  // ── SYNONYMS (50) ──────────────────────────────────────────────────────────
+  {type:'synonym',word:'apparel',q:'Which word is closest in meaning to APPAREL?',a:'clothing',ch:['clothing','shelter','footwear','furniture'],hint:'Think: what you put on your body each morning'},
+  {type:'synonym',word:'apparel',q:'Which word best replaces APPAREL in a sentence?',a:'garment',ch:['garment','vehicle','tool','shelter'],hint:'Think: a single piece of what you wear'},
+  {type:'synonym',word:'apparel',q:'Which word is a synonym for APPAREL?',a:'attire',ch:['attire','equipment','supply','goods'],hint:'Think: the word used in fashion for clothing'},
+  {type:'synonym',word:'appreciate',q:'Which word is closest in meaning to APPRECIATE?',a:'value',ch:['value','ignore','waste','forget'],hint:'Think: to recognize how good something is'},
+  {type:'synonym',word:'appreciate',q:'Which word best replaces APPRECIATE?',a:'admire',ch:['admire','reject','dismiss','scorn'],hint:'Think: to look at something with respect'},
+  {type:'synonym',word:'appreciate',q:'Which word is a synonym for APPRECIATE?',a:'recognize',ch:['recognize','overlook','underestimate','belittle'],hint:'Think: to see something for what it is worth'},
+  {type:'synonym',word:'continuous',q:'Which word is closest in meaning to CONTINUOUS?',a:'unending',ch:['unending','brief','occasional','broken'],hint:'Think: going on and on without stopping'},
+  {type:'synonym',word:'continuous',q:'Which word best replaces CONTINUOUS?',a:'nonstop',ch:['nonstop','intermittent','sporadic','irregular'],hint:'Think: without any pause or break'},
+  {type:'synonym',word:'continuous',q:'Which word is a synonym for CONTINUOUS?',a:'perpetual',ch:['perpetual','limited','temporary','brief'],hint:'Think: lasting forever without end'},
+  {type:'synonym',word:'continuous',q:'Which word means the same as CONTINUOUS?',a:'ceaseless',ch:['ceaseless','occasional','rare','infrequent'],hint:'Think: never ceasing or stopping'},
+  {type:'synonym',word:'dissolve',q:'Which word is closest in meaning to DISSOLVE?',a:'melt',ch:['melt','freeze','harden','solidify'],hint:'Think: what sugar does in warm water'},
+  {type:'synonym',word:'dissolve',q:'Which word best replaces DISSOLVE?',a:'liquefy',ch:['liquefy','solidify','crystallize','compact'],hint:'Think: to turn into liquid form'},
+  {type:'synonym',word:'dissolve',q:'Which word is a synonym for DISSOLVE?',a:'disintegrate',ch:['disintegrate','form','build','create'],hint:'Think: to break apart completely'},
+  {type:'synonym',word:'domesticate',q:'Which word is closest in meaning to DOMESTICATE?',a:'tame',ch:['tame','release','frighten','abandon'],hint:'Think: what silk farmers did to silkworms over centuries'},
+  {type:'synonym',word:'domesticate',q:'Which word best replaces DOMESTICATE?',a:'train',ch:['train','ignore','release','scare'],hint:'Think: to teach an animal to respond to humans'},
+  {type:'synonym',word:'domesticate',q:'Which word is a synonym for DOMESTICATE?',a:'cultivate',ch:['cultivate','neglect','abandon','release'],hint:'Think: to develop under careful human care'},
+  {type:'synonym',word:'emerge',q:'Which word is closest in meaning to EMERGE?',a:'appear',ch:['appear','vanish','hide','disappear'],hint:'Think: to come into view from somewhere'},
+  {type:'synonym',word:'emerge',q:'Which word best replaces EMERGE?',a:'surface',ch:['surface','sink','hide','conceal'],hint:'Think: to come up from below or within'},
+  {type:'synonym',word:'emerge',q:'Which word is a synonym for EMERGE?',a:'materialize',ch:['materialize','vanish','fade','disappear'],hint:'Think: to suddenly come into existence or view'},
+  {type:'synonym',word:'emerge',q:'Which word means the same as EMERGE?',a:'arise',ch:['arise','subside','decline','retreat'],hint:'Think: to come up or become apparent'},
+  {type:'synonym',word:'fiber',q:'Which word is closest in meaning to FIBER?',a:'strand',ch:['strand','block','sheet','layer'],hint:'Think: a single thin thread-like piece'},
+  {type:'synonym',word:'fiber',q:'Which word best replaces FIBER?',a:'thread',ch:['thread','rope','plank','slab'],hint:'Think: a very thin piece used in weaving cloth'},
+  {type:'synonym',word:'fiber',q:'Which word is a synonym for FIBER?',a:'filament',ch:['filament','mass','block','chunk'],hint:'Think: an extremely fine thread of material'},
+  {type:'synonym',word:'function',q:'Which word is closest in meaning to FUNCTION (n.)?',a:'purpose',ch:['purpose','appearance','color','size'],hint:'Think: the reason something exists or is used'},
+  {type:'synonym',word:'function',q:'Which word best replaces FUNCTION (v.)?',a:'operate',ch:['operate','decorate','break','rest'],hint:'Think: to work or perform as intended'},
+  {type:'synonym',word:'function',q:'Which word is a synonym for FUNCTION meaning a ceremony?',a:'gathering',ch:['gathering','argument','task','lesson'],hint:'Think: a formal event or celebration'},
+  {type:'synonym',word:'hatch',q:'Which word is closest in meaning to HATCH meaning to think up?',a:'devise',ch:['devise','forget','reject','dismiss'],hint:'Think: to carefully plan or create an idea'},
+  {type:'synonym',word:'hatch',q:'Which word best replaces HATCH meaning to create a scheme?',a:'concoct',ch:['concoct','abandon','refuse','cancel'],hint:'Think: to come up with a creative plan'},
+  {type:'synonym',word:'hatch',q:'Which word is a synonym for HATCH meaning to keep eggs warm?',a:'incubate',ch:['incubate','freeze','destroy','release'],hint:'Think: to warm eggs so they can develop'},
+  {type:'synonym',word:'inhibit',q:'Which word is closest in meaning to INHIBIT?',a:'prevent',ch:['prevent','encourage','promote','allow'],hint:'Think: to stop something from happening'},
+  {type:'synonym',word:'inhibit',q:'Which word best replaces INHIBIT?',a:'restrain',ch:['restrain','release','allow','encourage'],hint:'Think: to hold something back from acting freely'},
+  {type:'synonym',word:'inhibit',q:'Which word is a synonym for INHIBIT?',a:'hinder',ch:['hinder','help','support','assist'],hint:'Think: to get in the way of progress'},
+  {type:'synonym',word:'inhibit',q:'Which word means the same as INHIBIT?',a:'suppress',ch:['suppress','express','release','free'],hint:'Think: to push something down and hold it back'},
+  {type:'synonym',word:'minute',q:'Which word is closest in meaning to MINUTE (adj.)?',a:'tiny',ch:['tiny','enormous','vast','massive'],hint:'Think: extremely small in size'},
+  {type:'synonym',word:'minute',q:'Which word best replaces MINUTE (adj.)?',a:'microscopic',ch:['microscopic','gigantic','colossal','towering'],hint:'Think: so small you may need a microscope to see it'},
+  {type:'synonym',word:'minute',q:'Which word is a synonym for MINUTE meaning very small?',a:'minuscule',ch:['minuscule','tremendous','immense','grand'],hint:'Think: the tiniest possible size'},
+  {type:'synonym',word:'motion',q:'Which word is closest in meaning to MOTION?',a:'movement',ch:['movement','stillness','rest','halt'],hint:'Think: the act of moving from place to place'},
+  {type:'synonym',word:'motion',q:'Which word best replaces MOTION meaning a hand signal?',a:'gesture',ch:['gesture','stillness','pause','freeze'],hint:'Think: a movement of the hand to communicate'},
+  {type:'synonym',word:'motion',q:'Which word is a synonym for MOTION meaning a proposal at a meeting?',a:'proposal',ch:['proposal','rejection','veto','denial'],hint:'Think: a suggestion put to a vote'},
+  {type:'synonym',word:'sheathe',q:'Which word is closest in meaning to SHEATHE?',a:'cover',ch:['cover','expose','reveal','uncover'],hint:'Think: to put something over it for protection'},
+  {type:'synonym',word:'sheathe',q:'Which word best replaces SHEATHE?',a:'encase',ch:['encase','uncover','expose','bare'],hint:'Think: to surround completely with a protective layer'},
+  {type:'synonym',word:'sheathe',q:'Which word is a synonym for SHEATHE?',a:'wrap',ch:['wrap','strip','peel','remove'],hint:'Think: to wind protective material around something'},
+  {type:'synonym',word:'shed',q:'Which word is closest in meaning to SHED meaning to lose?',a:'discard',ch:['discard','collect','gather','keep'],hint:'Think: to let something fall away or give it up'},
+  {type:'synonym',word:'shed',q:'Which word best replaces SHED meaning to give off light?',a:'emit',ch:['emit','absorb','block','hold'],hint:'Think: to send out light or energy'},
+  {type:'synonym',word:'shed',q:'Which word is a synonym for SHED meaning to cast off a skin?',a:'molt',ch:['molt','grow','add','keep'],hint:'Think: what snakes and birds do with their outer covering'},
+  {type:'synonym',word:'transfer',q:'Which word is closest in meaning to TRANSFER?',a:'move',ch:['move','stay','remain','keep'],hint:'Think: to send from one place to another'},
+  {type:'synonym',word:'transfer',q:'Which word best replaces TRANSFER?',a:'relocate',ch:['relocate','remain','settle','stay'],hint:'Think: to shift to a new location'},
+  {type:'synonym',word:'transfer',q:'Which word is a synonym for TRANSFER?',a:'transport',ch:['transport','withhold','keep','hold'],hint:'Think: to carry from one place to another'},
+  {type:'synonym',word:'transfer',q:'Which word means the same as TRANSFER?',a:'convey',ch:['convey','retain','keep','withhold'],hint:'Think: to carry or communicate something across'},
+  {type:'synonym',word:'fiber',q:'Which word means the same as FIBER in the context of body tissue?',a:'tissue',ch:['tissue','bone','organ','fluid'],hint:'Think: what muscles are made of at the cellular level'},
+  {type:'synonym',word:'function',q:'Which word is a synonym for FUNCTION meaning role or duty?',a:'role',ch:['role','shape','color','texture'],hint:'Think: the job something is meant to perform'},
+
+  // ── ANTONYMS (35) ──────────────────────────────────────────────────────────
+  {type:'antonym',word:'continuous',q:'Which word is OPPOSITE in meaning to CONTINUOUS?',a:'intermittent',ch:['intermittent','steady','flowing','unbroken'],hint:'Think: something that stops and starts again'},
+  {type:'antonym',word:'inhibit',q:'Which word is OPPOSITE in meaning to INHIBIT?',a:'encourage',ch:['encourage','prevent','block','restrain'],hint:'Think: to push something forward instead of holding it back'},
+  {type:'antonym',word:'minute',q:'Which word is OPPOSITE in meaning to MINUTE (very small)?',a:'enormous',ch:['enormous','tiny','slight','faint'],hint:'Think: the biggest size possible'},
+  {type:'antonym',word:'emerge',q:'Which word is OPPOSITE in meaning to EMERGE?',a:'disappear',ch:['disappear','appear','surface','arise'],hint:'Think: to go completely out of sight'},
+  {type:'antonym',word:'dissolve',q:'Which word is OPPOSITE in meaning to DISSOLVE?',a:'solidify',ch:['solidify','melt','liquefy','disperse'],hint:'Think: to become firm and hard'},
+  {type:'antonym',word:'motion',q:'Which word is OPPOSITE in meaning to MOTION?',a:'stillness',ch:['stillness','movement','gesture','action'],hint:'Think: total lack of movement'},
+  {type:'antonym',word:'sheathe',q:'Which word is OPPOSITE in meaning to SHEATHE?',a:'expose',ch:['expose','cover','wrap','protect'],hint:'Think: to leave something unprotected and visible'},
+  {type:'antonym',word:'shed',q:'Which word is OPPOSITE in meaning to SHED meaning to lose or cast off?',a:'retain',ch:['retain','drop','lose','discard'],hint:'Think: to hold onto something instead of losing it'},
+  {type:'antonym',word:'transfer',q:'Which word is OPPOSITE in meaning to TRANSFER?',a:'keep',ch:['keep','move','send','carry'],hint:'Think: to leave something right where it is'},
+  {type:'antonym',word:'appreciate',q:'Which word is OPPOSITE in meaning to APPRECIATE meaning to see worth in?',a:'scorn',ch:['scorn','value','admire','recognize'],hint:'Think: to look down on something'},
+  {type:'antonym',word:'domesticate',q:'Which word is OPPOSITE in meaning to DOMESTICATED?',a:'wild',ch:['wild','trained','tame','cultivated'],hint:'Think: untamed and living freely in nature'},
+  {type:'antonym',word:'hatch',q:'Which word is OPPOSITE in meaning to HATCH meaning to think up a plan?',a:'abandon',ch:['abandon','devise','create','form'],hint:'Think: to give up on a plan entirely'},
+  {type:'antonym',word:'continuous',q:'Which word is OPPOSITE in meaning to CONTINUOUS?',a:'sporadic',ch:['sporadic','endless','constant','ceaseless'],hint:'Think: happening only occasionally'},
+  {type:'antonym',word:'inhibit',q:'Which word is OPPOSITE in meaning to INHIBIT?',a:'promote',ch:['promote','block','prevent','suppress'],hint:'Think: to help something grow or develop'},
+  {type:'antonym',word:'minute',q:'Which word is OPPOSITE in meaning to MINUTE (tiny)?',a:'vast',ch:['vast','slight','delicate','faint'],hint:'Think: immense in size or scope'},
+  {type:'antonym',word:'emerge',q:'Which word is OPPOSITE in meaning to EMERGE?',a:'vanish',ch:['vanish','surface','arise','materialize'],hint:'Think: to go away completely from view'},
+  {type:'antonym',word:'dissolve',q:'Which word is OPPOSITE in meaning to DISSOLVE?',a:'harden',ch:['harden','liquefy','melt','disperse'],hint:'Think: to become solid and firm'},
+  {type:'antonym',word:'motion',q:'Which word is OPPOSITE in meaning to MOTION meaning movement?',a:'rest',ch:['rest','action','gesture','signal'],hint:'Think: a state of not moving at all'},
+  {type:'antonym',word:'sheathe',q:'Which word is OPPOSITE in meaning to SHEATHE?',a:'uncover',ch:['uncover','protect','encase','wrap'],hint:'Think: to take away the protective covering'},
+  {type:'antonym',word:'shed',q:'Which word is OPPOSITE in meaning to SHED meaning to accumulate?',a:'gather',ch:['gather','lose','emit','drop'],hint:'Think: to collect and build up instead'},
+  {type:'antonym',word:'transfer',q:'Which word is OPPOSITE in meaning to TRANSFER?',a:'withhold',ch:['withhold','relocate','carry','send'],hint:'Think: to not give or move something to another place'},
+  {type:'antonym',word:'appreciate',q:'Which word is OPPOSITE in meaning to APPRECIATE meaning to increase in value?',a:'depreciate',ch:['depreciate','rise','grow','improve'],hint:'Think: to drop in value over time'},
+  {type:'antonym',word:'hatch',q:'Which word is OPPOSITE in meaning to HATCH meaning to come out of an egg?',a:'encase',ch:['encase','emerge','appear','surface'],hint:'Think: to seal something tightly inside a shell'},
+  {type:'antonym',word:'function',q:'Which word is OPPOSITE in meaning to FUNCTION meaning to work properly?',a:'malfunction',ch:['malfunction','operate','serve','run'],hint:'Think: to break down or fail to work'},
+  {type:'antonym',word:'continuous',q:'Which word is OPPOSITE in meaning to CONTINUOUS?',a:'occasional',ch:['occasional','persistent','steady','unbroken'],hint:'Think: happening only now and then'},
+  {type:'antonym',word:'inhibit',q:'Which word is OPPOSITE in meaning to INHIBIT?',a:'stimulate',ch:['stimulate','restrict','hinder','block'],hint:'Think: to speed up or activate something'},
+  {type:'antonym',word:'minute',q:'Which word is OPPOSITE in meaning to MINUTE?',a:'massive',ch:['massive','tiny','delicate','slim'],hint:'Think: an extremely large and impressive size'},
+  {type:'antonym',word:'emerge',q:'Which word is OPPOSITE in meaning to EMERGE?',a:'conceal',ch:['conceal','appear','surface','arise'],hint:'Think: to stay hidden from view'},
+  {type:'antonym',word:'shed',q:'Which word is OPPOSITE in meaning to SHED meaning to emit light?',a:'absorb',ch:['absorb','emit','cast','project'],hint:'Think: to take in rather than give off'},
+  {type:'antonym',word:'sheathe',q:'Which word is OPPOSITE in meaning to SHEATHE?',a:'bare',ch:['bare','cover','protect','shield'],hint:'Think: to leave something fully exposed'},
+  {type:'antonym',word:'transfer',q:'Which word is OPPOSITE in meaning to TRANSFER?',a:'remain',ch:['remain','move','relocate','shift'],hint:'Think: to stay in one place instead of moving'},
+  {type:'antonym',word:'appreciate',q:'Which word is OPPOSITE in meaning to APPRECIATE?',a:'ignore',ch:['ignore','value','prize','cherish'],hint:'Think: to pay no attention to something\'s worth'},
+  {type:'antonym',word:'domesticate',q:'Which word is OPPOSITE in meaning to DOMESTICATE?',a:'release',ch:['release','tame','cultivate','train'],hint:'Think: to let a wild creature go free'},
+  {type:'antonym',word:'fiber',q:'Which word is OPPOSITE in meaning to FIBER (a thin thread)?',a:'block',ch:['block','strand','filament','thread'],hint:'Think: the thickest, most solid shape possible'},
+  {type:'antonym',word:'motion',q:'Which word is OPPOSITE in meaning to MOTION meaning a proposal?',a:'withdrawal',ch:['withdrawal','suggestion','vote','proposal'],hint:'Think: taking something back rather than putting it forward'},
+
+  // ── ANALOGIES (40) ─────────────────────────────────────────────────────────
+  {type:'analogy',word:'apparel',q:'APPAREL is to BODY as ARMOR is to ___',a:'soldier',ch:['soldier','horse','weapon','shield'],hint:'Think: what each thing protects or covers'},
+  {type:'analogy',word:'hatch',q:'HATCH is to EGG as BLOOM is to ___',a:'flower',ch:['flower','seed','tree','root'],hint:'Think: what comes out of each when it opens'},
+  {type:'analogy',word:'fiber',q:'FIBER is to CLOTH as BRICK is to ___',a:'wall',ch:['wall','river','cloud','storm'],hint:'Think: many small pieces make up the larger whole'},
+  {type:'analogy',word:'motion',q:'MOTION is to STILLNESS as SOUND is to ___',a:'silence',ch:['silence','noise','echo','music'],hint:'Think: each pair is made of opposites'},
+  {type:'analogy',word:'inhibit',q:'INHIBIT is to GROWTH as DAM is to ___',a:'river',ch:['river','rain','cloud','ocean'],hint:'Think: what each thing blocks or slows down'},
+  {type:'analogy',word:'domesticate',q:'DOMESTICATE is to ANIMAL as CULTIVATE is to ___',a:'plant',ch:['plant','rock','cloud','ocean'],hint:'Think: bringing something natural under human control'},
+  {type:'analogy',word:'dissolve',q:'DISSOLVE is to SUGAR as MELT is to ___',a:'ice',ch:['ice','wood','stone','brick'],hint:'Think: what each process happens to most easily'},
+  {type:'analogy',word:'minute',q:'MINUTE is to ELEPHANT as VAST is to ___',a:'ant',ch:['ant','whale','mountain','ocean'],hint:'Think: the size word that fits the opposite creature'},
+  {type:'analogy',word:'sheathe',q:'SHEATHE is to SWORD as CASE is to ___',a:'phone',ch:['phone','book','door','window'],hint:'Think: what protective cover fits what object'},
+  {type:'analogy',word:'shed',q:'SHED is to SNAKE as MOLT is to ___',a:'bird',ch:['bird','fish','bear','deer'],hint:'Think: which animal molts its outer covering'},
+  {type:'analogy',word:'function',q:'FUNCTION is to PURPOSE as DEFINITION is to ___',a:'meaning',ch:['meaning','letter','shape','sound'],hint:'Think: each word points to what something fundamentally is'},
+  {type:'analogy',word:'emerge',q:'EMERGE is to COCOON as HATCH is to ___',a:'egg',ch:['egg','nest','tree','shell'],hint:'Think: what you come out of in each case'},
+  {type:'analogy',word:'appreciate',q:'APPRECIATE is to VALUE as DEPRECIATE is to ___',a:'decline',ch:['decline','rise','grow','improve'],hint:'Think: what the opposite of appreciating does to value'},
+  {type:'analogy',word:'transfer',q:'TRANSFER is to LOCATION as TRANSLATE is to ___',a:'language',ch:['language','color','size','shape'],hint:'Think: what each action moves something across'},
+  {type:'analogy',word:'continuous',q:'CONTINUOUS is to RIVER as INTERMITTENT is to ___',a:'rain',ch:['rain','ocean','flood','stream'],hint:'Think: which flows without stopping vs which falls in bursts'},
+  {type:'analogy',word:'hatch',q:'HATCH is to PLAN as FORGE is to ___',a:'signature',ch:['signature','letter','story','poem'],hint:'Think: both describe secretly creating something'},
+  {type:'analogy',word:'fiber',q:'FIBER is to MUSCLE as CELL is to ___',a:'organ',ch:['organ','bone','blood','nerve'],hint:'Think: smaller units that make up the larger body part'},
+  {type:'analogy',word:'motion',q:'MOTION is to VOTE as PETITION is to ___',a:'signature',ch:['signature','speech','law','book'],hint:'Think: what each formal action collects to show support'},
+  {type:'analogy',word:'inhibit',q:'INHIBIT is to SHY PERSON as COURAGE is to ___',a:'brave person',ch:['brave person','timid person','quiet person','sad person'],hint:'Think: what each quality or state goes with'},
+  {type:'analogy',word:'dissolve',q:'DISSOLVE is to SOLID as EVAPORATE is to ___',a:'liquid',ch:['liquid','gas','powder','foam'],hint:'Think: what state of matter each process works on'},
+  {type:'analogy',word:'sheathe',q:'SHEATHE is to PROTECTION as CAMOUFLAGE is to ___',a:'concealment',ch:['concealment','attack','speed','strength'],hint:'Think: what purpose each technique serves'},
+  {type:'analogy',word:'apparel',q:'APPAREL is to FASHION DESIGNER as BUILDING is to ___',a:'architect',ch:['architect','painter','writer','chef'],hint:'Think: who creates each thing'},
+  {type:'analogy',word:'function',q:'FUNCTION is to DICTIONARY as SHELTER is to ___',a:'house',ch:['house','book','lamp','road'],hint:'Think: what each thing is primarily used for'},
+  {type:'analogy',word:'emerge',q:'EMERGE is to DARKNESS as RISE is to ___',a:'horizon',ch:['horizon','ground','sky','cloud'],hint:'Think: what the sun comes out from in each case'},
+  {type:'analogy',word:'minute',q:'MINUTE (tiny) is to MICROSCOPE as DISTANT is to ___',a:'telescope',ch:['telescope','camera','mirror','lamp'],hint:'Think: which tool helps you see each type of thing'},
+  {type:'analogy',word:'domesticate',q:'DOMESTICATE is to PET as WILD is to ___',a:'predator',ch:['predator','farmer','owner','breeder'],hint:'Think: each word pairs with what kind of animal'},
+  {type:'analogy',word:'transfer',q:'TRANSFER is to SCHOOL as RELOCATE is to ___',a:'home',ch:['home','idea','skill','memory'],hint:'Think: where each type of move takes you'},
+  {type:'analogy',word:'continuous',q:'CONTINUOUS is to MARATHON as BRIEF is to ___',a:'sprint',ch:['sprint','walk','rest','pause'],hint:'Think: a long event vs a very short one'},
+  {type:'analogy',word:'shed',q:'SHED is to AUTUMN as BLOOM is to ___',a:'spring',ch:['spring','winter','summer','fall'],hint:'Think: which season each event happens in'},
+  {type:'analogy',word:'fiber',q:'FIBER is to SPINDLE as CLAY is to ___',a:'pottery wheel',ch:['pottery wheel','oven','brush','mold'],hint:'Think: the tool used to process each raw material'},
+  {type:'analogy',word:'appreciate',q:'APPRECIATE is to COLLECTOR as DEPRECIATE is to ___',a:'seller',ch:['seller','buyer','artist','owner'],hint:'Think: who benefits from each direction of value change'},
+  {type:'analogy',word:'hatch',q:'HATCH is to CHICK as SPROUT is to ___',a:'seed',ch:['seed','flower','tree','leaf'],hint:'Think: what comes out of each thing when it opens'},
+  {type:'analogy',word:'motion',q:'MOTION is to SENATOR as ARGUMENT is to ___',a:'lawyer',ch:['lawyer','judge','jury','witness'],hint:'Think: who makes each type of formal presentation'},
+  {type:'analogy',word:'inhibit',q:'INHIBIT is to FENCE as ENCOURAGE is to ___',a:'open door',ch:['open door','wall','lock','barrier'],hint:'Think: which image represents free passage'},
+  {type:'analogy',word:'emerge',q:'EMERGE is to BUTTERFLY as HATCH is to ___',a:'chick',ch:['chick','flower','fish','frog'],hint:'Think: each creature coming out of something that held it'},
+  {type:'analogy',word:'sheathe',q:'SHEATHE is to BLADE as ENVELOPE is to ___',a:'letter',ch:['letter','stamp','address','mailbox'],hint:'Think: the protective covering for each object'},
+  {type:'analogy',word:'transfer',q:'TRANSFER is to BUS PASS as TICKET is to ___',a:'train',ch:['train','car','bicycle','boat'],hint:'Think: what each document is used for on public transit'},
+  {type:'analogy',word:'dissolve',q:'DISSOLVE is to WATER as BURN is to ___',a:'fire',ch:['fire','air','earth','ice'],hint:'Think: which element causes each type of breakdown'},
+  {type:'analogy',word:'apparel',q:'APPAREL is to CLOTHING STORE as MEDICINE is to ___',a:'pharmacy',ch:['pharmacy','library','bakery','garage'],hint:'Think: the shop that sells each type of thing'},
+  {type:'analogy',word:'continuous',q:'CONTINUOUS is to WATERFALL as OCCASIONAL is to ___',a:'dripping faucet',ch:['dripping faucet','flood','river','ocean'],hint:'Think: which one flows without pause vs which drips now and then'},
+
+  // ── SIMILES (35) ────────────────────────────────────────────────────────────
+  {type:'simile',word:'apparel',q:'Which sentence uses APPAREL in a simile correctly?',a:'Her flowing apparel moved like butterfly wings in the breeze.',ch:['Her flowing apparel moved like butterfly wings in the breeze.','She wore apparel as if furniture had a purpose.','Apparel was the shop that sold everything.','He apparel-ed himself with great speed.'],hint:'A simile compares using like or as'},
+  {type:'simile',word:'appreciate',q:'Which sentence uses APPRECIATE in a simile correctly?',a:'She appreciated his kindness like a traveler appreciates water in a desert.',ch:['She appreciated his kindness like a traveler appreciates water in a desert.','Appreciate was like a store full of discounts.','He appreciated quickly as if running a race.','They appreciated nothing like old furniture.'],hint:'Think: how much and in what way does someone value something'},
+  {type:'simile',word:'continuous',q:'Which sentence uses CONTINUOUS in a simile correctly?',a:'The continuous hum of the machines was like a river that never rests.',ch:['The continuous hum of the machines was like a river that never rests.','The continuous was like a broken clock.','She ran continuously as if she were furniture.','The continuous cost nothing to buy.'],hint:'Think: something that flows without stopping'},
+  {type:'simile',word:'dissolve',q:'Which sentence uses DISSOLVE in a simile correctly?',a:'The sugar dissolved like a snowflake disappearing on a warm tongue.',ch:['The sugar dissolved like a snowflake disappearing on a warm tongue.','She dissolved the dissolve like a puzzle piece.','Dissolve was like a strong wall.','He dissolved nothing like a firm brick.'],hint:'Think: how quickly something disappears in liquid'},
+  {type:'simile',word:'domesticate',q:'Which sentence uses DOMESTICATE in a simile correctly?',a:'Taming the wild colt was like trying to domesticate a thunderstorm.',ch:['Taming the wild colt was like trying to domesticate a thunderstorm.','The farm domesticated like a grocery store.','She domesticated her pencil like a notebook.','Domesticate was as easy as furniture.'],hint:'Think: how wild and resistant something is to control'},
+  {type:'simile',word:'emerge',q:'Which sentence uses EMERGE in a simile correctly?',a:'The silk moth emerged from its cocoon like a secret finally told aloud.',ch:['The silk moth emerged from its cocoon like a secret finally told aloud.','Emerge was as still as a frozen pond.','The emerge moved like a heavy stone.','She emerged from the store like nothing.'],hint:'Think: how something comes into view for the first time'},
+  {type:'simile',word:'fiber',q:'Which sentence uses FIBER in a simile correctly?',a:'The silk fiber was as fine as a strand of morning mist.',ch:['The silk fiber was as fine as a strand of morning mist.','Fiber was like a thick wooden plank.','She ate the fiber like a loud noise.','The fiber cost nothing like furniture.'],hint:'Think: how thin and delicate a single thread is'},
+  {type:'simile',word:'function',q:'Which sentence uses FUNCTION in a simile correctly?',a:'The school cafeteria functions like the heart of a living body, pumping energy to every student.',ch:['The school cafeteria functions like the heart of a living body, pumping energy to every student.','The function was as silent as a broken machine.','She functioned like a piece of furniture.','The function moved as if nothing mattered.'],hint:'Think: comparing the purpose of one thing to the role of another'},
+  {type:'simile',word:'hatch',q:'Which sentence uses HATCH in a simile correctly?',a:'The chick hatched like a surprise bursting from a gift box.',ch:['The chick hatched like a surprise bursting from a gift box.','Hatch was as large as a storage room.','She hatched the furniture like a loud sound.','The hatch moved as slowly as a glacier.'],hint:'Think: the sudden, exciting moment of breaking free'},
+  {type:'simile',word:'inhibit',q:'Which sentence uses INHIBIT in a simile correctly?',a:'His shyness inhibited him like a heavy chain holding back a kite.',ch:['His shyness inhibited him like a heavy chain holding back a kite.','Inhibit was as fast as a running horse.','She inhibited the furniture like water.','The inhibit worked as if it were a gift.'],hint:'Think: something that holds you back from being free'},
+  {type:'simile',word:'minute',q:'Which sentence uses MINUTE (tiny) in a simile correctly?',a:'The silkworm egg was as minute as a grain of dust floating on a breeze.',ch:['The silkworm egg was as minute as a grain of dust floating on a breeze.','Minute was as loud as a thunderstorm.','She was minute like a large building.','The minute ticked on as if it were enormous.'],hint:'Think: comparing something incredibly small to another tiny thing'},
+  {type:'simile',word:'motion',q:'Which sentence uses MOTION in a simile correctly?',a:'The motion of the silkworm spinning its cocoon was like a dancer weaving silk in the air.',ch:['The motion of the silkworm spinning its cocoon was like a dancer weaving silk in the air.','Motion was as still as a frozen lake.','She motioned furniture like a quiet room.','The motion cost nothing like a free gift.'],hint:'Think: a graceful, continuous type of movement'},
+  {type:'simile',word:'sheathe',q:'Which sentence uses SHEATHE in a simile correctly?',a:'The silkworm sheathed itself in a cocoon like a knight lowering a visor.',ch:['The silkworm sheathed itself in a cocoon like a knight lowering a visor.','She sheathed the furniture as if it were loud.','The sheathe was as open as a field.','He sheathed nothing like an empty room.'],hint:'Think: covering something for protection like armor'},
+  {type:'simile',word:'shed',q:'Which sentence uses SHED in a simile correctly?',a:'The snake shed its old skin like a swimmer stepping out of a wet suit.',ch:['The snake shed its old skin like a swimmer stepping out of a wet suit.','Shed was as heavy as a stone wall.','She shed the furniture like loud music.','The shed glowed as if it were darkness.'],hint:'Think: taking off one layer to reveal what is underneath'},
+  {type:'simile',word:'transfer',q:'Which sentence uses TRANSFER in a simile correctly?',a:'Passing knowledge from teacher to student is like a transfer of fire from one torch to another.',ch:['Passing knowledge from teacher to student is like a transfer of fire from one torch to another.','Transfer was as heavy as a stone building.','She transferred furniture like loud noise.','The transfer cost as much as nothing.'],hint:'Think: moving something valuable from one place to another'},
+  {type:'simile',word:'apparel',q:'Complete the simile: The parade costumes were as colorful as ___',a:'a garden in full bloom',ch:['a garden in full bloom','a quiet night sky','a blank piece of paper','an empty room'],hint:'Think: colorful apparel compared to something else bright and varied'},
+  {type:'simile',word:'continuous',q:'Complete the simile: The silkworm ate continuously like ___',a:'a machine that never turns off',ch:['a machine that never turns off','a bird that sleeps all day','a river that suddenly stops','a lamp that blinks on and off'],hint:'Think: something that keeps going without any break at all'},
+  {type:'simile',word:'emerge',q:'Complete the simile: The truth emerged from the trial like ___',a:'sunlight breaking through storm clouds',ch:['sunlight breaking through storm clouds','darkness filling a room','a stone sinking in water','silence filling the air'],hint:'Think: something hidden finally coming into the light'},
+  {type:'simile',word:'dissolve',q:'Complete the simile: Her worries dissolved as quickly as ___',a:'sugar in hot tea',ch:['sugar in hot tea','rocks in a cold river','ice added to a fire','wood dropped in water'],hint:'Think: something that disappears very rapidly in a warm liquid'},
+  {type:'simile',word:'inhibit',q:'Complete the simile: Nervousness inhibited her speech like ___',a:'a knot tightening in a hose',ch:['a knot tightening in a hose','an open door on a sunny day','a river flowing without rocks','a kite soaring in clear sky'],hint:'Think: something that blocks the natural flow of something'},
+  {type:'simile',word:'minute',q:'Complete the simile: The silk moth egg was as minute as ___',a:'the head of a pin',ch:['the head of a pin','a basketball on the court','a boulder on a hillside','a door on a house'],hint:'Think: the smallest common object you can think of'},
+  {type:'simile',word:'fiber',q:'Complete the simile: Each silk fiber was as strong as ___',a:'a tiny thread of steel',ch:['a tiny thread of steel','a thick wooden log','a wet piece of paper','a handful of dry sand'],hint:'Think: something unexpectedly strong for its small size'},
+  {type:'simile',word:'motion',q:'Complete the simile: The baby fell asleep, soothed by the motion of the train like ___',a:'a leaf rocking on calm water',ch:['a leaf rocking on calm water','a stone crashing on a shore','a flag whipping in a storm','a wheel spinning out of control'],hint:'Think: a gentle, rhythmic, soothing type of movement'},
+  {type:'simile',word:'hatch',q:'Complete the simile: He hatched his clever plan like ___',a:'a spider carefully spinning its web',ch:['a spider carefully spinning its web','a stone rolling down a hill','a bird flying in a straight line','a light that switches on instantly'],hint:'Think: something patient and deliberate in its construction'},
+  {type:'simile',word:'sheathe',q:'Complete the simile: The copper plates sheathed the ship like ___',a:'a shell protecting a turtle',ch:['a shell protecting a turtle','a window opening to the sky','a bridge crossing a valley','a flag waving in the wind'],hint:'Think: a hard outer covering that protects what is inside'},
+  {type:'simile',word:'shed',q:'Complete the simile: Tears shed down her cheeks like ___',a:'rain running down a window pane',ch:['rain running down a window pane','smoke rising in a still room','snow piling on a rooftop','dust settling on a shelf'],hint:'Think: something flowing slowly downward on a smooth surface'},
+  {type:'simile',word:'transfer',q:'Complete the simile: The silkworms were transferred to the incubator like ___',a:'precious cargo moved to a safe vault',ch:['precious cargo moved to a safe vault','leaves swept into a pile','stones tossed into a pond','sand poured through an hourglass'],hint:'Think: moving something valuable with great care'},
+  {type:'simile',word:'domesticate',q:'Complete the simile: Domesticating a wild animal is as challenging as ___',a:'teaching the wind to slow down',ch:['teaching the wind to slow down','picking up a stone from the ground','turning off a light switch','reading words on a clear page'],hint:'Think: trying to control something that is naturally wild and free'},
+  {type:'simile',word:'function',q:'Complete the simile: The spinneret functioned like ___',a:'a tiny factory producing silk thread',ch:['a tiny factory producing silk thread','a wide open field in summer','a stormy night with no stars','a blank wall with no doors'],hint:'Think: a small body part doing a very specific job'},
+  {type:'simile',word:'appreciate',q:'Complete the simile: Those who appreciate fine silk value it like ___',a:'a rare jewel discovered in a cave',ch:['a rare jewel discovered in a cave','a common stone on a dusty road','a folded piece of newspaper','an old broken clock'],hint:'Think: how someone treats something they consider truly precious'},
+  {type:'simile',word:'emerge',q:'Which simile best describes the silk moth emerging from its cocoon?',a:'The moth emerged like a magician stepping out from behind a curtain.',ch:['The moth emerged like a magician stepping out from behind a curtain.','The moth emerged like a stone falling from a cliff.','The moth emerged like a fire burning out.','The moth emerged like a door slamming shut.'],hint:'Think: a dramatic, surprising appearance from a hidden space'},
+  {type:'simile',word:'inhibit',q:'Which simile correctly shows how cold inhibits growth?',a:'Cold inhibits a seed like a locked lid stops water from boiling.',ch:['Cold inhibits a seed like a locked lid stops water from boiling.','Cold inhibits growth like sunlight fills a garden.','Cold inhibits nothing just as rain fills a river.','Cold inhibits a flame like an open window lets in air.'],hint:'Think: something that prevents a natural process from happening'},
+  {type:'simile',word:'shed',q:'Which simile best describes a silkworm shedding its skin?',a:'The silkworm shed its skin like a child outgrowing a coat.',ch:['The silkworm shed its skin like a child outgrowing a coat.','The silkworm shed light like the full moon.','The silkworm shed its cocoon like a house being built.','The silkworm shed tears like a sad song.'],hint:'Think: growing beyond what once fit perfectly'},
+  {type:'simile',word:'continuous',q:'Which simile best describes a silkworm\'s continuous eating?',a:'The silkworm ate continuously, like a saw that never stops cutting.',ch:['The silkworm ate continuously, like a saw that never stops cutting.','The silkworm ate continuously, like a tree that sheds leaves.','The silkworm ate like a river that freezes in winter.','The silkworm ate continuously, like a light that switches off at dusk.'],hint:'Think: something mechanical that keeps working without rest'},
+
+  // ── METAPHORS (35) ──────────────────────────────────────────────────────────
+  {type:'metaphor',word:'apparel',q:'Which sentence uses APPAREL as a metaphor?',a:'The peacock\'s feathers are his finest apparel, a suit of living color.',ch:['The peacock\'s feathers are his finest apparel, a suit of living color.','The peacock wore his feathers like a coat.','The peacock\'s feathers were very colorful clothing.','The peacock dressed himself each morning.'],hint:'A metaphor says something IS something else, without using like or as'},
+  {type:'metaphor',word:'appreciate',q:'Which sentence uses APPRECIATE as a metaphor?',a:'The old violin appreciated with every song played, its wood deepening into pure gold.',ch:['The old violin appreciated with every song played, its wood deepening into pure gold.','The violin was as valuable as gold.','She appreciated the violin like a treasure.','The old violin was worth a lot of money.'],hint:'Think: the value of something growing in a poetic, non-literal way'},
+  {type:'metaphor',word:'continuous',q:'Which sentence uses CONTINUOUS as a metaphor?',a:'History is a continuous river, always flowing forward and never turning back.',ch:['History is a continuous river, always flowing forward and never turning back.','History flows like a continuous river.','History continues without stopping.','History is as continuous as a river.'],hint:'Think: equating something abstract directly to something physical'},
+  {type:'metaphor',word:'dissolve',q:'Which sentence uses DISSOLVE as a metaphor?',a:'All her anger dissolved the moment he smiled at her.',ch:['All her anger dissolved the moment he smiled at her.','Her anger melted away like ice.','Her anger disappeared quickly.','Her anger was like sugar in warm water.'],hint:'Think: an emotion being directly described as melting away'},
+  {type:'metaphor',word:'domesticate',q:'Which sentence uses DOMESTICATE as a metaphor?',a:'Years of city life had domesticated his wild spirit into quiet routine.',ch:['Years of city life had domesticated his wild spirit into quiet routine.','City life tamed him like a pet.','He was as domesticated as a household cat.','City life made him more tame over time.'],hint:'Think: calling a person\'s spirit directly a wild thing that was tamed'},
+  {type:'metaphor',word:'emerge',q:'Which sentence uses EMERGE as a metaphor?',a:'A new leader emerged from the chaos, the calm eye of the storm.',ch:['A new leader emerged from the chaos, the calm eye of the storm.','A new leader appeared like sunlight after rain.','A new leader came out of the chaos quickly.','A new leader emerged as if from nowhere.'],hint:'Think: describing emergence by directly calling it something else'},
+  {type:'metaphor',word:'fiber',q:'Which sentence uses FIBER as a metaphor?',a:'Honesty is the fiber of her character, woven into every choice she makes.',ch:['Honesty is the fiber of her character, woven into every choice she makes.','She is honest like a strong fiber.','Her honesty is as tough as a thread.','Honesty runs through her like a fiber.'],hint:'Think: calling a character trait directly a fiber that makes something strong'},
+  {type:'metaphor',word:'function',q:'Which sentence uses FUNCTION as a metaphor?',a:'The school principal is the function of the entire building, the purpose made human.',ch:['The school principal is the function of the entire building, the purpose made human.','The principal serves a purpose like a function.','The principal functions as the leader.','The principal is as important as a function.'],hint:'Think: calling a person directly the purpose or function of a place'},
+  {type:'metaphor',word:'hatch',q:'Which sentence uses HATCH as a metaphor?',a:'Her mind was a nest where brilliant ideas hatched every morning.',ch:['Her mind was a nest where brilliant ideas hatched every morning.','Her ideas appeared like hatching chicks.','She hatched ideas like a hen hatches eggs.','Her mind was as creative as a nest.'],hint:'Think: the mind being called a nest where thoughts are born'},
+  {type:'metaphor',word:'inhibit',q:'Which sentence uses INHIBIT as a metaphor?',a:'Doubt is the anchor that inhibits the ship of progress.',ch:['Doubt is the anchor that inhibits the ship of progress.','Doubt holds you back like an anchor.','Doubt inhibited him as if it were a chain.','Doubt prevents progress from happening.'],hint:'Think: calling doubt directly an anchor that holds something back'},
+  {type:'metaphor',word:'minute',q:'Which sentence uses MINUTE (tiny) as a metaphor?',a:'His problems were minute grains of sand on the vast beach of the universe.',ch:['His problems were minute grains of sand on the vast beach of the universe.','His problems were as tiny as grains of sand.','His problems were small compared to others.','His problems were like tiny grains of sand.'],hint:'Think: calling problems directly tiny grains on something vast'},
+  {type:'metaphor',word:'motion',q:'Which sentence uses MOTION as a metaphor?',a:'Change is the motion of civilization, always pushing it forward.',ch:['Change is the motion of civilization, always pushing it forward.','Change moves civilization like motion.','Civilization changes as motion carries it.','Change is as constant as motion itself.'],hint:'Think: calling change directly the motion of something large'},
+  {type:'metaphor',word:'sheathe',q:'Which sentence uses SHEATHE as a metaphor?',a:'Kindness is a sheath around the sharp edges of her honesty.',ch:['Kindness is a sheath around the sharp edges of her honesty.','Her kindness sheathed her honesty like armor.','She was kind as if her honesty were a sword.','Her kindness covered her honesty gently.'],hint:'Think: calling kindness directly a sheath that protects'},
+  {type:'metaphor',word:'shed',q:'Which sentence uses SHED as a metaphor?',a:'The graduation ceremony was a snake shedding its skin, releasing students into new lives.',ch:['The graduation ceremony was a snake shedding its skin, releasing students into new lives.','Graduation shed old identities like a snake.','Students shed their past as if outgrowing a coat.','Graduation was as transforming as shedding skin.'],hint:'Think: calling a ceremony directly the act of shedding, without using like or as'},
+  {type:'metaphor',word:'transfer',q:'Which sentence uses TRANSFER as a metaphor?',a:'A great book is a transfer of the author\'s soul into the reader\'s hands.',ch:['A great book is a transfer of the author\'s soul into the reader\'s hands.','A great book transfers ideas like a gift.','Reading a book is like a transfer of knowledge.','Books transfer ideas from author to reader.'],hint:'Think: calling the reading experience directly a soul transfer'},
+  {type:'metaphor',word:'apparel',q:'Which sentence is a metaphor using APPAREL?',a:'Autumn dressed the forest in its finest apparel, a coat of red and gold.',ch:['Autumn dressed the forest in its finest apparel, a coat of red and gold.','The autumn leaves were like colorful clothing.','The forest wore autumn leaves beautifully.','Autumn made the forest as colorful as a wardrobe.'],hint:'Think: calling falling leaves directly the forest\'s clothing'},
+  {type:'metaphor',word:'continuous',q:'Which sentence is a metaphor using CONTINUOUS?',a:'Time is a continuous highway with no exits and no turning back.',ch:['Time is a continuous highway with no exits and no turning back.','Time moves like a continuous road.','Time passes continuously like a moving car.','Time is as continuous as a river.'],hint:'Think: calling time directly a road that never ends'},
+  {type:'metaphor',word:'dissolve',q:'Which sentence is a metaphor using DISSOLVE?',a:'The crowd\'s tension dissolved into laughter when the clown appeared.',ch:['The crowd\'s tension dissolved into laughter when the clown appeared.','The crowd relaxed like a solid melting.','Tension disappeared as if it were dissolved.','The crowd\'s mood shifted like sugar in water.'],hint:'Think: describing tension directly dissolving, as if it were a substance in liquid'},
+  {type:'metaphor',word:'emerge',q:'Which sentence is a metaphor using EMERGE?',a:'From the wreckage of failure, a stronger version of herself emerged, forged in the fire.',ch:['From the wreckage of failure, a stronger version of herself emerged, forged in the fire.','She emerged from failure like a phoenix.','After failure, she appeared stronger than before.','She grew stronger as if emerging from flames.'],hint:'Think: a person being reborn directly as a new creation'},
+  {type:'metaphor',word:'fiber',q:'Which sentence is a metaphor using FIBER?',a:'Courage is the fiber that holds the fabric of a hero\'s character together.',ch:['Courage is the fiber that holds the fabric of a hero\'s character together.','Courage is like a strong fiber in a hero.','A hero is as strong as a woven fiber.','Courage holds a hero together like thread.'],hint:'Think: calling courage directly a fiber that makes character strong'},
+  {type:'metaphor',word:'function',q:'Which sentence is a metaphor using FUNCTION?',a:'The heart is the function of love made physical, pumping life into every relationship.',ch:['The heart is the function of love made physical, pumping life into every relationship.','The heart functions like the engine of love.','Love moves the heart as if it were a machine.','The heart pumps love as if it had a purpose.'],hint:'Think: calling the heart directly the embodied function of love'},
+  {type:'metaphor',word:'hatch',q:'Which sentence is a metaphor using HATCH?',a:'The boardroom was a hatch through which new businesses were born.',ch:['The boardroom was a hatch through which new businesses were born.','New ideas hatch in the boardroom like eggs.','The boardroom is as productive as a nest.','New businesses emerge from the boardroom like hatching chicks.'],hint:'Think: calling a place directly a hatch — an opening for new things'},
+  {type:'metaphor',word:'inhibit',q:'Which sentence is a metaphor using INHIBIT?',a:'Fear is the padlock that inhibits the door to your full potential.',ch:['Fear is the padlock that inhibits the door to your full potential.','Fear holds you back like a padlock.','Fear inhibits progress as if it were a chain.','Fear prevents you from reaching your potential.'],hint:'Think: calling fear directly a padlock that blocks a door'},
+  {type:'metaphor',word:'minute',q:'Which sentence is a metaphor using MINUTE (tiny)?',a:'Each moment in childhood is a minute jewel, priceless though it seems small.',ch:['Each moment in childhood is a minute jewel, priceless though it seems small.','Childhood moments are as small as jewels.','Moments of childhood are tiny and precious like gems.','Childhood is as brief as a tiny jewel.'],hint:'Think: calling each moment directly a tiny jewel'},
+  {type:'metaphor',word:'motion',q:'Which sentence is a metaphor using MOTION?',a:'Music is the motion of the soul, carrying emotion where words cannot go.',ch:['Music is the motion of the soul, carrying emotion where words cannot go.','Music moves the soul like water in motion.','Music moves us emotionally, just like motion.','Music is as moving as a river in flow.'],hint:'Think: calling music directly the motion of something intangible'},
+  {type:'metaphor',word:'sheathe',q:'Which sentence is a metaphor using SHEATHE?',a:'Sleep is the soft sheath that heals the wounds of a long day.',ch:['Sleep is the soft sheath that heals the wounds of a long day.','Sleep covers us like a warm sheath.','Sleep is as protective as a sheath on a blade.','Sleep wraps the body like a protective covering.'],hint:'Think: calling sleep directly a sheath that protects and heals'},
+  {type:'metaphor',word:'shed',q:'Which sentence is a metaphor using SHED (to emit light)?',a:'Her smile was a candle that shed warm light into every dark corner of the room.',ch:['Her smile was a candle that shed warm light into every dark corner of the room.','Her smile shone like a candle in the dark.','Her smile shed light as if it were a lamp.','Her smile was as bright as a candle.'],hint:'Think: calling her smile directly a candle that emits light'},
+  {type:'metaphor',word:'transfer',q:'Which sentence is a metaphor using TRANSFER?',a:'Teaching is the great transfer — a candle lighting other candles without losing its own flame.',ch:['Teaching is the great transfer — a candle lighting other candles without losing its own flame.','Teaching transfers knowledge like pouring water.','A teacher is as effective as a transfer of light.','Teaching is like a candle that shares its flame.'],hint:'Think: calling the act of teaching directly a great transfer of light'},
+  {type:'metaphor',word:'domesticate',q:'Which sentence is a metaphor using DOMESTICATE?',a:'School domesticated his restless curiosity into a focused, disciplined mind.',ch:['School domesticated his restless curiosity into a focused, disciplined mind.','School tamed him like a trainer tames an animal.','School changed him as if taming a wild creature.','His curiosity was trained at school like a wild animal.'],hint:'Think: calling curiosity directly a wild thing that school tamed'},
+  {type:'metaphor',word:'inhibit',q:'Which sentence is a metaphor using INHIBIT?',a:'Procrastination is the weed that inhibits the garden of achievement.',ch:['Procrastination is the weed that inhibits the garden of achievement.','Procrastination holds us back like a weed.','Procrastination inhibits success as if it were a barrier.','Procrastination slows achievement like a slow weed growing.'],hint:'Think: calling procrastination directly a weed in a garden'},
+  {type:'metaphor',word:'fiber',q:'Which sentence is a metaphor using FIBER?',a:'Discipline is the invisible fiber that holds a champion\'s training together day after day.',ch:['Discipline is the invisible fiber that holds a champion\'s training together day after day.','Discipline holds athletes together like a strong fiber.','Discipline is as strong as a fiber in a rope.','Discipline keeps athletes together like thread in cloth.'],hint:'Think: calling discipline directly a fiber that holds something together'},
+  {type:'metaphor',word:'emerge',q:'Which sentence is a metaphor using EMERGE?',a:'After years of struggle, a master painter emerged from the uncertain student he once was.',ch:['After years of struggle, a master painter emerged from the uncertain student he once was.','He became a master painter as if emerging from a cocoon.','Over years, he transformed like an emerging butterfly.','He grew from student to master like something emerging from a shell.'],hint:'Think: a person directly becoming something new, without like or as'},
+  {type:'metaphor',word:'motion',q:'Which sentence is a metaphor using MOTION?',a:'Her dancing was a continuous motion of storytelling, each step a paragraph.',ch:['Her dancing was a continuous motion of storytelling, each step a paragraph.','She danced as if each step were a sentence.','Her dance moved like the pages of a story.','She moved as continuously as a written paragraph.'],hint:'Think: calling dancing directly a motion of storytelling'},
+  {type:'metaphor',word:'shed',q:'Which sentence is a metaphor using SHED (to lose or cast off)?',a:'Moving to a new city was his chance to shed the old identity that no longer fit.',ch:['Moving to a new city was his chance to shed the old identity that no longer fit.','He shed his identity as if it were old clothing.','He changed his identity like a snake sheds its skin.','Moving gave him a chance to change as if shedding his past.'],hint:'Think: directly stating the action of losing an old self'},
+  {type:'metaphor',word:'transfer',q:'Which sentence is a metaphor using TRANSFER?',a:'Every handshake is a transfer of trust, invisible but real.',ch:['Every handshake is a transfer of trust, invisible but real.','A handshake transfers trust like passing a torch.','Shaking hands shares trust as if transferring it.','A handshake is as meaningful as a transfer of goods.'],hint:'Think: calling a handshake directly a transfer of something invisible'}
+];
+
+// ── QUIZ STATE ────────────────────────────────────────────────────────────────
+var pool=[],idx=0,score=0,total=0,streak=0,answered=false;
+
+function shuffle(a){var b=a.slice();for(var i=b.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=b[i];b[i]=b[j];b[j]=t;}return b;}
+
+function startQuiz(){
+  pool=shuffle(QUESTIONS).slice(0,20);
+  idx=0;score=0;total=0;streak=0;answered=false;
+  document.getElementById('result-section').style.display='none';
+  document.getElementById('quiz-section').style.display='';
+  renderQuestion();
+}
+
+function renderQuestion(){
+  var q=pool[idx];
+  var bar=document.getElementById('progress-bar');
+  bar.style.width=(idx/20*100)+'%';
+  document.getElementById('score-display').textContent='Score: '+score+'/'+total;
+  document.getElementById('streak-display').textContent='Streak: '+streak+' 🔥';
+  var badge=document.getElementById('q-badge');
+  var ts=TYPE_STYLES[q.type];
+  badge.textContent=ts.label;
+  badge.style.color=ts.color;
+  badge.style.background=ts.bg;
+  document.getElementById('q-word').textContent=q.word.toUpperCase();
+  document.getElementById('q-text').textContent=q.q;
+  document.getElementById('hint-text').style.display='none';
+  document.getElementById('hint-text').textContent=q.hint;
+  document.getElementById('hint-btn').style.display='inline-block';
+  document.getElementById('feedback-area').textContent='';
+  document.getElementById('feedback-area').className='';
+  document.getElementById('next-btn').style.display='none';
+  answered=false;
+  var choices=document.getElementById('choices');
+  clearEl(choices);
+  var shuffled=shuffle(q.ch);
+  shuffled.forEach(function(c){
+    var btn=mk('button','choice-btn',c);
+    btn.addEventListener('click',function(){handleAnswer(c,q,btn,shuffled);});
+    choices.appendChild(btn);
+  });
+}
+
+function handleAnswer(chosen,q,btn,all){
+  if(answered)return;
+  answered=true;
+  total++;
+  var fb=document.getElementById('feedback-area');
+  var choices=document.getElementById('choices');
+  choices.querySelectorAll('.choice-btn').forEach(function(b){
+    b.disabled=true;
+    if(b.textContent===q.a)b.classList.add('correct');
+  });
+  if(chosen===q.a){
+    score++;streak++;
+    btn.classList.add('correct');
+    fb.textContent='Correct! ⭐';
+    fb.className='correct';
+    burst(btn,true);
+    if(streak>=3)confetti();
+  }else{
+    streak=0;
+    btn.classList.add('wrong');
+    fb.textContent='Not quite — the answer is: '+q.a;
+    fb.className='wrong';
+    burst(btn,false);
+  }
+  document.getElementById('score-display').textContent='Score: '+score+'/'+total;
+  document.getElementById('streak-display').textContent='Streak: '+streak+' 🔥';
+  document.getElementById('next-btn').style.display='inline-block';
+}
+
+function nextQuestion(){
+  idx++;
+  if(idx>=20){showResult();return;}
+  renderQuestion();
+}
+
+function showResult(){
+  document.getElementById('quiz-section').style.display='none';
+  var rs=document.getElementById('result-section');
+  rs.style.display='block';
+  document.getElementById('final-score').textContent=score+'/20';
+  var pct=score/20;
+  var msg='';
+  if(pct>=.9)msg='Outstanding! You know your silk! 🌟';
+  else if(pct>=.7)msg='Great job! Keep weaving those skills! 💛';
+  else if(pct>=.5)msg='Good effort! Review and try again! 📚';
+  else msg='Keep practicing — the silk thread gets stronger! 💪';
+  document.getElementById('result-msg').textContent=msg;
+}
+
+function showHint(){
+  var q=pool[idx];
+  var ht=document.getElementById('hint-text');
+  ht.textContent=q.hint;
+  ht.style.display='inline';
+  document.getElementById('hint-btn').style.display='none';
+}
+
+// ── FLASHCARD STATE ──────────────────────────────────────────────────────────
+var fcWords=[],fcIdx=0;
+function initFlashcards(){fcWords=WORDS.slice();fcIdx=0;renderCard();}
+function renderCard(){
+  var w=fcWords[fcIdx];
+  document.getElementById('fc-word').textContent=w.word;
+  document.getElementById('fc-pos').textContent=w.pos;
+  document.getElementById('fc-def').textContent=w.def;
+  document.getElementById('fc-ex').textContent=w.ex;
+  document.getElementById('fc-counter').textContent=(fcIdx+1)+' / '+fcWords.length;
+  var card=document.getElementById('fc-card');
+  card.classList.remove('flipped');
+}
+function fcFlip(){document.getElementById('fc-card').classList.toggle('flipped');}
+function fcNext(){fcIdx=(fcIdx+1)%fcWords.length;renderCard();}
+function fcPrev(){fcIdx=(fcIdx-1+fcWords.length)%fcWords.length;renderCard();}
+function fcShuffle(){fcWords=shuffle(fcWords);fcIdx=0;renderCard();}
+
+// ── MODE SWITCHING ────────────────────────────────────────────────────────────
+function showMode(mode){
+  var qs=document.getElementById('quiz-section');
+  var fs=document.getElementById('flashcard-section');
+  var rs=document.getElementById('result-section');
+  var tq=document.getElementById('tab-quiz');
+  var tf=document.getElementById('tab-flash');
+  if(mode==='quiz'){
+    fs.style.display='none';rs.style.display='none';
+    qs.style.display='';tq.classList.add('active');tf.classList.remove('active');
+  }else{
+    qs.style.display='none';rs.style.display='none';
+    fs.style.display='';tf.classList.add('active');tq.classList.remove('active');
+    initFlashcards();
+  }
+}
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+function clearEl(el){while(el.firstChild)el.removeChild(el.firstChild);}
+function mk(tag,cls,txt){var el=document.createElement(tag);if(cls)el.className=cls;if(txt!==undefined)el.textContent=txt;return el;}
+
+function burst(el,correct){
+  var rect=el.getBoundingClientRect();
+  var cx=rect.left+rect.width/2,cy=rect.top+rect.height/2;
+  var colors=correct?['#22d3ee','#0e7490','#67e8f9','#a5f3fc']:['#ef4444','#fca5a5','#dc2626'];
+  for(var i=0;i<10;i++){
+    var p=document.createElement('div');p.className='particle';
+    var angle=Math.random()*Math.PI*2,dist=40+Math.random()*50;
+    p.style.cssText='left:'+cx+'px;top:'+cy+'px;width:8px;height:8px;background:'+colors[Math.floor(Math.random()*colors.length)]+';--dx:'+Math.cos(angle)*dist+'px;--dy:'+Math.sin(angle)*dist+'px;';
+    document.body.appendChild(p);
+    setTimeout(function(pp){document.body.removeChild(pp);},800,p);
+  }
+}
+function confetti(){
+  var colors=['#22d3ee','#0e7490','#67e8f9','#f472b6','#a78bfa','#fbbf24'];
+  for(var i=0;i<22;i++){
+    var c=document.createElement('div');c.className='confetti-piece';
+    var x=Math.random()*window.innerWidth,size=6+Math.random()*8;
+    var dx=(Math.random()-.5)*120,dy=-(80+Math.random()*120);
+    c.style.cssText='left:'+x+'px;top:'+(-size)+'px;width:'+size+'px;height:'+size+'px;background:'+colors[Math.floor(Math.random()*colors.length)]+';border-radius:'+Math.random()*4+'px;--dx:'+dx+'px;--dy:'+dy+'px;';
+    document.body.appendChild(c);
+    setTimeout(function(cc){document.body.removeChild(cc);},1000,c);
+  }
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+startQuiz();
+</script>
+</body>
+</html>

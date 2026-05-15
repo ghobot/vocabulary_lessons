@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wordly Wise – Lesson 12</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#160d01;color:#f1f5f9;font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;overflow-x:hidden}
+canvas#bg{position:fixed;inset:0;z-index:0;pointer-events:none}
+#app{position:relative;z-index:1;max-width:780px;margin:0 auto;padding:16px}
+a.home{display:inline-flex;align-items:center;gap:6px;color:#fbbf24;text-decoration:none;font-size:.85rem;margin-bottom:12px;opacity:.8}
+a.home:hover{opacity:1}
+h1{font-size:1.6rem;font-weight:700;color:#fbbf24;text-align:center;margin-bottom:4px}
+.subtitle{text-align:center;color:#fde68a;font-size:.85rem;margin-bottom:18px;opacity:.75}
+.mode-bar{display:flex;justify-content:center;gap:10px;margin-bottom:18px}
+.mode-btn{padding:7px 22px;border-radius:20px;border:2px solid #b45309;background:transparent;color:#fbbf24;font-size:.88rem;cursor:pointer;transition:.2s}
+.mode-btn.active,.mode-btn:hover{background:#b45309;color:#fff}
+#flashcard-section{display:none}
+.fc-controls{display:flex;justify-content:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.fc-btn{padding:7px 18px;border-radius:10px;border:none;background:#431407;color:#fde68a;font-size:.85rem;cursor:pointer;transition:.2s}
+.fc-btn:hover{background:#7c2d12}
+.fc-progress{text-align:center;color:#fde68a;font-size:.82rem;margin-bottom:10px}
+.card-wrap{perspective:900px;width:100%;max-width:560px;height:240px;margin:0 auto 16px}
+.card-inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.4,0,.2,1);cursor:pointer}
+.card-inner.flipped{transform:rotateY(180deg)}
+.card-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px;text-align:center}
+.card-front{background:linear-gradient(135deg,#7c2d12,#431407);border:1px solid #b45309}
+.card-back{background:linear-gradient(135deg,#431407,#160d01);border:1px solid #fbbf24;transform:rotateY(180deg)}
+.card-word{font-size:2rem;font-weight:700;color:#fbbf24}
+.card-pos{font-size:.8rem;color:#fde68a;margin-top:4px;font-style:italic}
+.card-tap{font-size:.75rem;color:#fbbf2455;margin-top:12px}
+.card-def{font-size:.95rem;color:#fef3c7;line-height:1.5}
+.card-ex{font-size:.8rem;color:#fde68a;margin-top:10px;font-style:italic}
+.quiz-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px}
+.q-counter{font-size:.85rem;color:#fde68a}
+.q-score{font-size:.85rem;color:#86efac}
+.streak-badge{font-size:.8rem;padding:3px 10px;border-radius:12px;background:#431407;color:#fde68a}
+.progress-bar{width:100%;height:6px;background:#2d1a00;border-radius:3px;margin-bottom:16px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,#b45309,#fbbf24);border-radius:3px;transition:width .4s}
+.type-badge{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.06em;padding:3px 10px;border-radius:12px;margin-bottom:10px}
+.q-word{font-size:1.05rem;color:#fef3c7;font-weight:600;margin-bottom:6px}
+.q-text{font-size:1rem;color:#f1f5f9;line-height:1.5;margin-bottom:16px}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+@media(max-width:500px){.choices{grid-template-columns:1fr}}
+.choice-btn{padding:11px 14px;border-radius:10px;border:1px solid #7c2d12;background:#2d1a00;color:#fef3c7;font-size:.9rem;cursor:pointer;text-align:left;transition:.2s;line-height:1.4}
+.choice-btn:hover:not(:disabled){background:#7c2d12;border-color:#b45309}
+.choice-btn.correct{background:#14532d;border-color:#4ade80;color:#bbf7d0}
+.choice-btn.wrong{background:#7c2d12;border-color:#fbbf24;color:#fde68a}
+.choice-btn:disabled{cursor:default}
+.hint-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px}
+.hint-btn{font-size:.78rem;padding:4px 12px;border-radius:8px;border:1px solid #b45309;background:transparent;color:#fbbf24;cursor:pointer}
+.hint-btn:hover{background:#7c2d12}
+.hint-box{background:#1c1000;border:1px solid #7c2d12;border-radius:10px;padding:10px 14px;font-size:.83rem;color:#fde68a;margin-bottom:12px;display:none}
+.feedback{text-align:center;font-size:.95rem;font-weight:600;min-height:24px;margin-bottom:10px}
+.feedback.ok{color:#4ade80}
+.feedback.no{color:#fbbf24}
+.next-btn{display:block;width:100%;padding:12px;border-radius:12px;border:none;background:#b45309;color:#fff;font-size:1rem;font-weight:600;cursor:pointer;display:none;transition:.2s}
+.next-btn:hover{background:#92400e}
+#result-section{display:none;text-align:center;padding:20px 0}
+.result-title{font-size:1.8rem;font-weight:700;color:#fbbf24;margin-bottom:8px}
+.result-score{font-size:3rem;font-weight:800;color:#fbbf24;margin-bottom:4px}
+.result-label{font-size:.9rem;color:#fde68a;margin-bottom:16px}
+.result-msg{font-size:1rem;color:#fef3c7;max-width:480px;margin:0 auto 20px;line-height:1.6;font-style:italic}
+.result-breakdown{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-bottom:20px}
+.rb-item{background:#2d1a00;border:1px solid #7c2d12;border-radius:10px;padding:8px 16px;font-size:.82rem;color:#fde68a}
+.rb-item span{font-weight:700;color:#fbbf24}
+.restart-btn{padding:12px 36px;border-radius:12px;border:none;background:#b45309;color:#fff;font-size:1rem;font-weight:600;cursor:pointer}
+.restart-btn:hover{background:#92400e}
+#pcanvas{position:fixed;inset:0;z-index:2;pointer-events:none}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<canvas id="pcanvas"></canvas>
+<div id="app">
+  <a class="home" href="../index.html">&#8592; Home</a>
+  <h1>Wordly Wise &mdash; Lesson 12</h1>
+  <p class="subtitle">The Trojan Horse &bull; 15 words &bull; 195 questions</p>
+  <div class="mode-bar">
+    <button class="mode-btn active" id="btn-quiz">Quiz Mode</button>
+    <button class="mode-btn" id="btn-flash">Flashcard Mode</button>
+  </div>
+
+  <div id="flashcard-section">
+    <div class="fc-controls">
+      <button class="fc-btn" id="fc-prev">&#8592; Prev</button>
+      <button class="fc-btn" id="fc-flip">Flip</button>
+      <button class="fc-btn" id="fc-next">Next &#8594;</button>
+      <button class="fc-btn" id="fc-shuffle">Shuffle</button>
+    </div>
+    <div class="fc-progress" id="fc-progress"></div>
+    <div class="card-wrap">
+      <div class="card-inner" id="card-inner">
+        <div class="card-face card-front" id="card-front"></div>
+        <div class="card-face card-back" id="card-back"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="quiz-section">
+    <div class="quiz-meta">
+      <span class="q-counter" id="q-counter"></span>
+      <span class="streak-badge" id="streak-badge">&#128293; 0 streak</span>
+      <span class="q-score" id="q-score"></span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+    <div id="type-badge-wrap"></div>
+    <div class="q-word" id="q-word"></div>
+    <div class="q-text" id="q-text"></div>
+    <div class="hint-row">
+      <button class="hint-btn" id="hint-btn">&#128161; Hint</button>
+    </div>
+    <div class="hint-box" id="hint-box"></div>
+    <div class="choices" id="choices"></div>
+    <div class="feedback" id="feedback"></div>
+    <button class="next-btn" id="next-btn">Next Question &#8594;</button>
+  </div>
+
+  <div id="result-section">
+    <div class="result-title">Round Complete!</div>
+    <div class="result-score" id="result-score"></div>
+    <div class="result-label">out of 20</div>
+    <div class="result-msg" id="result-msg"></div>
+    <div class="result-breakdown" id="result-breakdown"></div>
+    <button class="restart-btn" id="restart-btn">Play Again</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  var c=document.getElementById('bg'),ctx=c.getContext('2d'),stars=[];
+  function resize(){c.width=innerWidth;c.height=innerHeight;}
+  resize();window.addEventListener('resize',resize);
+  for(var i=0;i<220;i++)stars.push({x:Math.random(),y:Math.random(),r:Math.random()*1.5+.3,s:Math.random()*.4+.1});
+  function draw(){
+    ctx.clearRect(0,0,c.width,c.height);
+    var g=ctx.createRadialGradient(c.width/2,c.height/2,0,c.width/2,c.height/2,c.width*.7);
+    g.addColorStop(0,'#2d1a00');g.addColorStop(.5,'#160d01');g.addColorStop(1,'#060400');
+    ctx.fillStyle=g;ctx.fillRect(0,0,c.width,c.height);
+    var t=Date.now()/1000;
+    stars.forEach(function(s){
+      var op=.3+.4*Math.abs(Math.sin(t*s.s+s.x*10));
+      ctx.beginPath();ctx.arc(s.x*c.width,s.y*c.height,s.r,0,Math.PI*2);
+      ctx.fillStyle='rgba(251,191,36,'+op+')';ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+var pc=document.getElementById('pcanvas'),pctx=pc.getContext('2d'),particles=[];
+pc.width=innerWidth;pc.height=innerHeight;
+window.addEventListener('resize',function(){pc.width=innerWidth;pc.height=innerHeight;});
+function spawnBurst(x,y,color,n){
+  for(var i=0;i<n;i++){
+    var ang=Math.random()*Math.PI*2,spd=Math.random()*5+2;
+    particles.push({x:x,y:y,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,life:1,color:color,r:Math.random()*4+2});
+  }
+}
+function spawnConfetti(){
+  var colors=['#fbbf24','#f59e0b','#d97706','#4ade80','#60a5fa','#c084fc'];
+  for(var i=0;i<60;i++){
+    particles.push({x:Math.random()*pc.width,y:-10,vx:(Math.random()-.5)*4,vy:Math.random()*4+2,
+      life:1,color:colors[Math.floor(Math.random()*colors.length)],r:Math.random()*5+3,confetti:true});
+  }
+}
+(function ploop(){
+  pctx.clearRect(0,0,pc.width,pc.height);
+  particles=particles.filter(function(p){return p.life>0;});
+  particles.forEach(function(p){
+    p.x+=p.vx;p.y+=p.vy;p.life-=p.confetti?.012:.03;
+    if(p.confetti)p.vy+=.1;
+    pctx.globalAlpha=Math.max(0,p.life);
+    pctx.fillStyle=p.color;pctx.beginPath();
+    pctx.arc(p.x,p.y,p.r,0,Math.PI*2);pctx.fill();
+  });
+  pctx.globalAlpha=1;
+  requestAnimationFrame(ploop);
+})();
+
+function clearEl(el){while(el.firstChild)el.removeChild(el.firstChild);}
+function mk(tag,cls,txt){var el=document.createElement(tag);if(cls)el.className=cls;if(txt!==undefined)el.textContent=txt;return el;}
+function shuffle(a){var b=a.slice();for(var i=b.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=b[i];b[i]=b[j];b[j]=t;}return b;}
+
+var TYPE_STYLES={
+  synonym:{label:'SYNONYM',color:'#34d399',bg:'rgba(6,95,70,.4)'},
+  antonym:{label:'ANTONYM',color:'#f472b6',bg:'rgba(157,23,77,.35)'},
+  analogy:{label:'ANALOGY',color:'#a78bfa',bg:'rgba(109,40,217,.35)'},
+  simile:{label:'SIMILE',color:'#fbbf24',bg:'rgba(161,98,7,.35)'},
+  metaphor:{label:'METAPHOR',color:'#38bdf8',bg:'rgba(7,89,133,.35)'}
+};
+
+var WORDS=[
+  {word:'abandon',pos:'v.',def:'1. To give up by leaving in a time of danger. 2. To lose or give up completely. 3. To withdraw help or support from one in need.',ex:'"The captain gave the order to abandon the ship when it began to sink."'},
+  {word:'adversary',pos:'n.',def:'An enemy or opponent.',ex:'"France and Germany were adversaries in two world wars but now enjoy friendly relations."'},
+  {word:'baffle',pos:'v.',def:'To confuse; to prevent from understanding.',ex:'"Alice was baffled by their inappropriate behavior and didn\'t know how to respond."'},
+  {word:'blunder',pos:'n./v.',def:'(n.) A stupid or careless mistake. (v.) 1. To make such a mistake. 2. To move in a clumsy or careless way.',ex:'"The mayor\'s rude comment was a major blunder that cost him the election."'},
+  {word:'colossal',pos:'adj.',def:'Very big; enormous.',ex:'"The colossal size of the Great Wall is what impressed the tourists most."'},
+  {word:'detect',pos:'v.',def:'To discover something not easily noticed. Detection (n.), detective (n.), detector (n.).',ex:'"The witness did not detect anything unusual that day."'},
+  {word:'haul',pos:'v./n.',def:'(v.) To pull or carry with effort. (n.) 1. The amount caught or taken at one time. 2. The distance traveled or to be traveled.',ex:'"We haul the boat out of the water every winter."'},
+  {word:'overpower',pos:'v.',def:'To get the better of; to defeat.',ex:'"The spider overpowered the insect caught in its web."'},
+  {word:'rejoice',pos:'v.',def:'To be very happy.',ex:'"Family members rejoiced when they heard the expedition had returned safely."'},
+  {word:'scoff',pos:'v.',def:'To mock; to ridicule.',ex:'"People once scoffed at the idea of space travel."'},
+  {word:'sentinel',pos:'n.',def:'One who keeps watch or guards a point of entry.',ex:'"Sentinels were posted to warn of the enemy\'s approach."'},
+  {word:'siege',pos:'n.',def:'The surrounding of a place in order to force it to surrender.',ex:'"The siege of Leningrad by the German army lasted from 1941 to 1944."'},
+  {word:'sinister',pos:'adj.',def:'Suggesting or leading to evil or harm.',ex:'"The villain\'s sinister words sent shivers down our spines."'},
+  {word:'victor',pos:'n.',def:'The winner in a contest or struggle. Victorious (adj.): successful in a contest or battle.',ex:'"The victors of the semifinal competition will meet in the finals tomorrow."'},
+  {word:'woe',pos:'n.',def:'1. Deep distress or misery. 2. Trouble; misfortune. Woeful (adj.): 1. Full of woe; unhappy. 2. Very bad; wretched.',ex:'"The students\' woe was evident as they were led off to the principal\'s office."'}
+];
+
+var QUESTIONS=[
+// ── SYNONYMS (50) ──────────────────────────────────────────────────────────
+{type:'synonym',word:'abandon',q:'Which word is closest in meaning to ABANDON?',a:'desert',ch:['desert','protect','support','defend'],hint:'To abandon is to leave behind — to desert someone or something'},
+{type:'synonym',word:'abandon',q:'ABANDON most nearly means:',a:'forsake',ch:['forsake','shelter','rescue','aid'],hint:'To forsake means to give up or leave — same as abandon'},
+{type:'synonym',word:'abandon',q:'Which word is a synonym for ABANDON?',a:'relinquish',ch:['relinquish','pursue','maintain','keep'],hint:'To relinquish is to give up or let go — like abandon'},
+{type:'synonym',word:'adversary',q:'ADVERSARY most nearly means:',a:'enemy',ch:['enemy','ally','friend','partner'],hint:'An adversary is someone working against you — an enemy'},
+{type:'synonym',word:'adversary',q:'Which word is a synonym for ADVERSARY?',a:'opponent',ch:['opponent','teammate','supporter','ally'],hint:'An opponent is someone you compete against — like an adversary'},
+{type:'synonym',word:'adversary',q:'ADVERSARY is closest in meaning to:',a:'rival',ch:['rival','helper','companion','friend'],hint:'A rival is someone who competes against you — like an adversary'},
+{type:'synonym',word:'baffle',q:'BAFFLE most nearly means:',a:'confuse',ch:['confuse','clarify','explain','enlighten'],hint:'To baffle is to confuse or prevent from understanding'},
+{type:'synonym',word:'baffle',q:'Which word is a synonym for BAFFLE?',a:'perplex',ch:['perplex','solve','simplify','clarify'],hint:'To perplex means to confuse thoroughly — same as baffle'},
+{type:'synonym',word:'baffle',q:'BAFFLE is closest in meaning to:',a:'puzzle',ch:['puzzle','inform','explain','answer'],hint:'To puzzle someone is to leave them confused — like baffle'},
+{type:'synonym',word:'baffle',q:'Which of the following is a synonym for BAFFLE?',a:'mystify',ch:['mystify','enlighten','clarify','illuminate'],hint:'To mystify is to completely confuse — like baffle'},
+{type:'synonym',word:'blunder',q:'BLUNDER (n.) most nearly means:',a:'mistake',ch:['mistake','triumph','achievement','success'],hint:'A blunder is a stupid or careless mistake'},
+{type:'synonym',word:'blunder',q:'Which word is a synonym for BLUNDER?',a:'error',ch:['error','victory','accomplishment','correction'],hint:'An error is a mistake — like a blunder'},
+{type:'synonym',word:'blunder',q:'BLUNDER is closest in meaning to:',a:'bungle',ch:['bungle','succeed','achieve','master'],hint:'To bungle something is to make a mess of it — like a blunder'},
+{type:'synonym',word:'colossal',q:'COLOSSAL most nearly means:',a:'enormous',ch:['enormous','tiny','miniature','microscopic'],hint:'Colossal means very big — enormous'},
+{type:'synonym',word:'colossal',q:'Which word is a synonym for COLOSSAL?',a:'gigantic',ch:['gigantic','tiny','petite','miniature'],hint:'Gigantic means extremely large — like colossal'},
+{type:'synonym',word:'colossal',q:'COLOSSAL is closest in meaning to:',a:'mammoth',ch:['mammoth','tiny','slight','miniature'],hint:'Mammoth means huge — like colossal'},
+{type:'synonym',word:'colossal',q:'Which of the following is a synonym for COLOSSAL?',a:'massive',ch:['massive','tiny','slight','minute'],hint:'Massive means very large and heavy — like colossal'},
+{type:'synonym',word:'detect',q:'DETECT most nearly means:',a:'discover',ch:['discover','overlook','miss','ignore'],hint:'To detect is to discover something not easily noticed'},
+{type:'synonym',word:'detect',q:'Which word is a synonym for DETECT?',a:'notice',ch:['notice','ignore','overlook','miss'],hint:'To notice something is to become aware of it — like detect'},
+{type:'synonym',word:'detect',q:'DETECT is closest in meaning to:',a:'uncover',ch:['uncover','hide','conceal','miss'],hint:'To uncover is to reveal what was hidden — like detect'},
+{type:'synonym',word:'haul',q:'HAUL (v.) most nearly means:',a:'drag',ch:['drag','push','drop','abandon'],hint:'To haul is to pull with effort — to drag something heavy'},
+{type:'synonym',word:'haul',q:'Which word is a synonym for HAUL?',a:'pull',ch:['pull','push','shove','fling'],hint:'To pull is to draw something toward you with effort — like haul'},
+{type:'synonym',word:'haul',q:'HAUL is closest in meaning to:',a:'carry',ch:['carry','drop','release','push'],hint:'To carry something with effort is to haul it'},
+{type:'synonym',word:'overpower',q:'OVERPOWER most nearly means:',a:'defeat',ch:['defeat','surrender','yield','retreat'],hint:'To overpower is to get the better of — to defeat'},
+{type:'synonym',word:'overpower',q:'Which word is a synonym for OVERPOWER?',a:'overwhelm',ch:['overwhelm','surrender','retreat','yield'],hint:'To overwhelm means to overcome completely — like overpower'},
+{type:'synonym',word:'overpower',q:'OVERPOWER is closest in meaning to:',a:'conquer',ch:['conquer','surrender','yield','retreat'],hint:'To conquer is to defeat and take control — like overpower'},
+{type:'synonym',word:'rejoice',q:'REJOICE most nearly means:',a:'celebrate',ch:['celebrate','mourn','grieve','lament'],hint:'To rejoice is to be very happy — to celebrate'},
+{type:'synonym',word:'rejoice',q:'Which word is a synonym for REJOICE?',a:'exult',ch:['exult','mourn','sorrow','weep'],hint:'To exult means to feel great joy — like rejoice'},
+{type:'synonym',word:'rejoice',q:'REJOICE is closest in meaning to:',a:'delight',ch:['delight','grieve','mourn','lament'],hint:'To delight in something is to feel great joy — like rejoice'},
+{type:'synonym',word:'scoff',q:'SCOFF most nearly means:',a:'mock',ch:['mock','praise','admire','honor'],hint:'To scoff is to mock or ridicule with contempt'},
+{type:'synonym',word:'scoff',q:'Which word is a synonym for SCOFF?',a:'ridicule',ch:['ridicule','praise','compliment','admire'],hint:'To ridicule means to make fun of — same as scoff'},
+{type:'synonym',word:'scoff',q:'SCOFF is closest in meaning to:',a:'jeer',ch:['jeer','praise','applaud','honor'],hint:'To jeer is to make rude mocking remarks — like scoff'},
+{type:'synonym',word:'scoff',q:'Which of the following is a synonym for SCOFF?',a:'taunt',ch:['taunt','praise','compliment','admire'],hint:'To taunt means to provoke with mocking words — like scoff'},
+{type:'synonym',word:'sentinel',q:'SENTINEL most nearly means:',a:'guard',ch:['guard','prisoner','visitor','enemy'],hint:'A sentinel is someone who keeps watch — a guard'},
+{type:'synonym',word:'sentinel',q:'Which word is a synonym for SENTINEL?',a:'lookout',ch:['lookout','prisoner','visitor','enemy'],hint:'A lookout watches for danger — like a sentinel'},
+{type:'synonym',word:'sentinel',q:'SENTINEL is closest in meaning to:',a:'sentry',ch:['sentry','prisoner','captive','intruder'],hint:'A sentry is a soldier who stands guard — same as a sentinel'},
+{type:'synonym',word:'siege',q:'SIEGE most nearly means:',a:'blockade',ch:['blockade','retreat','surrender','escape'],hint:'A siege blocks a place to force its surrender — like a blockade'},
+{type:'synonym',word:'siege',q:'Which word is a synonym for SIEGE?',a:'encirclement',ch:['encirclement','retreat','surrender','escape'],hint:'An encirclement surrounds an enemy — like a siege'},
+{type:'synonym',word:'siege',q:'SIEGE is closest in meaning to:',a:'assault',ch:['assault','retreat','surrender','defense'],hint:'A siege is a prolonged assault on a fortified place'},
+{type:'synonym',word:'sinister',q:'SINISTER most nearly means:',a:'evil',ch:['evil','harmless','benign','innocent'],hint:'Sinister suggests evil or harm — menacing'},
+{type:'synonym',word:'sinister',q:'Which word is a synonym for SINISTER?',a:'menacing',ch:['menacing','harmless','friendly','innocent'],hint:'Menacing means threatening harm — like sinister'},
+{type:'synonym',word:'sinister',q:'SINISTER is closest in meaning to:',a:'ominous',ch:['ominous','harmless','benign','safe'],hint:'Ominous means suggesting something bad is coming — like sinister'},
+{type:'synonym',word:'victor',q:'VICTOR most nearly means:',a:'winner',ch:['winner','loser','victim','defeated'],hint:'A victor is the winner in a contest or struggle'},
+{type:'synonym',word:'victor',q:'Which word is a synonym for VICTOR?',a:'champion',ch:['champion','loser','victim','defeated'],hint:'A champion is someone who has won — like a victor'},
+{type:'synonym',word:'victor',q:'VICTOR is closest in meaning to:',a:'conqueror',ch:['conqueror','loser','victim','surrenderer'],hint:'A conqueror is someone who defeats others — like a victor'},
+{type:'synonym',word:'victor',q:'Which of the following is a synonym for VICTOR?',a:'triumphant one',ch:['triumphant one','loser','defeated','surrendered'],hint:'Triumphant means successful in battle — the victor is the triumphant one'},
+{type:'synonym',word:'woe',q:'WOE most nearly means:',a:'misery',ch:['misery','joy','happiness','delight'],hint:'Woe is deep distress or misery'},
+{type:'synonym',word:'woe',q:'Which word is a synonym for WOE?',a:'sorrow',ch:['sorrow','delight','joy','happiness'],hint:'Sorrow is deep sadness — like woe'},
+{type:'synonym',word:'woe',q:'WOE is closest in meaning to:',a:'distress',ch:['distress','happiness','joy','contentment'],hint:'Distress means great suffering — like woe'},
+{type:'synonym',word:'woe',q:'Which of the following is a synonym for WOE?',a:'anguish',ch:['anguish','joy','contentment','elation'],hint:'Anguish means severe pain or suffering — like woe'},
+// ── ANTONYMS (35) ──────────────────────────────────────────────────────────
+{type:'antonym',word:'abandon',q:'Which word is most nearly OPPOSITE in meaning to ABANDON?',a:'protect',ch:['protect','desert','forsake','leave'],hint:'Abandon means to leave behind — the opposite is to protect or stay with'},
+{type:'antonym',word:'abandon',q:'ABANDON is most nearly opposite in meaning to:',a:'support',ch:['support','desert','forsake','flee'],hint:'To support means to stay and help — the opposite of abandon'},
+{type:'antonym',word:'abandon',q:'Which word is the ANTONYM of ABANDON?',a:'maintain',ch:['maintain','desert','forsake','quit'],hint:'To maintain means to keep going — the opposite of giving up and abandoning'},
+{type:'antonym',word:'adversary',q:'Which word is most nearly OPPOSITE in meaning to ADVERSARY?',a:'ally',ch:['ally','rival','enemy','opponent'],hint:'An adversary is an enemy — the opposite is an ally'},
+{type:'antonym',word:'adversary',q:'ADVERSARY is most nearly opposite in meaning to:',a:'friend',ch:['friend','rival','foe','opponent'],hint:'A friend is on your side — the opposite of an adversary'},
+{type:'antonym',word:'baffle',q:'Which word is most nearly OPPOSITE in meaning to BAFFLE?',a:'clarify',ch:['clarify','confuse','perplex','puzzle'],hint:'Baffle means to confuse — the opposite is to clarify'},
+{type:'antonym',word:'baffle',q:'BAFFLE is most nearly opposite in meaning to:',a:'enlighten',ch:['enlighten','confuse','mystify','bewilder'],hint:'To enlighten is to make things clear — the opposite of baffle'},
+{type:'antonym',word:'blunder',q:'Which word is most nearly OPPOSITE in meaning to BLUNDER?',a:'success',ch:['success','mistake','error','bungle'],hint:'A blunder is a failure or mistake — the opposite is success or achievement'},
+{type:'antonym',word:'blunder',q:'BLUNDER is most nearly opposite in meaning to:',a:'achievement',ch:['achievement','error','mistake','bungle'],hint:'An achievement is something done successfully — the opposite of a blunder'},
+{type:'antonym',word:'blunder',q:'Which word is the ANTONYM of BLUNDER?',a:'triumph',ch:['triumph','error','mistake','bungle'],hint:'A triumph is a great success — the opposite of a blunder'},
+{type:'antonym',word:'colossal',q:'Which word is most nearly OPPOSITE in meaning to COLOSSAL?',a:'tiny',ch:['tiny','enormous','gigantic','massive'],hint:'Colossal means very large — the opposite is tiny'},
+{type:'antonym',word:'colossal',q:'COLOSSAL is most nearly opposite in meaning to:',a:'miniature',ch:['miniature','huge','massive','gigantic'],hint:'Miniature means very small — the opposite of colossal'},
+{type:'antonym',word:'colossal',q:'Which word is the ANTONYM of COLOSSAL?',a:'microscopic',ch:['microscopic','enormous','mammoth','gigantic'],hint:'Microscopic means extremely small — the direct opposite of colossal'},
+{type:'antonym',word:'detect',q:'Which word is most nearly OPPOSITE in meaning to DETECT?',a:'overlook',ch:['overlook','discover','notice','uncover'],hint:'Detect means to notice something — the opposite is to overlook or miss'},
+{type:'antonym',word:'detect',q:'DETECT is most nearly opposite in meaning to:',a:'miss',ch:['miss','discover','uncover','notice'],hint:'To miss is to fail to notice — the opposite of detect'},
+{type:'antonym',word:'haul',q:'Which word is most nearly OPPOSITE in meaning to HAUL?',a:'push',ch:['push','drag','pull','carry'],hint:'To haul is to pull — the opposite motion is to push'},
+{type:'antonym',word:'haul',q:'HAUL is most nearly opposite in meaning to:',a:'shove',ch:['shove','drag','tow','carry'],hint:'To shove is to push hard — the opposite direction from haul (pull)'},
+{type:'antonym',word:'overpower',q:'Which word is most nearly OPPOSITE in meaning to OVERPOWER?',a:'surrender',ch:['surrender','defeat','overwhelm','conquer'],hint:'Overpower means to defeat — the opposite is to surrender'},
+{type:'antonym',word:'overpower',q:'OVERPOWER is most nearly opposite in meaning to:',a:'yield',ch:['yield','conquer','overwhelm','defeat'],hint:'To yield is to give in — the opposite of overpower'},
+{type:'antonym',word:'rejoice',q:'Which word is most nearly OPPOSITE in meaning to REJOICE?',a:'mourn',ch:['mourn','celebrate','exult','delight'],hint:'Rejoice means to be very happy — the opposite is to mourn'},
+{type:'antonym',word:'rejoice',q:'REJOICE is most nearly opposite in meaning to:',a:'grieve',ch:['grieve','celebrate','exult','delight'],hint:'To grieve is to feel deep sadness — the opposite of rejoice'},
+{type:'antonym',word:'rejoice',q:'Which word is the ANTONYM of REJOICE?',a:'lament',ch:['lament','exult','delight','celebrate'],hint:'To lament is to express sorrow — the opposite of rejoice'},
+{type:'antonym',word:'scoff',q:'Which word is most nearly OPPOSITE in meaning to SCOFF?',a:'praise',ch:['praise','mock','jeer','ridicule'],hint:'To scoff is to mock — the opposite is to praise or admire'},
+{type:'antonym',word:'scoff',q:'SCOFF is most nearly opposite in meaning to:',a:'admire',ch:['admire','taunt','jeer','mock'],hint:'To admire is to regard with respect — the opposite of scoff'},
+{type:'antonym',word:'sentinel',q:'Which word is most nearly OPPOSITE in meaning to SENTINEL?',a:'intruder',ch:['intruder','guard','sentry','lookout'],hint:'A sentinel keeps watch to stop entry — the opposite is an intruder who enters without permission'},
+{type:'antonym',word:'sentinel',q:'SENTINEL is most nearly opposite in meaning to:',a:'trespasser',ch:['trespasser','guard','sentry','lookout'],hint:'A trespasser enters without permission — opposite of the sentinel who prevents that'},
+{type:'antonym',word:'siege',q:'Which word is most nearly OPPOSITE in meaning to SIEGE?',a:'retreat',ch:['retreat','assault','blockade','encirclement'],hint:'A siege involves surrounding and pressing in — the opposite is to retreat'},
+{type:'antonym',word:'siege',q:'SIEGE is most nearly opposite in meaning to:',a:'withdrawal',ch:['withdrawal','blockade','assault','encirclement'],hint:'A withdrawal means pulling back — the opposite of pressing a siege'},
+{type:'antonym',word:'sinister',q:'Which word is most nearly OPPOSITE in meaning to SINISTER?',a:'benign',ch:['benign','evil','menacing','ominous'],hint:'Sinister suggests evil — the opposite is benign (harmless or kind)'},
+{type:'antonym',word:'sinister',q:'SINISTER is most nearly opposite in meaning to:',a:'harmless',ch:['harmless','threatening','ominous','menacing'],hint:'Harmless means causing no harm — the opposite of sinister'},
+{type:'antonym',word:'sinister',q:'Which word is the ANTONYM of SINISTER?',a:'innocent',ch:['innocent','evil','menacing','dark'],hint:'Innocent means free from evil intent — the direct opposite of sinister'},
+{type:'antonym',word:'victor',q:'Which word is most nearly OPPOSITE in meaning to VICTOR?',a:'loser',ch:['loser','champion','winner','conqueror'],hint:'A victor is the winner — the opposite is the loser'},
+{type:'antonym',word:'victor',q:'VICTOR is most nearly opposite in meaning to:',a:'defeated',ch:['defeated','triumphant','victorious','champion'],hint:'Defeated means having lost — the opposite of victor'},
+{type:'antonym',word:'woe',q:'Which word is most nearly OPPOSITE in meaning to WOE?',a:'joy',ch:['joy','misery','sorrow','distress'],hint:'Woe is deep misery — the opposite is joy'},
+{type:'antonym',word:'woe',q:'WOE is most nearly opposite in meaning to:',a:'happiness',ch:['happiness','anguish','grief','sorrow'],hint:'Happiness is the opposite of woe\'s misery'},
+// ── ANALOGIES (40) ─────────────────────────────────────────────────────────
+{type:'analogy',word:'abandon',q:'ABANDON is to LEAVE as SUPPORT is to ___',a:'stay',ch:['stay','flee','desert','quit'],hint:'Think: abandon = leave (give up); support = stay (continue helping)'},
+{type:'analogy',word:'abandon',q:'CAPTAIN is to ABANDON SHIP as SOLDIER is to ___',a:'desert post',ch:['desert post','protect base','guard gate','hold position'],hint:'Think: a captain abandons a ship; a soldier deserts a post — same act in different contexts'},
+{type:'analogy',word:'abandon',q:'ABANDON is to FORSAKE as MAINTAIN is to ___',a:'keep',ch:['keep','desert','quit','leave'],hint:'Think: abandon = forsake (synonyms); maintain = keep (synonyms) — parallel pairs'},
+{type:'analogy',word:'adversary',q:'ADVERSARY is to ENEMY as ALLY is to ___',a:'friend',ch:['friend','rival','foe','opponent'],hint:'Think: adversary = enemy; ally = friend — antonym pairs'},
+{type:'analogy',word:'adversary',q:'TROY is to ADVERSARY as GREECE is to ___',a:'opponent',ch:['opponent','partner','ally','supporter'],hint:'Think: Troy and Greece were adversaries — each was the other\'s opponent'},
+{type:'analogy',word:'adversary',q:'ADVERSARY is to OPPONENT as TEAMMATE is to ___',a:'partner',ch:['partner','enemy','rival','foe'],hint:'Think: adversary = opponent (against you); teammate = partner (with you)'},
+{type:'analogy',word:'baffle',q:'BAFFLE is to CONFUSE as CLARIFY is to ___',a:'explain',ch:['explain','puzzle','mystify','confuse'],hint:'Think: baffle = confuse (make harder to understand); clarify = explain (make easier to understand)'},
+{type:'analogy',word:'baffle',q:'RIDDLE is to BAFFLE as SOLUTION is to ___',a:'solve',ch:['solve','confuse','puzzle','baffle'],hint:'Think: a riddle baffles; a solution solves — each word acts on the related concept'},
+{type:'analogy',word:'baffle',q:'BAFFLED is to PERPLEXED as ENLIGHTENED is to ___',a:'informed',ch:['informed','confused','puzzled','baffled'],hint:'Think: baffled = perplexed (confused); enlightened = informed (made clear) — synonyms in each pair'},
+{type:'analogy',word:'blunder',q:'BLUNDER is to MISTAKE as TRIUMPH is to ___',a:'success',ch:['success','error','failure','bungle'],hint:'Think: blunder = mistake; triumph = success — antonym pairs'},
+{type:'analogy',word:'blunder',q:'CHESS PLAYER is to BLUNDER as SURGEON is to ___',a:'error',ch:['error','triumph','achievement','victory'],hint:'Think: a chess player blunders; a surgeon makes an error — both are serious mistakes in their fields'},
+{type:'analogy',word:'colossal',q:'COLOSSAL is to ENORMOUS as TINY is to ___',a:'miniature',ch:['miniature','huge','massive','gigantic'],hint:'Think: colossal = enormous (both mean very large); tiny = miniature (both mean very small)'},
+{type:'analogy',word:'colossal',q:'ELEPHANT is to COLOSSAL as MOUSE is to ___',a:'tiny',ch:['tiny','enormous','gigantic','massive'],hint:'Think: an elephant is colossal; a mouse is tiny — each animal matches its size word'},
+{type:'analogy',word:'colossal',q:'COLOSSAL is to SIZE as DEAFENING is to ___',a:'sound',ch:['sound','weight','length','color'],hint:'Think: colossal describes extreme size; deafening describes extreme sound — each is an extreme of its category'},
+{type:'analogy',word:'detect',q:'DETECT is to DISCOVER as OVERLOOK is to ___',a:'miss',ch:['miss','find','notice','uncover'],hint:'Think: detect = discover (find something); overlook = miss (fail to find something)'},
+{type:'analogy',word:'detect',q:'DETECTIVE is to DETECT as SCIENTIST is to ___',a:'research',ch:['research','ignore','overlook','miss'],hint:'Think: a detective\'s job is to detect; a scientist\'s job is to research — professional roles'},
+{type:'analogy',word:'detect',q:'DETECT is to NOTICE as IGNORE is to ___',a:'miss',ch:['miss','find','uncover','discover'],hint:'Think: detect = notice (see something); ignore = miss (not see something) — parallel meanings'},
+{type:'analogy',word:'haul',q:'HAUL is to PULL as SHOVE is to ___',a:'push',ch:['push','drag','carry','tow'],hint:'Think: haul = pull (draw toward you); shove = push (force away from you)'},
+{type:'analogy',word:'haul',q:'FISHERMAN is to HAUL NETS as FARMER is to ___',a:'harvest crops',ch:['harvest crops','build fences','plant seeds','water fields'],hint:'Think: a fisherman hauls nets; a farmer harvests crops — each gathers the results of their labor'},
+{type:'analogy',word:'overpower',q:'OVERPOWER is to DEFEAT as SURRENDER is to ___',a:'yield',ch:['yield','conquer','defeat','overpower'],hint:'Think: overpower = defeat (win); surrender = yield (give up) — antonym pairs'},
+{type:'analogy',word:'overpower',q:'STRENGTH is to OVERPOWER as WEAKNESS is to ___',a:'surrender',ch:['surrender','conquer','defeat','overwhelm'],hint:'Think: strength enables you to overpower; weakness leads to surrender'},
+{type:'analogy',word:'overpower',q:'GREEK SOLDIERS is to OVERPOWER as TROJANS is to ___',a:'yield',ch:['yield','conquer','overpower','defeat'],hint:'Think: the Greek soldiers overpowered the guards; the Trojans yielded — the Trojan War outcome'},
+{type:'analogy',word:'rejoice',q:'REJOICE is to JOY as MOURN is to ___',a:'grief',ch:['grief','celebration','happiness','delight'],hint:'Think: to rejoice is the expression of joy; to mourn is the expression of grief'},
+{type:'analogy',word:'rejoice',q:'VICTORY is to REJOICE as DEFEAT is to ___',a:'despair',ch:['despair','celebrate','delight','exult'],hint:'Think: victory causes rejoicing; defeat causes despair — cause and emotional effect'},
+{type:'analogy',word:'scoff',q:'SCOFF is to MOCK as PRAISE is to ___',a:'honor',ch:['honor','taunt','jeer','ridicule'],hint:'Think: scoff = mock (show contempt); praise = honor (show respect) — antonym pairs'},
+{type:'analogy',word:'scoff',q:'CASSANDRA is to SCOFF AT as WISDOM is to ___',a:'dismiss',ch:['dismiss','accept','honor','follow'],hint:'Think: the Trojans scoffed at Cassandra; they dismissed wisdom — same action in different terms'},
+{type:'analogy',word:'scoff',q:'SCOFF is to RIDICULE as ADMIRE is to ___',a:'respect',ch:['respect','mock','taunt','jeer'],hint:'Think: scoff = ridicule (show contempt); admire = respect (show esteem) — antonym pairs'},
+{type:'analogy',word:'sentinel',q:'SENTINEL is to GUARD as PRISONER is to ___',a:'captive',ch:['captive','warden','guard','sentinel'],hint:'Think: a sentinel is a guard (watches the gate); a prisoner is a captive (kept inside)'},
+{type:'analogy',word:'sentinel',q:'SENTINEL is to WATCH as WORKER is to ___',a:'labor',ch:['labor','sleep','guard','protect'],hint:'Think: a sentinel\'s job is to watch; a worker\'s job is to labor — role and action'},
+{type:'analogy',word:'sentinel',q:'SENTINEL AT GATE is to TROY as SECURITY GUARD is to ___',a:'building',ch:['building','army','city','fleet'],hint:'Think: a sentinel guards Troy\'s gate; a security guard watches a building\'s entrance — same function, different settings'},
+{type:'analogy',word:'siege',q:'SIEGE is to SURROUND as RETREAT is to ___',a:'withdraw',ch:['withdraw','advance','attack','press'],hint:'Think: siege = surround (move in); retreat = withdraw (pull back) — opposite military movements'},
+{type:'analogy',word:'siege',q:'SIEGE is to CITY as BLOCKADE is to ___',a:'port',ch:['port','army','castle','fortress'],hint:'Think: a siege surrounds a city; a blockade surrounds a port — same strategy, different targets'},
+{type:'analogy',word:'sinister',q:'SINISTER is to EVIL as BENIGN is to ___',a:'harmless',ch:['harmless','wicked','ominous','menacing'],hint:'Think: sinister = evil; benign = harmless — antonym pairs'},
+{type:'analogy',word:'sinister',q:'SINISTER LOOK is to FEAR as WARM SMILE is to ___',a:'comfort',ch:['comfort','terror','dread','unease'],hint:'Think: a sinister look causes fear; a warm smile causes comfort — expression and emotional response'},
+{type:'analogy',word:'sinister',q:'VILLAIN is to SINISTER as HERO is to ___',a:'noble',ch:['noble','evil','menacing','ominous'],hint:'Think: a villain is sinister; a hero is noble — each character matches their defining quality'},
+{type:'analogy',word:'victor',q:'VICTOR is to WINNER as LOSER is to ___',a:'defeated',ch:['defeated','champion','triumphant','winning'],hint:'Think: victor = winner; loser = defeated — antonym pairs'},
+{type:'analogy',word:'victor',q:'VICTOR is to SPOILS as LOSER is to ___',a:'defeat',ch:['defeat','prize','trophy','reward'],hint:'Think: the victor wins the spoils (rewards); the loser receives defeat — outcomes of winning and losing'},
+{type:'analogy',word:'victor',q:'GREECE is to VICTOR as TROY is to ___',a:'vanquished',ch:['vanquished','winner','champion','triumphant'],hint:'Think: Greece was the victor of the Trojan War; Troy was vanquished (defeated)'},
+{type:'analogy',word:'woe',q:'WOE is to MISERY as JOY is to ___',a:'happiness',ch:['happiness','sorrow','distress','grief'],hint:'Think: woe = misery; joy = happiness — antonym pairs'},
+{type:'analogy',word:'woe',q:'BLUNDER is to WOE as SUCCESS is to ___',a:'joy',ch:['joy','misery','sorrow','distress'],hint:'Think: a blunder leads to woe; a success leads to joy — cause and emotional result'},
+// ── SIMILES (35) ───────────────────────────────────────────────────────────
+{type:'simile',word:'abandon',q:'Complete the simile: The crew abandoned the sinking ship like ___',a:'rats fleeing a flooded hold — not a second thought, not a single look back',ch:['rats fleeing a flooded hold — not a second thought, not a single look back','sailors returning to their posts at the first sign of trouble','a captain steering into the storm to keep everyone safe','passengers organizing an orderly evacuation by the book'],hint:'Think: abandon = flee without hesitation — like something instinctive, driven entirely by survival'},
+{type:'simile',word:'abandon',q:'Complete the simile: She abandoned her plan as quickly as ___',a:'a sandcastle gives way when the tide comes in — built carefully, gone in an instant',ch:['a sandcastle gives way when the tide comes in — built carefully, gone in an instant','a bridge holds firm under the weight of heavy traffic','a fortress that withstands a hundred-year siege','a lighthouse standing through a night of storms'],hint:'Think: abandoning quickly = things can be given up as suddenly as they were made'},
+{type:'simile',word:'adversary',q:'Complete the simile: The two armies faced each other like ___',a:'ancient adversaries meeting again on a battlefield neither had chosen',ch:['ancient adversaries meeting again on a battlefield neither had chosen','old friends reuniting after a long journey','teammates gathering before a game they know they\'ll win','partners combining their strengths toward a shared goal'],hint:'Think: adversaries meet with history between them — ancient, familiar, and unresolved'},
+{type:'simile',word:'adversary',q:'Complete the simile: Her adversary circled her in debate like ___',a:'a hawk circling prey — patient, watching, waiting for the right moment to strike',ch:['a hawk circling prey — patient, watching, waiting for the right moment to strike','a bird hovering over a friend\'s nest to offer protection','a guide walking alongside to point out the safest path','a partner holding position to cover every angle'],hint:'Think: an adversary looks for weakness — like a hawk circling, reading every movement before acting'},
+{type:'simile',word:'baffle',q:'Complete the simile: The riddle baffled him like ___',a:'a locked door with no keyhole — he could push and knock but found no way through',ch:['a locked door with no keyhole — he could push and knock but found no way through','an open window he could step through without effort','a solved equation with every step written out clearly','a map with every road labeled and every landmark marked'],hint:'Think: baffled = no entry point for understanding — like a door you can\'t even begin to open'},
+{type:'simile',word:'baffle',q:'Complete the simile: She was as baffled by the instructions as ___',a:'someone handed a map written entirely in a language they\'d never seen',ch:['someone handed a map written entirely in a language they\'d never seen','a navigator reading a map in their own language in familiar terrain','a student given a problem they\'ve already practiced solving','a chef given a recipe in their native language with all the ingredients at hand'],hint:'Think: baffled = the information is there but completely inaccessible — like a map you can\'t read'},
+{type:'simile',word:'baffle',q:'Complete the simile: The secret code baffled the experts like ___',a:'a locked chest whose key was lost a hundred years ago',ch:['a locked chest whose key was lost a hundred years ago','a chest opened with the key they had been given','a simple combination lock they solved in under a minute','a box left deliberately open for anyone to examine'],hint:'Think: baffled experts = all skill, no access — like having the knowledge to open something but not the key'},
+{type:'simile',word:'blunder',q:'Complete the simile: His blunder echoed through the tournament like ___',a:'a false note struck in the middle of a concert — everyone heard it, no one forgot it',ch:['a false note struck in the middle of a concert — everyone heard it, no one forgot it','a perfectly tuned chord that brought the audience to its feet','a quiet note that only the musician noticed','a rest in the music — an intentional moment of silence'],hint:'Think: a blunder in the wrong moment is impossible to ignore — like a false note in a quiet hall'},
+{type:'simile',word:'blunder',q:'Complete the simile: The mayor\'s blunder spread through the city like ___',a:'ink dropped in water — unstoppable, staining everything it touched',ch:['ink dropped in water — unstoppable, staining everything it touched','a single clear raindrop disappearing into a clean stream','a careful brushstroke that stays exactly where it was painted','a seal pressed into wax — contained, purposeful, precise'],hint:'Think: a major blunder spreads and stains — like ink in water, you can\'t take it back'},
+{type:'simile',word:'colossal',q:'Complete the simile: The wooden horse stood before the gates of Troy like ___',a:'a colossal riddle on wheels — too big to ignore, too strange to understand',ch:['a colossal riddle on wheels — too big to ignore, too strange to understand','a small gift easily tucked aside and forgotten','a familiar object recognized and welcomed without question','a message written so clearly that anyone could read its meaning'],hint:'Think: colossal and strange — like a riddle in physical form, too large to look away from'},
+{type:'simile',word:'colossal',q:'Complete the simile: The Great Wall stretched across the mountains like ___',a:'a colossal stone serpent laid flat across every peak it crossed',ch:['a colossal stone serpent laid flat across every peak it crossed','a small path winding through the valley below','a trail wide enough for one person walking carefully','a stream following the lowest ground between the hills'],hint:'Think: colossal and continuous — like a living thing stretched across the landscape'},
+{type:'simile',word:'colossal',q:'Complete the simile: Her mistake felt as colossal as ___',a:'an elephant trying to hide behind a fence post — impossible to overlook, impossible to pretend wasn\'t there',ch:['an elephant trying to hide behind a fence post — impossible to overlook, impossible to pretend wasn\'t there','a mouse disappearing into the smallest crack in the wall','a sparrow landing so lightly that no one notices it land','a whisper so quiet that only the person beside you can hear'],hint:'Think: colossal mistake = stands out completely — like something huge trying to hide in plain sight'},
+{type:'simile',word:'detect',q:'Complete the simile: The spy could detect a lie as easily as ___',a:'a bloodhound picks up a scent — instinctive, immediate, and never wrong',ch:['a bloodhound picks up a scent — instinctive, immediate, and never wrong','a person walking blindly through a forest in thick fog','someone reading a book in a language they\'ve only just begun to study','a navigator at sea with no stars and no instruments'],hint:'Think: to detect is instinctive in experts — like a bloodhound, they follow what others can\'t smell'},
+{type:'simile',word:'detect',q:'Complete the simile: He detected something wrong in the plan like ___',a:'a musician who hears a single instrument slightly out of tune in a full orchestra',ch:['a musician who hears a single instrument slightly out of tune in a full orchestra','a listener who hears only pleasant sounds and is satisfied','an audience member who enjoys the performance without analyzing it','a conductor who nods approvingly and walks away'],hint:'Think: to detect a flaw requires a trained ear — like hearing one wrong note in a complex piece'},
+{type:'simile',word:'haul',q:'Complete the simile: The workers hauled the stones like ___',a:'ants carrying crumbs many times their own weight — slow, relentless, unstoppable',ch:['ants carrying crumbs many times their own weight — slow, relentless, unstoppable','birds gliding on the wind without a single wingbeat of effort','a stone dropped into water — fast, effortless, following only gravity','a cloud drifting without weight or resistance across the sky'],hint:'Think: haul = carry heavy things over distance with effort — like ants who carry enormous loads relative to their size'},
+{type:'simile',word:'haul',q:'Complete the simile: She hauled the suitcase up the stairs like ___',a:'a ship being dragged over a sandbar — inch by reluctant inch',ch:['a ship being dragged over a sandbar — inch by reluctant inch','a feather caught in the wind and lifted effortlessly','a balloon rising toward the ceiling without being touched','a bubble that finds the air and is carried upward without strain'],hint:'Think: to haul something heavy is reluctant progress — like a ship grinding over sand'},
+{type:'simile',word:'haul',q:'Complete the simile: The fishermen hauled in their nets like ___',a:'farmers gathering a harvest — arms aching but rewarded by what they found',ch:['farmers gathering a harvest — arms aching but rewarded by what they found','children running toward a gift left without effort to find','a river flowing effortlessly to the sea it was always moving toward','birds landing on a branch already bent toward them by the wind'],hint:'Think: hauling nets = physical work that ends in a reward — like harvesting, the effort is the price of the prize'},
+{type:'simile',word:'overpower',q:'Complete the simile: The Greek soldiers overpowered the guards as swiftly as ___',a:'a wave swamping a rowboat — there one moment, submerged the next',ch:['a wave swamping a rowboat — there one moment, submerged the next','a gentle current that a strong rower can easily hold against','a tide that rises slowly and gives the shore time to prepare','a rain that falls softly enough that nothing is disturbed'],hint:'Think: overpower = sudden, total, no contest — like a wave and a rowboat'},
+{type:'simile',word:'overpower',q:'Complete the simile: The smell of the bonfire overpowered everything else like ___',a:'a trumpet blast swallowing the sound of every quieter instrument',ch:['a trumpet blast swallowing the sound of every quieter instrument','a single flute note floating above the rest without disturbing them','a whisper threading through the music without changing it','a single candle whose light blends with all the other candles'],hint:'Think: overpower = dominate completely — like a trumpet that drowns out everything else'},
+{type:'simile',word:'rejoice',q:'Complete the simile: The Trojans rejoiced like ___',a:'a crowd that watched the last storm cloud blow away after ten years of rain',ch:['a crowd that watched the last storm cloud blow away after ten years of rain','a group that heard the weather forecast and prepared carefully for more','people watching a storm approach and quietly heading indoors','a crowd that saw the clouds and decided to wait for the rain to pass'],hint:'Think: to rejoice after a long struggle = release of enormous relief — like watching ten years of storm finally clear'},
+{type:'simile',word:'rejoice',q:'Complete the simile: She rejoiced at the news like ___',a:'a candle suddenly lit in a dark room — small but filling everything with light',ch:['a candle suddenly lit in a dark room — small but filling everything with light','a room that was already bright and became slightly brighter','a lamp turned on in a room where no one had noticed the darkness','a window opened in a room that was already full of fresh air'],hint:'Think: rejoicing transforms your whole state — like one candle that fills darkness completely'},
+{type:'simile',word:'rejoice',q:'Complete the simile: The family rejoiced together like ___',a:'a chorus finding the same note after a long silence — suddenly and completely unified',ch:['a chorus finding the same note after a long silence — suddenly and completely unified','singers each performing their own song without listening to the others','a group of instruments each tuned to a different key','voices overlapping in a room where no two people agree on the melody'],hint:'Think: rejoicing together = alignment after separation — like voices finally finding the same note'},
+{type:'simile',word:'scoff',q:'Complete the simile: The professors scoffed at her application like ___',a:'diners turning away an unfamiliar dish before tasting it — dismissed without a moment\'s consideration',ch:['diners turning away an unfamiliar dish before tasting it — dismissed without a moment\'s consideration','chefs who taste every new ingredient carefully before forming a judgment','judges who read every entry twice before deciding which deserves a prize','tasters who try something unexpected and find themselves surprised by how good it is'],hint:'Think: to scoff is to reject without real examination — like food refused before it\'s even tried'},
+{type:'simile',word:'scoff',q:'Complete the simile: He scoffed at the idea as casually as ___',a:'brushing a crumb off the table — a small motion to him, but it carried everything',ch:['brushing a crumb off the table — a small motion to him, but it carried everything','weighing every option carefully before reaching a measured conclusion','stopping to consider the idea from every angle before responding','listening quietly and asking a thoughtful question before offering an opinion'],hint:'Think: scoffing is effortless dismissal — like brushing something away without a second thought'},
+{type:'simile',word:'sentinel',q:'Complete the simile: The sentinels stood at the gate like ___',a:'stone statues placed there before memory began — immovable, expressionless, watching everything',ch:['stone statues placed there before memory began — immovable, expressionless, watching everything','children eager to run inside the moment the gate opens','guests waiting nervously to be called in from the cold','travelers resting briefly before continuing their journey'],hint:'Think: a sentinel at a gate is permanent, watchful, unmoved — like stone that has always been there'},
+{type:'simile',word:'sentinel',q:'Complete the simile: She stood at the entrance like ___',a:'a sentinel carved into the very rock of the threshold — impossible to pass without being seen',ch:['a sentinel carved into the very rock of the threshold — impossible to pass without being seen','a welcome mat that invites everyone to step right over it','a door left deliberately open for whoever wishes to enter','a sign pointing the way in, with no one checking who follows it'],hint:'Think: a sentinel is part of the gate itself — like stone, a permanent presence that sees everything'},
+{type:'simile',word:'siege',q:'Complete the simile: The siege dragged on like ___',a:'a rainstorm that begins at dawn and is still falling when the last light fades',ch:['a rainstorm that begins at dawn and is still falling when the last light fades','a sudden summer shower over in fifteen minutes','a storm that arrives quickly, strikes hard, and clears before noon','a light drizzle that no one bothers to open an umbrella for'],hint:'Think: a siege is slow, relentless, never-ending — like a rain that fills the whole day without stopping'},
+{type:'simile',word:'siege',q:'Complete the simile: The city endured the siege like ___',a:'an island fortress holding out against a rising sea — surrounded, pressured, but not yet broken',ch:['an island fortress holding out against a rising sea — surrounded, pressured, but not yet broken','a ship in open water with no obstacles and a favorable wind','a bridge standing strong with no weight on it and no current below','a gate standing open with no enemy in sight for a hundred miles'],hint:'Think: enduring a siege = surrounded on all sides, holding against constant pressure — like an island in a rising sea'},
+{type:'simile',word:'siege',q:'Complete the simile: The ten-year siege ground down both armies like ___',a:'two millstones turning against each other — wearing everything between them to dust',ch:['two millstones turning against each other — wearing everything between them to dust','a single millstone turning on smooth grain — effortless, productive, clean','two wheels that mesh perfectly and turn the same direction together','a clockwork mechanism where every gear fits and nothing is wasted'],hint:'Think: a long siege wears down both sides — like two millstones, the grinding eventually destroys what\'s between them'},
+{type:'simile',word:'sinister',q:'Complete the simile: His sinister smile curled like ___',a:'the edge of smoke from a fire lit for no good purpose',ch:['the edge of smoke from a fire lit for no good purpose','morning mist rising from a field in the early light','steam from a kettle on a cold morning','fog lifting off the water as the sun comes up'],hint:'Think: sinister = dark, curling, suggesting harm — like smoke from a fire whose purpose isn\'t warmth'},
+{type:'simile',word:'sinister',q:'Complete the simile: The abandoned house looked as sinister as ___',a:'a smile with too many teeth — technically right, somehow deeply wrong',ch:['a smile with too many teeth — technically right, somehow deeply wrong','a window with the light on and a warm fire visible inside','a door left open in welcome on a familiar street','a garden tended carefully with flowers blooming in the right season'],hint:'Think: sinister = looks like something familiar but feels wrong — like a smile that is just slightly off'},
+{type:'simile',word:'victor',q:'Complete the simile: The victor stood above the fallen city like ___',a:'a storm that has spent itself and left only ruin behind',ch:['a storm that has spent itself and left only ruin behind','a warm front moving in after a long cold snap','a gentle rain that settles the dust without breaking anything','a wind that stirs the trees without tearing any branches loose'],hint:'Think: victor after destruction = power that has fully discharged — like a spent storm that has nothing left but the wreckage'},
+{type:'simile',word:'victor',q:'Complete the simile: She emerged from the competition victorious like ___',a:'a phoenix stepping out of its own ashes — something destroyed transformed into something triumphant',ch:['a phoenix stepping out of its own ashes — something destroyed transformed into something triumphant','a candle blown out by the first gust of wind that found it','a spark that flares once and is gone before anyone can see it','a flame that needs constant tending or it quietly goes out on its own'],hint:'Think: victor after a hard fight = renewed, triumphant — like a phoenix, the struggle IS the transformation'},
+{type:'simile',word:'woe',q:'Complete the simile: The Trojans\' woe spread through the city like ___',a:'smoke from a fire they had lit themselves — impossible to escape what they had caused',ch:['smoke from a fire they had lit themselves — impossible to escape what they had caused','a morning fog that burns off cleanly the moment the sun appears','rain that washes everything clean and leaves the air fresh afterward','a wind that carries seeds and brings new growth wherever it blows'],hint:'Think: woe caused by your own blunder = inescapable — like smoke from a fire you lit'},
+{type:'simile',word:'woe',q:'Complete the simile: Her woe was as visible as ___',a:'a bruise on a pale face — impossible to miss, impossible to pretend wasn\'t there',ch:['a bruise on a pale face — impossible to miss, impossible to pretend wasn\'t there','a mark hidden under clothing that no one outside could see','a thought kept entirely inside, never showing on the face or body','a feeling so quiet that only the person carrying it could feel its weight'],hint:'Think: woe shows — like a bruise, it marks the surface and everyone can see it'},
+// ── METAPHORS (35) ─────────────────────────────────────────────────────────
+{type:'metaphor',word:'abandon',q:'Which sentence is a metaphor using ABANDON?',a:'Trust, once abandoned, is a bridge burned from both sides — you cannot cross back over it, and neither can anyone else.',ch:['Trust, once abandoned, is a bridge burned from both sides — you cannot cross back over it, and neither can anyone else.','Trust, once abandoned, is as hard to rebuild as a bridge that has been burned.','Like a bridge burned from both sides, trust once abandoned becomes impossible to cross.','Abandoning trust is as destructive as burning a bridge you both needed to use.'],hint:'Think: calling abandoned trust directly a burned bridge — it IS the destroyed crossing, and abandonment IS the fire'},
+{type:'metaphor',word:'abandon',q:'Which sentence is a metaphor using ABANDON?',a:'Hope was the one thing the trapped miners refused to abandon — their last lantern in a collapsed shaft.',ch:['Hope was the one thing the trapped miners refused to abandon — their last lantern in a collapsed shaft.','Hope felt like a lantern to the miners, and they refused to abandon it.','Like a lantern they refused to let go of, the miners held on to hope and refused to abandon it.','The miners refused to abandon hope, which burned like a lantern in the darkness.'],hint:'Think: calling hope directly a lantern — it IS their light source, the one thing they refuse to leave behind'},
+{type:'metaphor',word:'adversary',q:'Which sentence is a metaphor using ADVERSARY?',a:'Time was the Trojans\' most patient adversary — it wore them down not with swords but with ten years of waiting.',ch:['Time was the Trojans\' most patient adversary — it wore them down not with swords but with ten years of waiting.','Time acted like an adversary to the Trojans — patient, wearing them down without weapons.','Like an adversary more patient than any soldier, time wore down the Trojans over ten years.','Time was as much an adversary to the Trojans as any Greek soldier — slow, relentless, exhausting.'],hint:'Think: calling time directly an adversary — it IS their enemy, the one that defeats them with patience'},
+{type:'metaphor',word:'adversary',q:'Which sentence is a metaphor using ADVERSARY?',a:'Doubt is every dreamer\'s adversary — a small, persistent voice that grows louder every time you hesitate.',ch:['Doubt is every dreamer\'s adversary — a small, persistent voice that grows louder every time you hesitate.','Doubt works like an adversary for dreamers — it speaks against them every time they hesitate.','Like an adversary that never rests, doubt speaks against you every time you consider giving up.','Doubt is as much an adversary to dreamers as any real opponent — it fights against them from within.'],hint:'Think: calling doubt directly an adversary — it IS the enemy, fighting from inside rather than outside'},
+{type:'metaphor',word:'baffle',q:'Which sentence is a metaphor using BAFFLE?',a:'The wooden horse was a riddle the Trojans never solved — it baffled them, and that bafflement was the trap.',ch:['The wooden horse was a riddle the Trojans never solved — it baffled them, and that bafflement was the trap.','The wooden horse baffled the Trojans the way a riddle confuses someone who can\'t find the answer.','Like a riddle they couldn\'t solve, the wooden horse baffled the Trojans and became their undoing.','The Trojans were baffled by the wooden horse as completely as someone who can\'t solve a riddle.'],hint:'Think: calling the horse directly a riddle — it IS the puzzle, and their failure to solve it IS the trap'},
+{type:'metaphor',word:'baffle',q:'Which sentence is a metaphor using BAFFLE?',a:'Their silence was a baffle — a wall of nothing that stopped every question from reaching the answer.',ch:['Their silence was a baffle — a wall of nothing that stopped every question from reaching the answer.','Their silence baffled everyone the way a wall stops sound from passing through.','Like a baffle that absorbs every question, their silence prevented anyone from finding the answer.','Their silence was as baffling as a wall — every question hit it and came back unanswered.'],hint:'Think: calling their silence directly a baffle — it IS the device that blocks, stops every attempt at understanding'},
+{type:'metaphor',word:'baffle',q:'Which sentence is a metaphor using BAFFLE?',a:'The code was a labyrinth of symbols — it baffled every expert who entered and offered no exit.',ch:['The code was a labyrinth of symbols — it baffled every expert who entered and offered no exit.','The code baffled experts the way a labyrinth confuses those who enter without a map.','Like a labyrinth with no exit, the code baffled every expert who tried to find a way through.','The experts were baffled by the code as completely as someone lost in a labyrinth.'],hint:'Think: calling the code directly a labyrinth — it IS the maze, and to be baffled IS to be lost inside it'},
+{type:'metaphor',word:'blunder',q:'Which sentence is a metaphor using BLUNDER?',a:'Hauling the horse inside was Troy\'s great blunder — the door they opened for their own destruction.',ch:['Hauling the horse inside was Troy\'s great blunder — the door they opened for their own destruction.','Hauling the horse inside was as much a blunder as opening a door to let in an enemy.','Like a door thrown open to destruction, hauling the horse inside was the Trojans\' great blunder.','The Trojans blundered when they hauled the horse inside, as if they had opened a door for their enemies.'],hint:'Think: calling the blunder directly a door — it IS the opening through which destruction entered'},
+{type:'metaphor',word:'blunder',q:'Which sentence is a metaphor using BLUNDER?',a:'Every blunder is a teacher — harsh, unscheduled, and impossible to ignore.',ch:['Every blunder is a teacher — harsh, unscheduled, and impossible to ignore.','Every blunder teaches you something, like a harsh teacher you didn\'t choose.','Like a teacher who arrives without warning, every blunder forces you to learn something.','A blunder is as much a teacher as a classroom lesson — harsh but instructive.'],hint:'Think: calling every blunder directly a teacher — it IS the instructor, and the lesson IS the consequence'},
+{type:'metaphor',word:'colossal',q:'Which sentence is a metaphor using COLOSSAL?',a:'The Trojan Horse was a colossal deception — a monument to the idea that the biggest threats wear the most beautiful disguises.',ch:['The Trojan Horse was a colossal deception — a monument to the idea that the biggest threats wear the most beautiful disguises.','The Trojan Horse was as colossal a deception as any monument erected to a false idea.','Like a colossal monument to deception, the wooden horse announced its purpose to everyone but its victims.','The deception of the Trojan Horse was colossal — as large and impressive as any monument.'],hint:'Think: calling the deception directly a monument — it IS the enormous structure, built to stand as an example forever'},
+{type:'metaphor',word:'colossal',q:'Which sentence is a metaphor using COLOSSAL?',a:'His ego was colossal architecture — grand on the outside, hollow all the way through.',ch:['His ego was colossal architecture — grand on the outside, hollow all the way through.','His ego was as colossal as a massive building — impressive from outside, empty within.','Like colossal architecture, his ego was designed to impress but offered nothing inside.','His ego was colossally hollow — as grand in appearance as a great building with nothing in it.'],hint:'Think: calling his ego directly architecture — it IS the structure, colossal and hollow, built to impress'},
+{type:'metaphor',word:'detect',q:'Which sentence is a metaphor using DETECT?',a:'Cassandra\'s gift was the ability to detect the threads of fate before anyone else could see the weaving.',ch:['Cassandra\'s gift was the ability to detect the threads of fate before anyone else could see the weaving.','Cassandra could detect fate\'s patterns the way a weaver detects a flaw in the threads before anyone else.','Like someone who detects flaws in a weaving before it\'s complete, Cassandra saw fate before it unfolded.','Cassandra detected the threads of fate as easily as a skilled weaver detects a knot in the cloth.'],hint:'Think: fate as a weaving — Cassandra IS the one who detects the threads before the pattern is visible to anyone else'},
+{type:'metaphor',word:'detect',q:'Which sentence is a metaphor using DETECT?',a:'A good detective is a human lens — always detecting what others pass over, always focusing on what others blur.',ch:['A good detective is a human lens — always detecting what others pass over, always focusing on what others blur.','A good detective detects things the way a lens focuses light — bringing detail into view that others miss.','Like a lens that detects flaws invisible to the naked eye, a good detective sees what others overlook.','A detective detects things as precisely as a lens focuses on what the unaided eye cannot resolve.'],hint:'Think: calling the detective directly a lens — they ARE the focusing instrument, and detection IS the act of bringing things into clarity'},
+{type:'metaphor',word:'detect',q:'Which sentence is a metaphor using DETECT?',a:'Their loyalty was easy to detect — it was the thread running through everything they did, visible from any angle.',ch:['Their loyalty was easy to detect — it was the thread running through everything they did, visible from any angle.','Their loyalty was as easy to detect as a thread woven visibly through everything they said and did.','Like a thread running through every action, their loyalty was something you could detect from any angle.','You could detect their loyalty in everything they did, the way you detect a thread woven through cloth.'],hint:'Think: calling loyalty directly a thread — it IS the structural element, and to detect it IS to see it running through every action'},
+{type:'metaphor',word:'haul',q:'Which sentence is a metaphor using HAUL?',a:'History is a weight we all haul — some carry it like a burden, others like a lantern showing where not to walk again.',ch:['History is a weight we all haul — some carry it like a burden, others like a lantern showing where not to walk again.','History feels like a weight we haul with us — sometimes a burden, sometimes a tool.','Like a weight we haul forward, history can slow us down or help us find the right path.','We haul history the way we haul a heavy load — it weighs on us whether we choose to carry it or not.'],hint:'Think: calling history directly a weight we haul — it IS the load, and the hauling IS the act of carrying the past with us'},
+{type:'metaphor',word:'haul',q:'Which sentence is a metaphor using HAUL?',a:'Every generation hauls the mistakes of the last — the question is whether they haul it to study or to repeat.',ch:['Every generation hauls the mistakes of the last — the question is whether they haul it to study or to repeat.','Every generation hauls the weight of the previous generation\'s mistakes, like cargo passed forward.','Like cargo hauled from one ship to the next, past mistakes are carried by every new generation.','Each generation hauls history\'s mistakes the way a ship hauls cargo — forward, whether they wish it or not.'],hint:'Think: calling past mistakes directly cargo to be hauled — they ARE the freight, carried from one generation to the next'},
+{type:'metaphor',word:'overpower',q:'Which sentence is a metaphor using OVERPOWER?',a:'In the end, Greek cunning overpowered Trojan strength — the war was not won with a sword but with a gift.',ch:['In the end, Greek cunning overpowered Trojan strength — the war was not won with a sword but with a gift.','In the end, Greek cunning was powerful enough to overpower the physical strength of Troy.','Like a force that overpowers through cleverness rather than strength, the Greeks won with a gift, not a sword.','The Greeks used cunning to overpower Troy in the same way that intelligence overpowers brute force.'],hint:'Think: cunning IS the overpowering force — it IS the weapon that defeats, and the gift IS that weapon'},
+{type:'metaphor',word:'overpower',q:'Which sentence is a metaphor using OVERPOWER?',a:'Silence can overpower a room — fill it completely with nothing until every voice inside goes quiet.',ch:['Silence can overpower a room — fill it completely with nothing until every voice inside goes quiet.','Silence overpowers a room the way a strong presence dominates every conversation within it.','Like a force that overpowers everything in its path, silence fills a room and quiets every voice.','A powerful silence can overpower conversation the way one dominant voice overpowers all the others.'],hint:'Think: calling silence an overpowering force — it IS the dominant presence, and to overpower IS to fill and silence everything else'},
+{type:'metaphor',word:'rejoice',q:'Which sentence is a metaphor using REJOICE?',a:'The Trojans\' rejoicing was a fire lit too soon — it consumed the night they needed to stay watch.',ch:['The Trojans\' rejoicing was a fire lit too soon — it consumed the night they needed to stay watch.','The Trojans rejoiced too soon, like someone who lights a fire before they\'ve made sure it\'s safe.','Like a fire lit before the danger had passed, their premature rejoicing consumed the night they needed.','Their rejoicing was as dangerous as a fire — lit at the wrong moment, it burned away their vigilance.'],hint:'Think: calling their rejoicing directly a fire lit too soon — it IS the thing that consumed the night, that burned their watchfulness'},
+{type:'metaphor',word:'rejoice',q:'Which sentence is a metaphor using REJOICE?',a:'To rejoice is to give the whole self over to the moment — to become nothing but the fact of being glad.',ch:['To rejoice is to give the whole self over to the moment — to become nothing but the fact of being glad.','To rejoice is to feel so glad that you give yourself completely to the happiness of the moment.','Like giving yourself over to the moment, to rejoice is to be nothing but gladness for a time.','Rejoicing means surrendering to happiness the way you give yourself over to a moment of pure joy.'],hint:'Think: calling rejoicing directly a surrender of the self — to rejoice IS to become entirely the emotion'},
+{type:'metaphor',word:'rejoice',q:'Which sentence is a metaphor using REJOICE?',a:'Their relief was a rejoicing that swept through the city like water released from a dam — sudden, total, unstoppable.',ch:['Their relief was a rejoicing that swept through the city like water released from a dam — sudden, total, unstoppable.','Their relief felt like a rejoicing that swept through the city the way water bursts from a dam.','Like water released from a dam, their rejoicing was sudden and impossible to stop once it started.','Their rejoicing swept through the city the way water rushes from a broken dam — all at once, everywhere.'],hint:'Think: calling their relief directly a rejoicing, and the rejoicing directly a flood — the emotion IS the water, unstoppable and total'},
+{type:'metaphor',word:'scoff',q:'Which sentence is a metaphor using SCOFF?',a:'Every scoff is a closed door — you mock what you don\'t understand, and in doing so guarantee you never will.',ch:['Every scoff is a closed door — you mock what you don\'t understand, and in doing so guarantee you never will.','Every scoff is as final as a door closed against understanding — once you mock, you stop learning.','Like a door closed against understanding, a scoff shuts out whatever you refuse to take seriously.','To scoff at something is to close a door on it — you end any chance of understanding by mocking it.'],hint:'Think: calling every scoff directly a closed door — it IS the barrier, and to scoff IS to shut out all possibility of understanding'},
+{type:'metaphor',word:'scoff',q:'Which sentence is a metaphor using SCOFF?',a:'History\'s greatest scoffers are its greatest footnotes — remembered only for what they refused to believe.',ch:['History\'s greatest scoffers are its greatest footnotes — remembered only for what they refused to believe.','History\'s greatest scoffers are like footnotes — noted only for what they dismissed rather than what they built.','Like footnotes in the story of progress, those who scoffed are remembered only for what they rejected.','The people who scoffed at new ideas became footnotes — history remembers them for what they refused to believe.'],hint:'Think: calling scoffers directly footnotes — they ARE the margin notes, remembered only for their dismissal'},
+{type:'metaphor',word:'sentinel',q:'Which sentence is a metaphor using SENTINEL?',a:'Memory is the sentinel of identity — it stands at the gate of who you are and decides what enters and what is turned away.',ch:['Memory is the sentinel of identity — it stands at the gate of who you are and decides what enters and what is turned away.','Memory works like a sentinel for identity — it guards what you keep and turns away what doesn\'t belong.','Like a sentinel standing at the gate, memory decides what becomes part of who you are.','Your memory is as much a sentinel as any guard — it keeps some things in and turns others away.'],hint:'Think: calling memory directly a sentinel — it IS the guard, and identity IS the city being protected'},
+{type:'metaphor',word:'sentinel',q:'Which sentence is a metaphor using SENTINEL?',a:'Conscience is an internal sentinel — it cannot be bribed, cannot be relieved of duty, and never truly sleeps.',ch:['Conscience is an internal sentinel — it cannot be bribed, cannot be relieved of duty, and never truly sleeps.','Conscience works like a sentinel inside you — it watches everything you do and cannot be dismissed.','Like a sentinel who never leaves their post, conscience keeps watch on every action and cannot be bribed.','Your conscience is as persistent as a sentinel — it watches from inside and is impossible to dismiss.'],hint:'Think: calling conscience directly a sentinel — it IS the guard, posted inside, impossible to corrupt or dismiss'},
+{type:'metaphor',word:'sentinel',q:'Which sentence is a metaphor using SENTINEL?',a:'The old oak at the end of the drive was a sentinel — it had stood there so long it had grown into the shape of watching.',ch:['The old oak at the end of the drive was a sentinel — it had stood there so long it had grown into the shape of watching.','The old oak looked like a sentinel — it stood at the end of the drive as if placed there to watch.','Like a sentinel that has been on duty too long, the old oak had grown into the posture of permanent watch.','The old oak served as a sentinel at the end of the drive — rooted there and impossible to pass unnoticed.'],hint:'Think: calling the oak directly a sentinel — it IS the guard, and time has shaped it into permanent watchfulness'},
+{type:'metaphor',word:'siege',q:'Which sentence is a metaphor using SIEGE?',a:'Grief is a siege — it surrounds you completely, cuts off all supply lines to joy, and waits for you to exhaust yourself.',ch:['Grief is a siege — it surrounds you completely, cuts off all supply lines to joy, and waits for you to exhaust yourself.','Grief works like a siege — it surrounds you and cuts you off from everything that might bring comfort.','Like a siege that surrounds a city, grief cuts off every supply line to joy and waits you out.','Grief feels like being under siege — surrounded, cut off, with nothing coming in and no way out.'],hint:'Think: calling grief directly a siege — it IS the encirclement, and joy IS the supply line that gets cut'},
+{type:'metaphor',word:'siege',q:'Which sentence is a metaphor using SIEGE?',a:'The silence before the verdict was a siege — pressing in from every side, making the air impossible to breathe.',ch:['The silence before the verdict was a siege — pressing in from every side, making the air impossible to breathe.','The silence before the verdict felt like a siege — it pressed in from every direction with nowhere to escape.','Like a siege closing in from every direction, the silence before the verdict made everything feel impossible.','That silence was as much a siege as any army — it surrounded and pressed in until there was no room left.'],hint:'Think: calling the silence directly a siege — it IS the encirclement, pressing from every side'},
+{type:'metaphor',word:'sinister',q:'Which sentence is a metaphor using SINISTER?',a:'The wooden horse was sinister perfection — a gift that held its own army, a welcome that carried its own destruction.',ch:['The wooden horse was sinister perfection — a gift that held its own army, a welcome that carried its own destruction.','The wooden horse was sinister in a perfect way — a gift containing soldiers, a welcome hiding destruction.','Like sinister perfection in physical form, the wooden horse was a gift that concealed its own army.','The wooden horse was perfectly sinister — as carefully designed to cause harm as anything ever built.'],hint:'Think: calling the horse directly sinister perfection — it IS the perfected form of evil disguised as a gift'},
+{type:'metaphor',word:'sinister',q:'Which sentence is a metaphor using SINISTER?',a:'His patience was sinister — not the patience of someone who can wait, but of someone who has already decided the outcome.',ch:['His patience was sinister — not the patience of someone who can wait, but of someone who has already decided the outcome.','His patience felt sinister — it was the patience of someone who had already decided how everything would end.','Like something sinister, his patience didn\'t feel like waiting — it felt like certainty of a bad outcome.','His patience was as sinister as a plan already decided — not waiting, but counting down.'],hint:'Think: calling his patience directly sinister — it IS the threatening quality, patience as a form of certain, predatory confidence'},
+{type:'metaphor',word:'victor',q:'Which sentence is a metaphor using VICTOR?',a:'Greece was ultimately not the victor of the Trojan War — history was, and it has been replaying the story ever since.',ch:['Greece was ultimately not the victor of the Trojan War — history was, and it has been replaying the story ever since.','Greece was not really the victor in any lasting sense — history has outlasted the story of every winner.','Like a victor that outlasts all others, history has been retelling the Trojan War for thousands of years.','The real victor of the Trojan War was history itself — it kept the story alive long after both sides were gone.'],hint:'Think: calling history directly the victor — it IS the true winner, the one that outlasts and preserves everything'},
+{type:'metaphor',word:'victor',q:'Which sentence is a metaphor using VICTOR?',a:'Every victor carries the echo of the defeated — a triumph without that weight is hollow at the center.',ch:['Every victor carries the echo of the defeated — a triumph without that weight is hollow at the center.','Every victor should remember the defeated — a triumph that ignores the cost is hollow.','Like an echo carried forward, the memory of the defeated follows every victor.','A victor that forgets the defeated is like a triumph hollow at its center — missing the weight that gives it meaning.'],hint:'Think: calling what the victor carries an echo — it IS the sound that follows every win, the presence of the defeated'},
+{type:'metaphor',word:'victor',q:'Which sentence is a metaphor using VICTOR?',a:'The real victor in any struggle is the one still learning after the battle ends — the one who takes more from the fight than the prize.',ch:['The real victor in any struggle is the one still learning after the battle ends — the one who takes more from the fight than the prize.','The real victor is not the one who wins but the one who learns more from the fight than the prize could ever teach.','Like a victor who carries more than the trophy, the true winner is the one who learns from the struggle.','The one who keeps learning after winning is more of a victor than the one who only carries away the prize.'],hint:'Think: calling the learner directly the real victor — growth IS the victory, more than any trophy or prize'},
+{type:'metaphor',word:'woe',q:'Which sentence is a metaphor using WOE?',a:'Troy\'s woe was a city-shaped wound — it bled not blood but people, culture, and memory, until nothing was left to carry the name.',ch:['Troy\'s woe was a city-shaped wound — it bled not blood but people, culture, and memory, until nothing was left to carry the name.','Troy\'s woe was as deep as a wound — it bled out everything that had made the city what it was.','Like a wound that bleeds out people and culture, Troy\'s woe left nothing standing to carry its name forward.','The woe of Troy was as deep as a wound — it drained the city of everything until only the name remained.'],hint:'Think: calling Troy\'s woe directly a wound — it IS the injury, and everything lost IS what the wound bled away'},
+{type:'metaphor',word:'woe',q:'Which sentence is a metaphor using WOE?',a:'Woe is the tax that foolishness charges — paid in suffering, with interest, long after the original mistake.',ch:['Woe is the tax that foolishness charges — paid in suffering, with interest, long after the original mistake.','Woe feels like a tax charged for foolishness — paid in suffering, often long after the mistake was made.','Like a tax charged on every foolish decision, woe arrives after the blunder and must be paid in suffering.','Foolishness charges woe as its tax — you pay it in suffering, often long after you\'ve forgotten the original mistake.'],hint:'Think: calling woe directly a tax — it IS the payment charged, and foolishness IS the thing that charges it'}
+];
+
+var queue=[],qIdx=0,score=0,streak=0,typeTally={},answered=false;
+var fcIdx=0,fcOrder=[],fcFlipped=false;
+
+function renderCard(){
+  fcFlipped=false;
+  document.getElementById('card-inner').classList.remove('flipped');
+  var w=WORDS[fcOrder[fcIdx]];
+  document.getElementById('fc-progress').textContent=(fcIdx+1)+' / '+WORDS.length;
+  var front=document.getElementById('card-front');
+  clearEl(front);
+  front.appendChild(mk('div','card-word',w.word));
+  front.appendChild(mk('div','card-pos',w.pos));
+  front.appendChild(mk('div','card-tap','Tap to reveal'));
+  var back=document.getElementById('card-back');
+  clearEl(back);
+  back.appendChild(mk('div','card-def',w.def));
+  back.appendChild(mk('div','card-ex',w.ex));
+}
+function initFlashcards(){
+  fcOrder=[];for(var i=0;i<WORDS.length;i++)fcOrder.push(i);
+  fcIdx=0;renderCard();
+}
+document.getElementById('card-inner').addEventListener('click',function(){
+  fcFlipped=!fcFlipped;this.classList.toggle('flipped',fcFlipped);
+});
+document.getElementById('fc-flip').addEventListener('click',function(){
+  fcFlipped=!fcFlipped;document.getElementById('card-inner').classList.toggle('flipped',fcFlipped);
+});
+document.getElementById('fc-prev').addEventListener('click',function(){fcIdx=(fcIdx-1+WORDS.length)%WORDS.length;renderCard();});
+document.getElementById('fc-next').addEventListener('click',function(){fcIdx=(fcIdx+1)%WORDS.length;renderCard();});
+document.getElementById('fc-shuffle').addEventListener('click',function(){fcOrder=shuffle(fcOrder);fcIdx=0;renderCard();});
+
+function startQuiz(){
+  queue=shuffle(QUESTIONS).slice(0,20);
+  qIdx=0;score=0;streak=0;typeTally={};answered=false;
+  document.getElementById('result-section').style.display='none';
+  document.getElementById('quiz-section').style.display='';
+  showQuestion();
+}
+function showQuestion(){
+  answered=false;
+  var q=queue[qIdx];
+  var ts=TYPE_STYLES[q.type]||{label:q.type.toUpperCase(),color:'#94a3b8',bg:'rgba(51,65,85,.4)'};
+  document.getElementById('q-counter').textContent='Question '+(qIdx+1)+' of '+queue.length;
+  document.getElementById('q-score').textContent='Score: '+score;
+  document.getElementById('streak-badge').textContent='🔥 '+streak+' streak';
+  document.getElementById('progress-fill').style.width=((qIdx/queue.length)*100)+'%';
+  var bw=document.getElementById('type-badge-wrap');
+  clearEl(bw);
+  var badge=mk('span','type-badge',ts.label);
+  badge.style.color=ts.color;badge.style.background=ts.bg;
+  bw.appendChild(badge);
+  document.getElementById('q-word').textContent=q.word.toUpperCase();
+  document.getElementById('q-text').textContent=q.q;
+  var hb=document.getElementById('hint-box');
+  hb.style.display='none';hb.textContent=q.hint;
+  var cc=document.getElementById('choices');
+  clearEl(cc);
+  shuffle(q.ch).forEach(function(opt){
+    var btn=mk('button','choice-btn',opt);
+    btn.addEventListener('click',function(){selectAnswer(this,opt,q);});
+    cc.appendChild(btn);
+  });
+  document.getElementById('feedback').textContent='';
+  document.getElementById('feedback').className='feedback';
+  document.getElementById('next-btn').style.display='none';
+}
+document.getElementById('hint-btn').addEventListener('click',function(){
+  var hb=document.getElementById('hint-box');
+  hb.style.display=hb.style.display==='none'?'block':'none';
+});
+function selectAnswer(btn,opt,q){
+  if(answered)return;
+  answered=true;
+  var correct=opt===q.a;
+  var rect=btn.getBoundingClientRect();
+  var cx=rect.left+rect.width/2,cy=rect.top+rect.height/2;
+  var fb=document.getElementById('feedback');
+  if(correct){
+    btn.classList.add('correct');score++;streak++;
+    fb.textContent='Correct! ✓';fb.className='feedback ok';
+    spawnBurst(cx,cy,'#4ade80',18);
+    if(streak>=3)spawnConfetti();
+  } else {
+    btn.classList.add('wrong');streak=0;
+    fb.textContent='Incorrect. The answer is: '+q.a;fb.className='feedback no';
+    spawnBurst(cx,cy,'#fbbf24',12);
+    document.getElementById('choices').querySelectorAll('.choice-btn').forEach(function(b){if(b.textContent===q.a)b.classList.add('correct');});
+  }
+  typeTally[q.type]=typeTally[q.type]||{c:0,t:0};
+  typeTally[q.type].t++;if(correct)typeTally[q.type].c++;
+  document.querySelectorAll('.choice-btn').forEach(function(b){b.disabled=true;});
+  document.getElementById('next-btn').style.display='block';
+}
+document.getElementById('next-btn').addEventListener('click',function(){
+  qIdx++;if(qIdx>=queue.length){showResult();}else{showQuestion();}
+});
+function showResult(){
+  document.getElementById('quiz-section').style.display='none';
+  document.getElementById('result-section').style.display='block';
+  document.getElementById('result-score').textContent=score;
+  var pct=score/queue.length;
+  var msgs=[
+    'Like the Greeks, your cunning and persistence proved victorious. Perfect score!',
+    'Outstanding! You\'d have detected the Trojan Horse from a mile away.',
+    'Strong work — you persevered through every question without a blunder.',
+    'Good effort — keep going and no adversary in vocabulary will hold you back.',
+    'Every blunder is a teacher. Study the words and return to the siege stronger.'
+  ];
+  document.getElementById('result-msg').textContent=pct===1?msgs[0]:pct>=.85?msgs[1]:pct>=.7?msgs[2]:pct>=.5?msgs[3]:msgs[4];
+  var bd=document.getElementById('result-breakdown');
+  clearEl(bd);
+  Object.keys(typeTally).forEach(function(k){
+    var d=typeTally[k];
+    var item=mk('div','rb-item');
+    var lbl=mk('span',null,(TYPE_STYLES[k]||{label:k}).label+': ');
+    var val=mk('span',null,d.c+'/'+d.t);
+    item.appendChild(lbl);item.appendChild(val);
+    bd.appendChild(item);
+  });
+  document.getElementById('progress-fill').style.width='100%';
+}
+document.getElementById('restart-btn').addEventListener('click',startQuiz);
+
+document.getElementById('btn-quiz').addEventListener('click',function(){
+  this.classList.add('active');document.getElementById('btn-flash').classList.remove('active');
+  document.getElementById('flashcard-section').style.display='none';
+  document.getElementById('quiz-section').style.display='';
+  document.getElementById('result-section').style.display='none';
+});
+document.getElementById('btn-flash').addEventListener('click',function(){
+  this.classList.add('active');document.getElementById('btn-quiz').classList.remove('active');
+  document.getElementById('quiz-section').style.display='none';
+  document.getElementById('result-section').style.display='none';
+  document.getElementById('flashcard-section').style.display='';
+  initFlashcards();
+});
+
+initFlashcards();
+startQuiz();
+</script>
+</body>
+</html>

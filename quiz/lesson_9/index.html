@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lesson 9 – Water, Water, Everywhere | Wordly Wise Quiz</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',sans-serif;background:#040e20;color:#e2e8f0;min-height:100vh;overflow-x:hidden}
+  canvas{position:fixed;top:0;left:0;z-index:0;pointer-events:none}
+  #app{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:16px}
+  header{text-align:center;padding:24px 0 12px}
+  header h1{font-size:2rem;font-weight:800;background:linear-gradient(135deg,#60a5fa,#1d4ed8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  header p{color:#1e3a8a;margin-top:6px;font-size:.95rem}
+  #home-link{display:inline-flex;align-items:center;gap:6px;color:#60a5fa;text-decoration:none;font-size:.9rem;margin-bottom:12px;opacity:.8;transition:opacity .2s}
+  #home-link:hover{opacity:1}
+  nav.mode-tabs{display:flex;gap:8px;justify-content:center;margin:16px 0}
+  nav.mode-tabs button{padding:8px 22px;border-radius:999px;border:2px solid #1d4ed8;background:transparent;color:#60a5fa;font-size:.9rem;cursor:pointer;transition:all .2s}
+  nav.mode-tabs button.active{background:#1d4ed8;color:#fff}
+  #flashcard-section{display:none}
+  .fc-controls{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+  .fc-controls button{padding:8px 18px;border-radius:8px;border:none;background:#071428;color:#60a5fa;cursor:pointer;font-size:.9rem;transition:background .2s}
+  .fc-controls button:hover{background:#1d4ed8}
+  #fc-counter{color:#1e40af;font-size:.9rem}
+  .fc-scene{width:100%;max-width:520px;height:230px;margin:0 auto 18px;perspective:1000px;cursor:pointer}
+  .fc-card{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.4,0,.2,1)}
+  .fc-card.flipped{transform:rotateY(180deg)}
+  .fc-face{position:absolute;inset:0;border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+  .fc-front{background:linear-gradient(135deg,#071428,#0f2040);border:2px solid #60a5fa40}
+  .fc-back{background:linear-gradient(135deg,#040e20,#071428);border:2px solid #60a5fa40;transform:rotateY(180deg)}
+  .fc-word{font-size:2rem;font-weight:800;color:#60a5fa}
+  .fc-pos{font-size:.85rem;color:#1e40af;margin-top:4px}
+  .fc-hint{font-size:.8rem;color:#172554;margin-top:8px}
+  .fc-def{font-size:.95rem;color:#e2e8f0;text-align:center;line-height:1.6}
+  .fc-ex{font-size:.82rem;color:#1e40af;margin-top:10px;font-style:italic;text-align:center}
+  #quiz-section{}
+  .quiz-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+  #progress-bar-wrap{width:100%;height:8px;background:#071428;border-radius:999px;margin-bottom:16px;overflow:hidden}
+  #progress-bar{height:100%;background:linear-gradient(90deg,#1d4ed8,#60a5fa);border-radius:999px;transition:width .4s}
+  #score-display{font-size:.9rem;color:#1e40af}
+  #streak-display{font-size:.9rem;color:#60a5fa;font-weight:600}
+  .question-card{background:linear-gradient(135deg,#071428,#0a1a34);border:1px solid #1d4ed840;border-radius:18px;padding:28px;margin-bottom:16px}
+  .q-type-badge{display:inline-block;padding:3px 12px;border-radius:999px;font-size:.75rem;font-weight:700;letter-spacing:.05em;margin-bottom:14px}
+  .q-word{font-size:1.5rem;font-weight:700;color:#60a5fa;margin-bottom:8px}
+  .q-text{font-size:1rem;color:#cbd5e1;margin-bottom:20px;line-height:1.6}
+  .choices{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media(max-width:520px){.choices{grid-template-columns:1fr}}
+  .choice-btn{padding:12px 16px;border-radius:12px;border:2px solid #071428;background:#040e20;color:#e2e8f0;font-size:.95rem;cursor:pointer;text-align:left;transition:all .2s;line-height:1.4}
+  .choice-btn:hover:not(:disabled){border-color:#60a5fa;background:#071428}
+  .choice-btn.correct{border-color:#10b981;background:#064e3b;color:#6ee7b7}
+  .choice-btn.wrong{border-color:#ef4444;background:#450a0a;color:#fca5a5}
+  .choice-btn:disabled{cursor:default}
+  #hint-area{min-height:22px;margin-bottom:10px}
+  #hint-text{font-size:.85rem;color:#60a5fa;font-style:italic;display:none}
+  #hint-btn{padding:5px 14px;border-radius:8px;border:1px solid #60a5fa60;background:transparent;color:#60a5fa;font-size:.82rem;cursor:pointer}
+  #feedback-area{min-height:28px;margin-top:10px;font-size:.95rem;font-weight:600}
+  #feedback-area.correct{color:#10b981}
+  #feedback-area.wrong{color:#ef4444}
+  #next-btn{display:none;margin-top:14px;padding:10px 28px;border-radius:12px;border:none;background:linear-gradient(135deg,#1d4ed8,#60a5fa);color:#fff;font-size:1rem;font-weight:700;cursor:pointer;transition:opacity .2s}
+  #next-btn:hover{opacity:.85}
+  #result-section{display:none;text-align:center;padding:32px 16px}
+  #result-section h2{font-size:2rem;font-weight:800;color:#60a5fa;margin-bottom:8px}
+  #result-section p{color:#1e40af;margin-bottom:20px}
+  #final-score{font-size:3rem;font-weight:900;color:#60a5fa;margin:16px 0}
+  #result-section button{padding:12px 32px;border-radius:12px;border:none;background:linear-gradient(135deg,#1d4ed8,#60a5fa);color:#fff;font-size:1rem;font-weight:700;cursor:pointer}
+  .particle{position:fixed;pointer-events:none;border-radius:50%;z-index:999;animation:particleFly .8s ease-out forwards}
+  @keyframes particleFly{to{transform:translate(var(--dx),var(--dy)) scale(0);opacity:0}}
+  .confetti-piece{position:fixed;pointer-events:none;z-index:999;animation:confettiFall 1s ease-in forwards}
+  @keyframes confettiFall{to{transform:translate(var(--dx),calc(var(--dy) + 80px)) rotate(720deg);opacity:0}}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<div id="app">
+  <a id="home-link" href="../index.html">&#8592; All Lessons</a>
+  <header>
+    <h1>&#x1F4A7; Lesson 9 &#8211; Water, Water, Everywhere</h1>
+    <p>accumulate &bull; aggravate &bull; conserve &bull; contaminate &bull; diminish &bull; drastic &bull; extravagant &bull; frugal &bull; impurity &bull; peril &bull; perpetual &bull; resource &bull; substitute &bull; sustain &bull; vital</p>
+  </header>
+  <nav class="mode-tabs">
+    <button id="tab-quiz" class="active" onclick="showMode('quiz')">Quiz Mode</button>
+    <button id="tab-flash" onclick="showMode('flash')">Flashcards</button>
+  </nav>
+
+  <div id="flashcard-section">
+    <div class="fc-controls">
+      <button onclick="fcPrev()">&#8592; Prev</button>
+      <span id="fc-counter">1 / 15</span>
+      <button onclick="fcNext()">Next &#8594;</button>
+      <button onclick="fcShuffle()">&#x1F500; Shuffle</button>
+    </div>
+    <div class="fc-scene" onclick="fcFlip()">
+      <div class="fc-card" id="fc-card">
+        <div class="fc-face fc-front">
+          <div class="fc-word" id="fc-word"></div>
+          <div class="fc-pos" id="fc-pos"></div>
+          <div class="fc-hint">Click to reveal definition</div>
+        </div>
+        <div class="fc-face fc-back">
+          <div class="fc-def" id="fc-def"></div>
+          <div class="fc-ex" id="fc-ex"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="quiz-section">
+    <div class="quiz-header">
+      <span id="score-display">Score: 0/0</span>
+      <span id="streak-display">Streak: 0 &#x1F525;</span>
+    </div>
+    <div id="progress-bar-wrap"><div id="progress-bar" style="width:0%"></div></div>
+    <div class="question-card">
+      <div id="q-badge" class="q-type-badge"></div>
+      <div class="q-word" id="q-word"></div>
+      <div class="q-text" id="q-text"></div>
+      <div id="hint-area">
+        <button id="hint-btn" onclick="showHint()">&#x1F4A1; Hint</button>
+        <span id="hint-text"></span>
+      </div>
+      <div class="choices" id="choices"></div>
+      <div id="feedback-area"></div>
+      <button id="next-btn" onclick="nextQuestion()">Next &#8594;</button>
+    </div>
+  </div>
+
+  <div id="result-section">
+    <h2>Round Complete!</h2>
+    <p>Here&#39;s how you did on this round of 20 questions.</p>
+    <div id="final-score"></div>
+    <p id="result-msg"></p>
+    <button onclick="startQuiz()">Play Again</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  var c=document.getElementById('bg'),ctx=c.getContext('2d'),W,H,stars=[];
+  function resize(){W=c.width=window.innerWidth;H=c.height=window.innerHeight;}
+  resize();window.addEventListener('resize',resize);
+  for(var i=0;i<180;i++)stars.push({x:Math.random()*9999,y:Math.random()*9999,r:Math.random()*1.4+.3,s:Math.random()*.4+.1});
+  function drawBg(){
+    ctx.clearRect(0,0,W,H);
+    var g=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,Math.max(W,H)*.75);
+    g.addColorStop(0,'#071428');g.addColorStop(.5,'#040e20');g.addColorStop(1,'#020810');
+    ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    stars.forEach(function(s){
+      s.x+=s.s;if(s.x>W)s.x=0;
+      ctx.beginPath();ctx.arc(s.x,s.y%H,s.r,0,Math.PI*2);
+      ctx.fillStyle='rgba(96,165,250,0.7)';ctx.fill();
+    });
+    requestAnimationFrame(drawBg);
+  }
+  drawBg();
+})();
+
+var WORDS=[
+  {word:'accumulate',pos:'v.',def:'To increase in number or amount; to pile up, collect, or gather.',ex:'"An inch of snow accumulated overnight."'},
+  {word:'aggravate',pos:'v.',def:'1. To make worse. 2. To anger or annoy. Aggravation (n.): annoyance, or a source of annoyance.',ex:'"The skater aggravated an old knee injury when she fell."'},
+  {word:'conserve',pos:'v.',def:'To save by using carefully. Conservation (n.): the saving or protection of something through careful use.',ex:'"Lower speed limits help conserve gasoline."'},
+  {word:'contaminate',pos:'v.',def:'To harm by contact with something undesirable. Contamination (n.): the act or result of contaminating.',ex:'"Chemicals spilled last year continue to contaminate the lake."'},
+  {word:'diminish',pos:'v.',def:'To make or become smaller or less; to reduce.',ex:'"The popcorn we ate after school diminished our hunger."'},
+  {word:'drastic',pos:'adj.',def:'Severe; extreme.',ex:'"Criminals receive drastic punishment in this new novel."'},
+  {word:'extravagant',pos:'adj.',def:'Spending, costing, or using more than is required. Extravagance (n.): the quality of being wasteful; a thing that costs more than one can afford.',ex:'"Shawn\'s buying lunch for everyone was an extravagant thing to do."'},
+  {word:'frugal',pos:'adj.',def:'Careful in spending or using something.',ex:'"The bill for the splendid wedding ceremony shocked my frugal relatives."'},
+  {word:'impurity',pos:'n.',def:'Something that is harmful or dirty.',ex:'"Filtering removes the impurities from water."'},
+  {word:'peril',pos:'n.',def:'Danger; something that is dangerous. Imperil (v.): to place in danger. Perilous (adj.): dangerous.',ex:'"The sailor understood the peril involved in a solo crossing of the Atlantic Ocean."'},
+  {word:'perpetual',pos:'adj.',def:'Lasting or seeming to last forever or for a long time; continuous.',ex:'"A perpetual rain has been falling for nine days."'},
+  {word:'resource',pos:'n.',def:'1. A supply that can be used when there is a need. 2. Skill in dealing with difficult situations. Resourceful (adj.): able to deal with difficult problems.',ex:'"Coal and lumber are natural resources."'},
+  {word:'substitute',pos:'v./n./adj.',def:'(v.) To replace one thing or person for another. (n.) Something or someone that replaces another. (adj.) Acting in place of someone or something else.',ex:'"Cooks sometimes substitute lemon for vinegar in salad dressing."'},
+  {word:'sustain',pos:'v.',def:'1. To keep up; to support. 2. To suffer; to undergo.',ex:'"Their firm belief that they would be rescued sustained them."'},
+  {word:'vital',pos:'adj.',def:'1. Necessary for continued life or prosperity. 2. Full of lively spirit. 3. Of the greatest importance.',ex:'"Clean water is vital for our health."'}
+];
+
+var TYPE_STYLES={
+  synonym:{label:'SYNONYM',color:'#34d399',bg:'rgba(6,95,70,.4)'},
+  antonym:{label:'ANTONYM',color:'#f472b6',bg:'rgba(157,23,77,.35)'},
+  analogy:{label:'ANALOGY',color:'#a78bfa',bg:'rgba(109,40,217,.35)'},
+  simile:{label:'SIMILE',color:'#fbbf24',bg:'rgba(161,98,7,.35)'},
+  metaphor:{label:'METAPHOR',color:'#38bdf8',bg:'rgba(7,89,133,.35)'}
+};
+
+var QUESTIONS=[
+  // ── SYNONYMS (50) ──────────────────────────────────────────────────────────
+  {type:'synonym',word:'accumulate',q:'Which word is closest in meaning to ACCUMULATE?',a:'amass',ch:['amass','scatter','deplete','distribute'],hint:'Think: to gather or pile up over time'},
+  {type:'synonym',word:'accumulate',q:'Which word best replaces ACCUMULATE in "sediment accumulates in river valleys"?',a:'collects',ch:['collects','disperses','depletes','scatters'],hint:'Think: slow buildup of matter over time'},
+  {type:'synonym',word:'accumulate',q:'Which word means "to collect or gather little by little"?',a:'accumulate',ch:['accumulate','expend','drain','scatter'],hint:'Think: growing larger through repeated addition'},
+  {type:'synonym',word:'aggravate',q:'Which word is closest in meaning to AGGRAVATE (to make worse)?',a:'worsen',ch:['worsen','alleviate','soothe','remedy'],hint:'Think: taking a bad situation and pushing it further in the wrong direction'},
+  {type:'synonym',word:'aggravate',q:'Which word best replaces AGGRAVATE in "the noise aggravated her headache"?',a:'intensified',ch:['intensified','calmed','reduced','cured'],hint:'Think: the headache became stronger, not weaker'},
+  {type:'synonym',word:'aggravate',q:'Which word means "to annoy or exasperate"?',a:'irritate',ch:['irritate','satisfy','please','comfort'],hint:'Think: producing a feeling of frustration or anger'},
+  {type:'synonym',word:'aggravate',q:'Which word is most similar to AGGRAVATION (a source of annoyance)?',a:'irritant',ch:['irritant','remedy','relief','comfort'],hint:'Think: something that keeps bothering you'},
+  {type:'synonym',word:'conserve',q:'Which word is closest in meaning to CONSERVE?',a:'preserve',ch:['preserve','squander','exhaust','deplete'],hint:'Think: using something carefully so it lasts longer'},
+  {type:'synonym',word:'conserve',q:'Which word best replaces CONSERVE in "we must conserve our energy"?',a:'save',ch:['save','waste','burn','spend'],hint:'Think: avoiding unnecessary use'},
+  {type:'synonym',word:'conserve',q:'A wildlife refuge protects animals from hunting — which word describes the goal of such a refuge?',a:'conserve',ch:['conserve','contaminate','diminish','aggravate'],hint:'Think: to keep safe and prevent from disappearing'},
+  {type:'synonym',word:'conserve',q:'Which word means "to protect by using carefully"?',a:'conserve',ch:['conserve','exploit','drain','exhaust'],hint:'Think: careful stewardship of a limited supply'},
+  {type:'synonym',word:'contaminate',q:'Which word is closest in meaning to CONTAMINATE?',a:'pollute',ch:['pollute','purify','filter','cleanse'],hint:'Think: introducing something harmful into something clean'},
+  {type:'synonym',word:'contaminate',q:'Which word best replaces CONTAMINATE in "chemicals contaminated the well"?',a:'tainted',ch:['tainted','purified','cleaned','filtered'],hint:'Think: made unsafe by the introduction of harmful substances'},
+  {type:'synonym',word:'contaminate',q:'Which word means "to make impure or harmful by contact"?',a:'contaminate',ch:['contaminate','conserve','sustain','restore'],hint:'Think: something clean becoming dangerous after contact with something harmful'},
+  {type:'synonym',word:'diminish',q:'Which word is closest in meaning to DIMINISH?',a:'lessen',ch:['lessen','amplify','increase','expand'],hint:'Think: making something smaller or less significant'},
+  {type:'synonym',word:'diminish',q:'Which word best replaces DIMINISH in "the pain began to diminish after the medicine"?',a:'subside',ch:['subside','intensify','grow','spread'],hint:'Think: the pain was fading or decreasing'},
+  {type:'synonym',word:'diminish',q:'Which word means "to reduce in size, strength, or importance"?',a:'diminish',ch:['diminish','sustain','accumulate','aggravate'],hint:'Think: something getting smaller over time'},
+  {type:'synonym',word:'diminish',q:'Which word is most similar to DIMINISH?',a:'shrink',ch:['shrink','expand','multiply','develop'],hint:'Think: a balloon losing air versus gaining it'},
+  {type:'synonym',word:'drastic',q:'Which word is closest in meaning to DRASTIC?',a:'extreme',ch:['extreme','moderate','gentle','mild'],hint:'Think: far beyond the ordinary — going all the way'},
+  {type:'synonym',word:'drastic',q:'Which word best replaces DRASTIC in "drastic measures were required"?',a:'severe',ch:['severe','minor','slight','gradual'],hint:'Think: the kind of action you only take when smaller steps have failed'},
+  {type:'synonym',word:'drastic',q:'Which word means "highly severe or radical in nature"?',a:'drastic',ch:['drastic','frugal','perpetual','vital'],hint:'Think: cutting to the core rather than trimming at the edges'},
+  {type:'synonym',word:'extravagant',q:'Which word is closest in meaning to EXTRAVAGANT?',a:'lavish',ch:['lavish','thrifty','frugal','sparing'],hint:'Think: spending or doing far more than is needed or affordable'},
+  {type:'synonym',word:'extravagant',q:'Which word best replaces EXTRAVAGANT in "an extravagant birthday party"?',a:'excessive',ch:['excessive','modest','simple','minimal'],hint:'Think: far more than what the occasion required'},
+  {type:'synonym',word:'extravagant',q:'Which word means "wasteful; using more than is needed"?',a:'extravagant',ch:['extravagant','frugal','resourceful','vital'],hint:'Think: the opposite of careful spending'},
+  {type:'synonym',word:'extravagant',q:'Which word is most similar to EXTRAVAGANCE (the noun)?',a:'wastefulness',ch:['wastefulness','thrift','economy','conservation'],hint:'Think: the habit of using more than is reasonable or affordable'},
+  {type:'synonym',word:'frugal',q:'Which word is closest in meaning to FRUGAL?',a:'thrifty',ch:['thrifty','wasteful','extravagant','lavish'],hint:'Think: being careful about spending and not wasting anything'},
+  {type:'synonym',word:'frugal',q:'Which word best replaces FRUGAL in "she was too frugal to waste electricity"?',a:'economical',ch:['economical','excessive','reckless','careless'],hint:'Think: using resources wisely and avoiding unnecessary expense'},
+  {type:'synonym',word:'frugal',q:'Which word means "careful not to waste money or resources"?',a:'frugal',ch:['frugal','drastic','extravagant','vital'],hint:'Think: a penny-pincher or saver rather than a spender'},
+  {type:'synonym',word:'impurity',q:'Which word is closest in meaning to IMPURITY?',a:'contaminant',ch:['contaminant','purifier','filter','cleaner'],hint:'Think: a substance that makes something dirty or harmful'},
+  {type:'synonym',word:'impurity',q:'Which word best describes the specks of dirt and bacteria removed when water is filtered?',a:'impurities',ch:['impurities','resources','substitutes','surpluses'],hint:'Think: harmful things removed to make something safe'},
+  {type:'synonym',word:'impurity',q:'Which word means "something harmful or unclean mixed into a substance"?',a:'impurity',ch:['impurity','resource','conservation','remedy'],hint:'Think: a pollutant that does not belong in clean water or air'},
+  {type:'synonym',word:'peril',q:'Which word is closest in meaning to PERIL?',a:'danger',ch:['danger','safety','security','refuge'],hint:'Think: a situation where harm or injury is possible'},
+  {type:'synonym',word:'peril',q:'Which word best replaces PERIL in "the sailors faced many perils at sea"?',a:'hazards',ch:['hazards','comforts','shelters','resources'],hint:'Think: threats or risks that could cause injury or death'},
+  {type:'synonym',word:'peril',q:'Which word means "a source of harm or risk"?',a:'peril',ch:['peril','resource','substitute','remedy'],hint:'Think: the kind of word that goes in "in great ___"'},
+  {type:'synonym',word:'perpetual',q:'Which word is closest in meaning to PERPETUAL?',a:'endless',ch:['endless','temporary','brief','fleeting'],hint:'Think: going on and on without stopping'},
+  {type:'synonym',word:'perpetual',q:'Which word best replaces PERPETUAL in "a perpetual rain had fallen for nine days"?',a:'continuous',ch:['continuous','occasional','rare','intermittent'],hint:'Think: without any pause or break — nonstop'},
+  {type:'synonym',word:'perpetual',q:'Which word means "never-ending or everlasting"?',a:'perpetual',ch:['perpetual','drastic','frugal','impure'],hint:'Think: something that seems as if it will go on forever'},
+  {type:'synonym',word:'resource',q:'Which word is closest in meaning to RESOURCE (a supply that can be drawn on)?',a:'asset',ch:['asset','burden','deficit','liability'],hint:'Think: something valuable you can use when you need it'},
+  {type:'synonym',word:'resource',q:'Which word best replaces RESOURCE in "coal is a natural resource"?',a:'supply',ch:['supply','demand','waste','expense'],hint:'Think: a store of something useful that the earth provides'},
+  {type:'synonym',word:'resource',q:'Which word means "capable of finding clever solutions" (form of RESOURCE)?',a:'resourceful',ch:['resourceful','reckless','wasteful','perilous'],hint:'Think: someone who uses what they have cleverly and efficiently'},
+  {type:'synonym',word:'substitute',q:'Which word is closest in meaning to SUBSTITUTE (noun)?',a:'replacement',ch:['replacement','original','authentic','prototype'],hint:'Think: something that fills in for what is normally used'},
+  {type:'synonym',word:'substitute',q:'Which word best replaces SUBSTITUTE in "she was the substitute teacher"?',a:'stand-in',ch:['stand-in','principal','supervisor','expert'],hint:'Think: someone filling a role temporarily when the usual person is absent'},
+  {type:'synonym',word:'substitute',q:'Which word means "to put in place of another"?',a:'substitute',ch:['substitute','accumulate','sustain','diminish'],hint:'Think: swapping one thing for another in a recipe or a game'},
+  {type:'synonym',word:'substitute',q:'Which word is most similar to SUBSTITUTE in "there is no substitute for hard work"?',a:'replacement',ch:['replacement','shortcut','decoration','distraction'],hint:'Think: nothing else will do — nothing fills the role equally well'},
+  {type:'synonym',word:'sustain',q:'Which word is closest in meaning to SUSTAIN (to keep going; to support)?',a:'maintain',ch:['maintain','weaken','diminish','reduce'],hint:'Think: keeping something alive or going through ongoing support'},
+  {type:'synonym',word:'sustain',q:'Which word best replaces SUSTAIN in "food and water sustain life"?',a:'support',ch:['support','deplete','drain','exhaust'],hint:'Think: providing what is needed to continue existing'},
+  {type:'synonym',word:'sustain',q:'Which word means "to suffer or undergo" (as in "she sustained an injury")?',a:'suffer',ch:['suffer','avoid','dodge','prevent'],hint:'Think: experiencing something difficult or harmful directly'},
+  {type:'synonym',word:'vital',q:'Which word is closest in meaning to VITAL (necessary for life)?',a:'essential',ch:['essential','optional','trivial','minor'],hint:'Think: absolutely required — cannot be done without'},
+  {type:'synonym',word:'vital',q:'Which word best replaces VITAL in "it is vital that you act now"?',a:'crucial',ch:['crucial','optional','helpful','convenient'],hint:'Think: so important that failure to act would have serious consequences'},
+  {type:'synonym',word:'vital',q:'Which word means "full of energy and liveliness" (second meaning of VITAL)?',a:'vibrant',ch:['vibrant','sluggish','dull','lethargic'],hint:'Think: alive, energized, buzzing with spirit — not weary or faded'},
+
+  // ── ANTONYMS (35) ──────────────────────────────────────────────────────────
+  {type:'antonym',word:'accumulate',q:'Which word is most OPPOSITE in meaning to ACCUMULATE?',a:'disperse',ch:['disperse','gather','pile','collect'],hint:'Think: spreading outward instead of piling inward'},
+  {type:'antonym',word:'accumulate',q:'Which word is the best antonym for ACCUMULATE?',a:'scatter',ch:['scatter','amass','heap','stockpile'],hint:'Think: throwing things apart rather than pulling them together'},
+  {type:'antonym',word:'aggravate',q:'Which word is most OPPOSITE in meaning to AGGRAVATE (to make worse)?',a:'alleviate',ch:['alleviate','worsen','intensify','inflame'],hint:'Think: to make better or ease rather than make worse'},
+  {type:'antonym',word:'aggravate',q:'Which word is the best antonym for AGGRAVATE (to annoy)?',a:'soothe',ch:['soothe','irritate','exasperate','provoke'],hint:'Think: to calm down rather than stir up'},
+  {type:'antonym',word:'aggravate',q:'Which word is most OPPOSITE in meaning to AGGRAVATION?',a:'relief',ch:['relief','annoyance','bother','nuisance'],hint:'Think: the feeling after a problem disappears rather than grows'},
+  {type:'antonym',word:'conserve',q:'Which word is most OPPOSITE in meaning to CONSERVE?',a:'squander',ch:['squander','preserve','protect','save'],hint:'Think: using up wastefully rather than saving carefully'},
+  {type:'antonym',word:'conserve',q:'Which word is the best antonym for CONSERVE?',a:'waste',ch:['waste','shield','guard','sustain'],hint:'Think: throwing away instead of carefully keeping'},
+  {type:'antonym',word:'contaminate',q:'Which word is most OPPOSITE in meaning to CONTAMINATE?',a:'purify',ch:['purify','pollute','taint','foul'],hint:'Think: making something completely clean rather than dirty'},
+  {type:'antonym',word:'contaminate',q:'Which word is the best antonym for CONTAMINATE?',a:'cleanse',ch:['cleanse','infect','corrupt','harm'],hint:'Think: removing all harmful substances rather than adding them'},
+  {type:'antonym',word:'diminish',q:'Which word is most OPPOSITE in meaning to DIMINISH?',a:'amplify',ch:['amplify','reduce','lessen','shrink'],hint:'Think: making bigger rather than smaller'},
+  {type:'antonym',word:'diminish',q:'Which word is the best antonym for DIMINISH?',a:'increase',ch:['increase','shrink','dwindle','fade'],hint:'Think: growing stronger instead of getting weaker'},
+  {type:'antonym',word:'diminish',q:'Which word means the opposite of "to make or become less"?',a:'expand',ch:['expand','contract','narrow','deplete'],hint:'Think: spreading out and growing rather than shrinking and fading'},
+  {type:'antonym',word:'drastic',q:'Which word is most OPPOSITE in meaning to DRASTIC?',a:'mild',ch:['mild','severe','extreme','radical'],hint:'Think: gentle and moderate rather than harsh and sweeping'},
+  {type:'antonym',word:'drastic',q:'Which word is the best antonym for DRASTIC?',a:'moderate',ch:['moderate','brutal','intense','forceful'],hint:'Think: a balanced middle-ground response rather than an extreme one'},
+  {type:'antonym',word:'extravagant',q:'Which word is most OPPOSITE in meaning to EXTRAVAGANT?',a:'frugal',ch:['frugal','lavish','excessive','wasteful'],hint:'Think: careful with money rather than reckless with it'},
+  {type:'antonym',word:'extravagant',q:'Which word is the best antonym for EXTRAVAGANT?',a:'thrifty',ch:['thrifty','ostentatious','luxurious','indulgent'],hint:'Think: spending only what is needed rather than far more'},
+  {type:'antonym',word:'extravagant',q:'Which word means the opposite of "using more than is required"?',a:'economical',ch:['economical','reckless','lavish','generous'],hint:'Think: getting the same result for far less cost or effort'},
+  {type:'antonym',word:'frugal',q:'Which word is most OPPOSITE in meaning to FRUGAL?',a:'extravagant',ch:['extravagant','thrifty','economical','sparing'],hint:'Think: spending without concern for cost rather than watching every penny'},
+  {type:'antonym',word:'frugal',q:'Which word is the best antonym for FRUGAL?',a:'wasteful',ch:['wasteful','careful','conservative','prudent'],hint:'Think: throwing things away versus holding on to them carefully'},
+  {type:'antonym',word:'impurity',q:'Which word is most OPPOSITE in meaning to IMPURITY?',a:'purity',ch:['purity','contaminant','pollutant','toxin'],hint:'Think: the completely clean state — no harmful substances present'},
+  {type:'antonym',word:'impurity',q:'Which word is the best antonym for IMPURITY?',a:'cleanliness',ch:['cleanliness','taint','filth','corruption'],hint:'Think: the quality of being completely free from harmful additions'},
+  {type:'antonym',word:'peril',q:'Which word is most OPPOSITE in meaning to PERIL?',a:'safety',ch:['safety','hazard','risk','threat'],hint:'Think: freedom from danger rather than exposure to it'},
+  {type:'antonym',word:'peril',q:'Which word is the best antonym for PERIL?',a:'security',ch:['security','danger','menace','jeopardy'],hint:'Think: a state of being protected and free from harm'},
+  {type:'antonym',word:'perpetual',q:'Which word is most OPPOSITE in meaning to PERPETUAL?',a:'temporary',ch:['temporary','endless','constant','ceaseless'],hint:'Think: lasting only a short time rather than going on forever'},
+  {type:'antonym',word:'perpetual',q:'Which word is the best antonym for PERPETUAL?',a:'brief',ch:['brief','eternal','continuous','unending'],hint:'Think: a quick flash rather than an unending stream'},
+  {type:'antonym',word:'perpetual',q:'Which word means the opposite of "lasting forever"?',a:'fleeting',ch:['fleeting','permanent','everlasting','timeless'],hint:'Think: gone in a moment rather than lasting through all time'},
+  {type:'antonym',word:'resource',q:'Which word is most OPPOSITE in meaning to RESOURCE (a useful supply)?',a:'deficit',ch:['deficit','asset','supply','reserve'],hint:'Think: running short of what you need rather than having a store of it'},
+  {type:'antonym',word:'resource',q:'Which word is the best antonym for RESOURCEFUL?',a:'helpless',ch:['helpless','capable','clever','inventive'],hint:'Think: unable to solve problems rather than quick to find solutions'},
+  {type:'antonym',word:'substitute',q:'Which word is most OPPOSITE in meaning to SUBSTITUTE (noun)?',a:'original',ch:['original','replacement','stand-in','proxy'],hint:'Think: the real, first thing rather than the fill-in copy'},
+  {type:'antonym',word:'substitute',q:'Which word is the best antonym for SUBSTITUTE (as in "substitute teacher")?',a:'permanent',ch:['permanent','temporary','occasional','fill-in'],hint:'Think: the actual, full-time version rather than a temporary stand-in'},
+  {type:'antonym',word:'sustain',q:'Which word is most OPPOSITE in meaning to SUSTAIN (to support)?',a:'undermine',ch:['undermine','support','maintain','uphold'],hint:'Think: wearing away the foundations rather than holding them firm'},
+  {type:'antonym',word:'sustain',q:'Which word is the best antonym for SUSTAIN?',a:'weaken',ch:['weaken','strengthen','nourish','preserve'],hint:'Think: drawing out strength rather than providing it'},
+  {type:'antonym',word:'vital',q:'Which word is most OPPOSITE in meaning to VITAL (essential)?',a:'nonessential',ch:['nonessential','critical','necessary','fundamental'],hint:'Think: something you could easily do without rather than something you absolutely need'},
+  {type:'antonym',word:'vital',q:'Which word is the best antonym for VITAL (full of lively spirit)?',a:'lifeless',ch:['lifeless','vibrant','lively','energetic'],hint:'Think: dull and flat rather than buzzing with energy and personality'},
+  {type:'antonym',word:'vital',q:'Which word means the opposite of "of the greatest importance"?',a:'trivial',ch:['trivial','crucial','indispensable','urgent'],hint:'Think: hardly worth noticing rather than critically important'},
+
+  // ── ANALOGIES (40) ─────────────────────────────────────────────────────────
+  {type:'analogy',word:'accumulate',q:'ACCUMULATE is to PILE as SCATTER is to ___',a:'spread',ch:['spread','gather','heap','collect'],hint:'Think: scatter moves things apart the way spread does — both oppose gathering'},
+  {type:'analogy',word:'accumulate',q:'SNOW is to DRIFT as DEBT is to ___',a:'accumulate',ch:['accumulate','diminish','conserve','substitute'],hint:'Think: snow forms a drift by piling up; debt grows by accumulating'},
+  {type:'analogy',word:'accumulate',q:'ACCUMULATE is to MORE as DIMINISH is to ___',a:'less',ch:['less','more','same','much'],hint:'Think: one process makes things grow; the other makes things shrink'},
+  {type:'analogy',word:'aggravate',q:'AGGRAVATE is to WORSE as ALLEVIATE is to ___',a:'better',ch:['better','worse','same','painful'],hint:'Think: aggravate pushes a situation the wrong direction; alleviate pushes it the right way'},
+  {type:'analogy',word:'aggravate',q:'SALT is to WOUND as CRITICISM is to ___',a:'aggravate',ch:['aggravate','soothe','diminish','conserve'],hint:'Think: salt makes a wound worse; harsh criticism makes hurt feelings worse'},
+  {type:'analogy',word:'aggravate',q:'AGGRAVATE is to ANGER as SOOTHE is to ___',a:'calm',ch:['calm','annoy','bother','irritate'],hint:'Think: aggravate produces anger; soothe produces the opposite feeling'},
+  {type:'analogy',word:'conserve',q:'CONSERVE is to SAVE as SQUANDER is to ___',a:'waste',ch:['waste','preserve','guard','protect'],hint:'Think: conserve and save are on the same side; squander and waste are on the other'},
+  {type:'analogy',word:'conserve',q:'DAM is to WATER as SAVINGS ACCOUNT is to ___',a:'conserve',ch:['conserve','contaminate','aggravate','diminish'],hint:'Think: a dam conserves water by holding it; a savings account conserves money the same way'},
+  {type:'analogy',word:'conserve',q:'CONSERVE is to RESOURCES as PRESERVE is to ___',a:'food',ch:['food','waste','spending','pollution'],hint:'Think: we conserve natural resources; we preserve food — both extend useful life'},
+  {type:'analogy',word:'contaminate',q:'CONTAMINATE is to DIRTY as PURIFY is to ___',a:'clean',ch:['clean','taint','foul','infect'],hint:'Think: these are opposite processes — one introduces harm, the other removes it'},
+  {type:'analogy',word:'contaminate',q:'CHEMICAL is to WATER as RUMOR is to ___',a:'contaminate',ch:['contaminate','sustain','conserve','accumulate'],hint:'Think: a chemical contaminates clean water; a rumor contaminates the truth'},
+  {type:'analogy',word:'contaminate',q:'CONTAMINATE is to IMPURITY as PURIFY is to ___',a:'cleanliness',ch:['cleanliness','filth','taint','poison'],hint:'Think: contamination introduces impurity; purification produces cleanliness'},
+  {type:'analogy',word:'diminish',q:'DIMINISH is to SMALLER as AMPLIFY is to ___',a:'larger',ch:['larger','smaller','quieter','weaker'],hint:'Think: diminish makes things less; amplify makes things more'},
+  {type:'analogy',word:'diminish',q:'CANDLE is to BURN DOWN as ENTHUSIASM is to ___',a:'diminish',ch:['diminish','accumulate','sustain','aggravate'],hint:'Think: a candle burns down to nothing; enthusiasm can diminish the same way if not fed'},
+  {type:'analogy',word:'diminish',q:'DIMINISH is to SIZE as SOFTEN is to ___',a:'intensity',ch:['intensity','volume','direction','color'],hint:'Think: diminishing reduces size; softening reduces intensity'},
+  {type:'analogy',word:'drastic',q:'DRASTIC is to SEVERE as MILD is to ___',a:'gentle',ch:['gentle','harsh','extreme','radical'],hint:'Think: drastic and severe are at one end of the scale; mild and gentle are at the other'},
+  {type:'analogy',word:'drastic',q:'SURGERY is to DRASTIC as BANDAGE is to ___',a:'mild',ch:['mild','extreme','severe','forceful'],hint:'Think: surgery is a drastic response to injury; a bandage is a mild one'},
+  {type:'analogy',word:'extravagant',q:'EXTRAVAGANT is to WASTEFUL as FRUGAL is to ___',a:'careful',ch:['careful','reckless','excessive','lavish'],hint:'Think: extravagant describes careless spending; frugal describes careful spending'},
+  {type:'analogy',word:'extravagant',q:'MISER is to HOARDING as SPENDTHRIFT is to ___',a:'extravagant',ch:['extravagant','frugal','thrifty','economical'],hint:'Think: a miser is extreme in hoarding; a spendthrift is extreme in extravagant spending'},
+  {type:'analogy',word:'extravagant',q:'EXTRAVAGANT is to EXCESS as FRUGAL is to ___',a:'economy',ch:['economy','extravagance','luxury','indulgence'],hint:'Think: extravagance is the habit of excess; frugality is the habit of economy'},
+  {type:'analogy',word:'frugal',q:'FRUGAL is to THRIFTY as EXTRAVAGANT is to ___',a:'wasteful',ch:['wasteful','careful','sparing','economical'],hint:'Think: frugal and thrifty mean the same thing; extravagant pairs with wasteful'},
+  {type:'analogy',word:'frugal',q:'SQUIRREL is to NUTS as FRUGAL PERSON is to ___',a:'savings',ch:['savings','expenses','debts','spending'],hint:'Think: a squirrel stores nuts for winter; a frugal person stores savings for lean times'},
+  {type:'analogy',word:'frugal',q:'FRUGAL is to SPENDING as CAUTIOUS is to ___',a:'risk',ch:['risk','caution','safety','savings'],hint:'Think: a frugal person is careful about spending; a cautious person is careful about risk'},
+  {type:'analogy',word:'impurity',q:'IMPURITY is to WATER as ERROR is to ___',a:'text',ch:['text','water','air','soil'],hint:'Think: an impurity makes water unsafe; an error makes text wrong — both are unwanted additions'},
+  {type:'analogy',word:'impurity',q:'FILTER is to IMPURITY as EDITOR is to ___',a:'errors',ch:['errors','stories','pages','words'],hint:'Think: a filter removes impurities from water; an editor removes errors from writing'},
+  {type:'analogy',word:'peril',q:'PERIL is to DANGER as SECURITY is to ___',a:'safety',ch:['safety','threat','hazard','risk'],hint:'Think: peril and danger are the same thing; security and safety are the same thing'},
+  {type:'analogy',word:'peril',q:'LIFEGUARD is to DROWNING as HELMET is to ___',a:'peril',ch:['peril','impurity','substitute','aggravation'],hint:'Think: a lifeguard protects against the peril of drowning; a helmet protects against head injury'},
+  {type:'analogy',word:'perpetual',q:'PERPETUAL is to ENDLESS as TEMPORARY is to ___',a:'brief',ch:['brief','lasting','eternal','permanent'],hint:'Think: perpetual describes what never ends; temporary describes what is only briefly present'},
+  {type:'analogy',word:'perpetual',q:'WATER CYCLE is to PERPETUAL as SEASONS are to ___',a:'cyclical',ch:['cyclical','ending','random','once'],hint:'Think: the water cycle is perpetual — it repeats forever; the seasons are cyclical, returning again and again'},
+  {type:'analogy',word:'resource',q:'RESOURCE is to SUPPLY as LIABILITY is to ___',a:'burden',ch:['burden','asset','benefit','advantage'],hint:'Think: a resource is an asset you can draw on; a liability is a burden you must carry'},
+  {type:'analogy',word:'resource',q:'LIBRARY is to KNOWLEDGE as RESERVOIR is to ___',a:'resource',ch:['resource','impurity','peril','aggravation'],hint:'Think: a library is a resource for knowledge; a reservoir is a resource for water'},
+  {type:'analogy',word:'substitute',q:'SUBSTITUTE is to REPLACEMENT as ORIGINAL is to ___',a:'authentic',ch:['authentic','copy','fake','imitation'],hint:'Think: a substitute is a replacement; the original is the authentic thing'},
+  {type:'analogy',word:'substitute',q:'UNDERSTUDY is to ACTOR as SUBSTITUTE is to ___',a:'teacher',ch:['teacher','student','principal','coach'],hint:'Think: an understudy fills in for an actor; a substitute fills in for a teacher'},
+  {type:'analogy',word:'substitute',q:'SUBSTITUTE is to FILL IN as RETIRE is to ___',a:'step down',ch:['step down','fill in','take over','replace'],hint:'Think: to substitute is to step in; to retire is to step down — both are role transitions'},
+  {type:'analogy',word:'sustain',q:'SUSTAIN is to SUPPORT as UNDERMINE is to ___',a:'weaken',ch:['weaken','uphold','maintain','strengthen'],hint:'Think: sustain holds something up; undermine gradually breaks it down'},
+  {type:'analogy',word:'sustain',q:'FOOD is to BODY as SUNLIGHT is to ___',a:'sustain',ch:['sustain','conserve','contaminate','diminish'],hint:'Think: food sustains the body; sunlight sustains plant life'},
+  {type:'analogy',word:'sustain',q:'SUSTAIN is to ONGOING as CEASE is to ___',a:'finished',ch:['finished','continuous','endless','perpetual'],hint:'Think: to sustain something keeps it going; to cease something brings it to an end'},
+  {type:'analogy',word:'vital',q:'VITAL is to ESSENTIAL as OPTIONAL is to ___',a:'unnecessary',ch:['unnecessary','critical','required','mandatory'],hint:'Think: vital and essential mean the same; optional and unnecessary mean the same'},
+  {type:'analogy',word:'vital',q:'OXYGEN is to BREATHING as WATER is to ___',a:'vital',ch:['vital','optional','helpful','convenient'],hint:'Think: oxygen is vital to breathing; water is vital to life itself'},
+  {type:'analogy',word:'vital',q:'VITAL is to ALIVE as LIFELESS is to ___',a:'dead',ch:['dead','vibrant','energetic','lively'],hint:'Think: vital describes someone bursting with life; lifeless describes the complete absence of it'},
+
+  // ── SIMILES (35) ───────────────────────────────────────────────────────────
+  {type:'simile',word:'accumulate',q:'Complete the simile: Her worries accumulated like ___',a:'leaves piling up in a corner no one bothers to sweep',ch:['leaves piling up in a corner no one bothers to sweep','a stone wall someone knocks down every morning','a tide that recedes before it ever reaches the shore','a bucket someone empties before it gets full'],hint:'Think: small things gathering steadily into a larger and larger mass'},
+  {type:'simile',word:'accumulate',q:'Complete the simile: The dust on the old piano had accumulated like ___',a:'years of silence settling in a layer no one disturbed',ch:['years of silence settling in a layer no one disturbed','a fresh breeze that clears the air every morning','a tide that washes away all traces of the day','a quick wipe of a rag that leaves everything spotless'],hint:'Think: quiet, undisturbed buildup over a very long period'},
+  {type:'simile',word:'accumulate',q:'Complete the simile: Knowledge accumulates like ___',a:'interest in a savings account — slowly at first, then faster and faster',ch:['interest in a savings account — slowly at first, then faster and faster','a fire that burns itself out without leaving ash','a wave that erases what came before it','a stone that rolls away and leaves no mark'],hint:'Think: each addition builds on the last, making the total grow faster over time'},
+  {type:'simile',word:'aggravate',q:'Complete the simile: His constant interruptions aggravated her concentration like ___',a:'a fly buzzing near your ear while you try to sleep',ch:['a fly buzzing near your ear while you try to sleep','a gentle breeze on a warm summer afternoon','a soft blanket wrapped around your shoulders','a quiet room with a single candle burning'],hint:'Think: something small that keeps disrupting what you are trying to do'},
+  {type:'simile',word:'aggravate',q:'Complete the simile: The extra delay aggravated the situation like ___',a:'a second rock dropped into an already cracked windshield',ch:['a second rock dropped into an already cracked windshield','a layer of padding placed over a bruise to protect it','a careful bandage applied with clean hands','a warm drink offered to someone who is cold'],hint:'Think: adding harm to what was already damaged'},
+  {type:'simile',word:'conserve',q:'Complete the simile: She conserved water as carefully as ___',a:'a desert traveler rationing the last drops in a canteen',ch:['a desert traveler rationing the last drops in a canteen','a child splashing through every puddle after rain','someone filling a bathtub and letting it overflow','a farmer who waters crops every hour on the hour'],hint:'Think: someone who knows exactly how precious their limited supply is'},
+  {type:'simile',word:'conserve',q:'Complete the simile: The committee pledged to conserve the forest like ___',a:'a museum guard protecting irreplaceable artifacts from harm',ch:['a museum guard protecting irreplaceable artifacts from harm','a logger who cuts every tree before winter comes','a builder who clears land for the cheapest possible price','a developer who plants concrete wherever there was soil'],hint:'Think: careful, vigilant protection of something that cannot be replaced'},
+  {type:'simile',word:'contaminate',q:'Complete the simile: One factory\'s waste contaminated the river like ___',a:'a single drop of ink turning an entire glass of water gray',ch:['a single drop of ink turning an entire glass of water gray','a soft rain that washes the dirt from leaves and stones','a snowfall that covers and purifies everything it touches','a filter that removes every trace of color from the stream'],hint:'Think: a small amount of harmful substance spreading far beyond where it started'},
+  {type:'simile',word:'contaminate',q:'Complete the simile: False information contaminated the public debate like ___',a:'a weed that spreads underground until it chokes every flower in the garden',ch:['a weed that spreads underground until it chokes every flower in the garden','a careful gardener who removes every harmful plant by hand','a clean wind that carries only the seeds of healthy plants','a rain that feeds every plant equally and without harm'],hint:'Think: something harmful that spreads invisibly and destroys what was healthy'},
+  {type:'simile',word:'contaminate',q:'Complete the simile: The spilled chemicals contaminated the soil like ___',a:'a stain that soaks deeper the longer you wait to treat it',ch:['a stain that soaks deeper the longer you wait to treat it','a patch of sunlight that makes the garden grow faster','a gentle frost that disappears when morning comes','a coat of polish that makes old wood shine again'],hint:'Think: something harmful that penetrates and spreads the longer it is ignored'},
+  {type:'simile',word:'diminish',q:'Complete the simile: Her confidence had diminished like ___',a:'a once-bright fire reduced to a few glowing embers in the cold',ch:['a once-bright fire reduced to a few glowing embers in the cold','a bonfire that roared higher with every passing hour','a flame that burned all the more fiercely in the wind','a blaze that could not be reduced by any amount of rain'],hint:'Think: something that was once large and powerful, now barely present'},
+  {type:'simile',word:'diminish',q:'Complete the simile: The supply of fresh water was diminishing like ___',a:'sand slipping through fingers no matter how tightly you hold them',ch:['sand slipping through fingers no matter how tightly you hold them','water rising steadily behind a well-built dam','a spring that flowed more strongly with each passing season','a river fed by annual rains that never failed to come'],hint:'Think: something you cannot stop from slowly disappearing'},
+  {type:'simile',word:'drastic',q:'Complete the simile: The new water restrictions were as drastic as ___',a:'a surgeon removing an organ to save the body from a worse fate',ch:['a surgeon removing an organ to save the body from a worse fate','a doctor who suggests resting and drinking plenty of fluids','a nurse who places a cool cloth on a warm forehead','a pharmacist who recommends a mild over-the-counter remedy'],hint:'Think: the most severe possible intervention — no half-measures'},
+  {type:'simile',word:'drastic',q:'Complete the simile: The change in water quality after the factory opened was as drastic as ___',a:'a river that reversed its course overnight',ch:['a river that reversed its course overnight','a gentle bend in a stream that smoothed over time','a gradual shift in the current no one noticed for years','a small eddy that spun briefly and then disappeared'],hint:'Think: a sudden, extreme reversal with no gradual transition'},
+  {type:'simile',word:'extravagant',q:'Complete the simile: The city\'s water use during the drought was as extravagant as ___',a:'a sailor pouring fresh water overboard in the middle of the ocean',ch:['a sailor pouring fresh water overboard in the middle of the ocean','a traveler rationing each drop through a parched desert','a camper boiling and filtering every drop from a mountain stream','a diver surfacing only when absolutely necessary to save air'],hint:'Think: wasteful behavior in exactly the situation where conservation is most critical'},
+  {type:'simile',word:'extravagant',q:'Complete the simile: His promises about fixing the water supply were as extravagant as ___',a:'a magician who claims he can make it rain gold',ch:['a magician who claims he can make it rain gold','a friend who offers only what they know they can deliver','a planner who lists only the steps she is certain she can complete','a scientist who reports only what the data clearly supports'],hint:'Think: promises far beyond what is realistic or possible to deliver'},
+  {type:'simile',word:'frugal',q:'Complete the simile: The desert community was as frugal with water as ___',a:'a watchmaker with the tiniest spring in the most delicate clock',ch:['a watchmaker with the tiniest spring in the most delicate clock','a child filling a swimming pool one bucket at a time','a gardener who waters everything twice whether it needs it or not','a restaurant that refills your glass before you have taken the first sip'],hint:'Think: extreme care with something tiny and irreplaceable'},
+  {type:'simile',word:'frugal',q:'Complete the simile: She was as frugal with electricity as ___',a:'a lighthouse keeper on a remote island who must make his oil last through the winter',ch:['a lighthouse keeper on a remote island who must make his oil last through the winter','a child who leaves every light blazing through the night','a family that upgrades to the newest appliances every year','a hotel that never turns off its neon sign'],hint:'Think: someone who knows supply is limited and treats every unit as precious'},
+  {type:'simile',word:'frugal',q:'Complete the simile: The frugal scientist reused every piece of equipment like ___',a:'a cobbler who resolves the same boots year after year rather than buying new ones',ch:['a cobbler who resolves the same boots year after year rather than buying new ones','a shopper who replaces perfectly good items whenever a new model appears','a cook who throws out leftovers before they can be used again','a builder who tears down a solid wall because it is old'],hint:'Think: getting the maximum use out of something before replacing it'},
+  {type:'simile',word:'impurity',q:'Complete the simile: The rumor spread through the group like an impurity ___',a:'dissolving into a clear stream and clouding it beyond recognition',ch:['dissolving into a clear stream and clouding it beyond recognition','being filtered out before it could reach any part of the system','trapped behind a barrier that kept it perfectly contained','removed by a careful process that left the water sparkling'],hint:'Think: something harmful spreading silently through something that was pure'},
+  {type:'simile',word:'impurity',q:'Complete the simile: The single defective part was like an impurity ___',a:'in a batch of medicine — small but capable of ruining everything',ch:['in a batch of medicine — small but capable of ruining everything','in a perfectly sealed container that no outside force could reach','filtered out at every stage before it reached the final product','tested for and eliminated long before it could cause any trouble'],hint:'Think: one small harmful element that compromises an entire system'},
+  {type:'simile',word:'peril',q:'Complete the simile: Swimming above the waterfall\'s edge was as foolish as walking into peril ___',a:'with a blindfold on and both hands tied behind your back',ch:['with a blindfold on and both hands tied behind your back','with every safety line double-checked and every risk assessed','with an experienced guide who knows every dangerous turn','with the right gear and a clear head and a careful plan'],hint:'Think: walking toward danger while having removed every possible protection'},
+  {type:'simile',word:'peril',q:'Complete the simile: The polluted river was a peril to the town like ___',a:'a slow-moving flood that no one could see but everyone would eventually feel',ch:['a slow-moving flood that no one could see but everyone would eventually feel','a gentle stream that children wade through without a second thought','a clear mountain brook that cools the air for miles around','a small pond that reflects the sky on a calm summer afternoon'],hint:'Think: a hidden, creeping danger that builds without warning until it overwhelms'},
+  {type:'simile',word:'perpetual',q:'Complete the simile: The water cycle runs as perpetually as ___',a:'a clock that winds itself and never needs a hand to start it again',ch:['a clock that winds itself and never needs a hand to start it again','a machine that breaks down if it runs more than a few hours','a candle that must be relit every time the wind blows it out','a battery that slowly loses its charge no matter how carefully it is stored'],hint:'Think: a process that repeats endlessly with no outside force needed to restart it'},
+  {type:'simile',word:'perpetual',q:'Complete the simile: Their argument about water rights seemed as perpetual as ___',a:'a tide that recedes only to return before the beach is dry',ch:['a tide that recedes only to return before the beach is dry','a single wave that crashes once and leaves the shore in peace','a storm that passes in minutes and is forgotten by noon','a cloud that drifts out of sight and never returns'],hint:'Think: something that keeps coming back no matter how often it seems to end'},
+  {type:'simile',word:'resource',q:'Complete the simile: Her calm under pressure was a resource like ___',a:'a deep underground spring — always there when the surface runs dry',ch:['a deep underground spring — always there when the surface runs dry','a shallow pool that evaporates in the first hour of summer heat','a river that floods in spring but disappears by July','a puddle that a child can step over without getting their feet wet'],hint:'Think: something deeper and more reliable than what appears on the surface'},
+  {type:'simile',word:'resource',q:'Complete the simile: The town treated its forest like a precious resource as carefully as ___',a:'a doctor protects the last vial of a medicine that cannot be made again',ch:['a doctor protects the last vial of a medicine that cannot be made again','a logger who harvests as quickly as possible before the season ends','a factory that burns raw material to keep the furnace running','a developer who views trees as obstacles to be cleared'],hint:'Think: protecting something rare and irreplaceable with the utmost care'},
+  {type:'simile',word:'substitute',q:'Complete the simile: For the thirsty traveler in the desert, nothing could substitute for water — like ___',a:'asking a drowning man if he would prefer a life jacket or a trophy',ch:['asking a drowning man if he would prefer a life jacket or a trophy','offering a swimmer extra towels for after the race','giving a rested runner a glass of cool water before the finish line','pouring lemonade for guests who are already satisfied'],hint:'Think: a situation where only one specific thing will do — no alternative is acceptable'},
+  {type:'simile',word:'substitute',q:'Complete the simile: The backup water tank served as a substitute like ___',a:'a spare tire — not the best option but absolutely essential when the original fails',ch:['a spare tire — not the best option but absolutely essential when the original fails','the primary engine running at full power with no backup needed','the original part that was designed and tested for exactly this role','a component that is preferred over the standard version in every situation'],hint:'Think: something that fills in adequately when the primary is not available'},
+  {type:'simile',word:'sustain',q:'Complete the simile: Her determination sustained the team like ___',a:'a keel sustains a ship — unseen but keeping everything upright through the storm',ch:['a keel sustains a ship — unseen but keeping everything upright through the storm','a heavy anchor dragging the ship back whenever it tried to move forward','a wave that pushed the boat off its course and toward the rocks','a wind that spun the vessel in circles without direction'],hint:'Think: a structural element that maintains stability without drawing attention to itself'},
+  {type:'simile',word:'sustain',q:'Complete the simile: Clean water sustains life like ___',a:'a heartbeat sustains the body — quietly, constantly, and without it everything stops',ch:['a heartbeat sustains the body — quietly, constantly, and without it everything stops','a luxury sustains a mood — nice to have, but nothing fails if it disappears','a bonus sustains interest — welcome when it comes, but not relied on','a reward sustains effort — motivating for a moment, then forgotten'],hint:'Think: not a comfort but a fundamental necessity — remove it and everything collapses'},
+  {type:'simile',word:'sustain',q:'Complete the simile: The relief workers sustained hope in the flood-stricken town like ___',a:'candles lit one by one in a building where the power has gone out',ch:['candles lit one by one in a building where the power has gone out','a power outage spreading through the grid on a cold winter night','a storm that puts out every light and does not pass for days','a blackout that leaves every room cold, dark, and silent'],hint:'Think: small acts of warmth and light that keep hope alive in darkness'},
+  {type:'simile',word:'vital',q:'Complete the simile: Water is as vital to life as ___',a:'a spine is to the body — remove it and nothing holds together',ch:['a spine is to the body — remove it and nothing holds together','a scarf is to a coat — nice to have on a cold day but not truly necessary','a second window in a room that already has one','a lamp in a room already lit by the afternoon sun'],hint:'Think: something so central and structural that life collapses without it'},
+  {type:'simile',word:'vital',q:'Complete the simile: She was as vital to the team as ___',a:'an engine is to a ship — take her out and the whole voyage stops',ch:['an engine is to a ship — take her out and the whole voyage stops','a flag is to a castle — noticeable and symbolic but not necessary for defense','a coat of paint is to a house — pleasant, but the walls stand without it','a third wheel on a bicycle — an addition that makes balance harder'],hint:'Think: the central driving force — not decorative, not optional, but core'},
+  {type:'simile',word:'vital',q:'Complete the simile: The conservation plan was as vital as ___',a:'a levee before the flood — the time to build it is before you need it, not after',ch:['a levee before the flood — the time to build it is before you need it, not after','an umbrella found after the storm has already passed','a map consulted only after arriving at the wrong destination','a lock installed on the door after the house has been emptied'],hint:'Think: something so necessary that waiting too long to act makes it useless'},
+
+  // ── METAPHORS (35) ─────────────────────────────────────────────────────────
+  {type:'metaphor',word:'accumulate',q:'Which sentence is a metaphor using ACCUMULATE?',a:'Regret is a tax that accumulates silently until the debt comes due all at once.',ch:['Regret is a tax that accumulates silently until the debt comes due all at once.','Regret piles up like late fees on an overdue library book.','Regret accumulates the way interest grows in a savings account.','Regret grew as steadily as interest on a loan she had forgotten to pay.'],hint:'Think: calling regret directly a tax — no like or as — and saying it accumulates'},
+  {type:'metaphor',word:'accumulate',q:'Which sentence is a metaphor using ACCUMULATE?',a:'Each unread email in her inbox was a grain of sand — harmless alone, but accumulated into a dune that buried her workday.',ch:['Each unread email in her inbox was a grain of sand — harmless alone, but accumulated into a dune that buried her workday.','Her unread emails piled up like sand dunes in a desert storm.','The emails accumulated as quickly as windblown sand in an open field.','Her inbox filled up the way sand fills a bucket at the beach.'],hint:'Think: calling each email directly a grain of sand — the inbox IS a dune'},
+  {type:'metaphor',word:'accumulate',q:'Which sentence is a metaphor using ACCUMULATE?',a:'Pollution is a slow accumulation of choices — each one a drop that, together, fills the ocean with regret.',ch:['Pollution is a slow accumulation of choices — each one a drop that, together, fills the ocean with regret.','Pollution accumulates the way raindrops fill a barrel left outside.','Pollution piles up like litter along an unswept highway.','The pollution grew like a pile of garbage no one removed.'],hint:'Think: calling pollution directly an accumulation of choices — the pollution IS the choices'},
+  {type:'metaphor',word:'aggravate',q:'Which sentence is a metaphor using AGGRAVATE?',a:'Every delay was salt — deliberately aggravating the wound of an already frustrated nation.',ch:['Every delay was salt — deliberately aggravating the wound of an already frustrated nation.','Every delay aggravated their frustration the way salt irritates a wound.','Each delay was like pouring salt into a wound that was already painful.','The delays aggravated the public as salt aggravates a burn.'],hint:'Think: calling each delay directly salt — the delay IS salt being poured on a wound'},
+  {type:'metaphor',word:'aggravate',q:'Which sentence is a metaphor using AGGRAVATE?',a:'His constant advice was a blister aggravated by every step she took — unwanted, painful, and impossible to ignore.',ch:['His constant advice was a blister aggravated by every step she took — unwanted, painful, and impossible to ignore.','His advice aggravated her the way a blister aggravates a long walk.','His unsolicited advice was as aggravating as a blister on a long hike.','His advice felt like a blister that got more painful with every step.'],hint:'Think: calling his advice directly a blister — the advice IS the wound, aggravated by movement'},
+  {type:'metaphor',word:'conserve',q:'Which sentence is a metaphor using CONSERVE?',a:'The rain barrel was a quiet act of conservation — a small savings account for the sky\'s deposits.',ch:['The rain barrel was a quiet act of conservation — a small savings account for the sky\'s deposits.','The rain barrel helped conserve water the way a savings account conserves money.','Using a rain barrel is like keeping a savings account for rainwater.','A rain barrel conserves water as carefully as a bank conserves your deposits.'],hint:'Think: calling the barrel directly a savings account — the barrel IS the financial instrument'},
+  {type:'metaphor',word:'conserve',q:'Which sentence is a metaphor using CONSERVE?',a:'Conservation is the art of treating every drop as if it were the last one left in the world.',ch:['Conservation is the art of treating every drop as if it were the last one left in the world.','Conservation feels like caring for water as though it were incredibly precious.','To conserve water is to treat it like gold — precious and never to be wasted.','Conservation means acting as if every drop were as rare as a diamond.'],hint:'Think: calling conservation directly an art — the discipline IS the art form'},
+  {type:'metaphor',word:'contaminate',q:'Which sentence is a metaphor using CONTAMINATE?',a:'Prejudice is a contaminant — invisible in the water of daily conversation until someone falls ill from drinking it.',ch:['Prejudice is a contaminant — invisible in the water of daily conversation until someone falls ill from drinking it.','Prejudice contaminates a conversation the way a pollutant contaminates a river.','Prejudice spreads like a toxin through water, invisible until the damage is done.','Prejudice can contaminate a group as silently as chemicals contaminate a well.'],hint:'Think: calling prejudice directly a contaminant — not comparing it, saying it IS one'},
+  {type:'metaphor',word:'contaminate',q:'Which sentence is a metaphor using CONTAMINATE?',a:'The factory was a contamination engine — running day and night, pumping poison into the veins of the watershed.',ch:['The factory was a contamination engine — running day and night, pumping poison into the veins of the watershed.','The factory contaminated the watershed the way an engine pollutes the air.','The factory ran like a contamination machine that never shut down.','The factory\'s output contaminated the river as steadily as an engine burns fuel.'],hint:'Think: calling the factory directly an engine — the factory IS the contamination machine'},
+  {type:'metaphor',word:'contaminate',q:'Which sentence is a metaphor using CONTAMINATE?',a:'Doubt is a contaminant in the mind — once it enters the clear water of confidence, the whole supply becomes unsafe.',ch:['Doubt is a contaminant in the mind — once it enters the clear water of confidence, the whole supply becomes unsafe.','Doubt contaminates confidence the way pollution contaminates drinking water.','Doubt creeps into confidence like bacteria into a water supply.','Once it enters, doubt spreads through confidence as toxins spread through water.'],hint:'Think: calling doubt directly a contaminant — no like or as — and the mind is the water supply'},
+  {type:'metaphor',word:'diminish',q:'Which sentence is a metaphor using DIMINISH?',a:'Each lie he told was a chisel — diminishing the statue of his reputation until only rubble remained.',ch:['Each lie he told was a chisel — diminishing the statue of his reputation until only rubble remained.','Each lie diminished his reputation the way a chisel reduces a block of stone.','His lies chipped away at his reputation like a sculptor\'s chisel on marble.','His reputation diminished as steadily as a stone block under a sculptor\'s tools.'],hint:'Think: calling each lie directly a chisel — the lie IS the tool that diminishes'},
+  {type:'metaphor',word:'diminish',q:'Which sentence is a metaphor using DIMINISH?',a:'Clean water reserves are a shrinking inheritance — diminished by each generation that takes more than it gives back.',ch:['Clean water reserves are a shrinking inheritance — diminished by each generation that takes more than it gives back.','Clean water reserves diminish the way an inheritance shrinks when heirs overspend.','Clean water is like an inheritance that each generation uses up a little more.','The water supply shrinks like an inheritance divided among too many heirs.'],hint:'Think: calling water reserves directly an inheritance — the reserves ARE the inheritance being diminished'},
+  {type:'metaphor',word:'drastic',q:'Which sentence is a metaphor using DRASTIC?',a:'The new water law was a surgeon\'s saw — drastic, irreversible, and cutting through the habits of a generation.',ch:['The new water law was a surgeon\'s saw — drastic, irreversible, and cutting through the habits of a generation.','The new law was drastic, like a surgeon\'s saw cutting through tissue.','The law felt as drastic as a surgical cut — precise and impossible to undo.','The law was as drastic as surgery — cutting deep and leaving permanent change.'],hint:'Think: calling the law directly a saw — the law IS the surgical instrument'},
+  {type:'metaphor',word:'drastic',q:'Which sentence is a metaphor using DRASTIC?',a:'Cutting water use in half was a drastic amputation — the city lost a limb but lived.',ch:['Cutting water use in half was a drastic amputation — the city lost a limb but lived.','Cutting water use in half was as drastic as an amputation.','The water cuts were so drastic it felt like cutting off a limb.','Reducing water use so drastically was like performing an amputation on the city.'],hint:'Think: calling the water cut directly an amputation — the reduction IS the medical procedure'},
+  {type:'metaphor',word:'extravagant',q:'Which sentence is a metaphor using EXTRAVAGANT?',a:'Their lawn was an extravagant mouth, drinking thousands of gallons a week while the aquifer ran dry beneath them.',ch:['Their lawn was an extravagant mouth, drinking thousands of gallons a week while the aquifer ran dry beneath them.','Their lawn consumed water as extravagantly as an open mouth drinks it in.','Maintaining that lawn was like feeding an extravagant mouth that never stopped eating.','The lawn was so extravagant in its water use that it seemed to drink like an open mouth.'],hint:'Think: calling the lawn directly a mouth — the lawn IS the devouring, extravagant consumer'},
+  {type:'metaphor',word:'extravagant',q:'Which sentence is a metaphor using EXTRAVAGANT?',a:'The resort\'s fountain was an extravagant theater — performing for guests while the village upstream went without.',ch:['The resort\'s fountain was an extravagant theater — performing for guests while the village upstream went without.','The resort\'s fountain was as extravagant as a theater performance — impressive but wasteful.','The fountain performed like an extravagant show that cost far more than it was worth.','Maintaining that fountain was as wasteful as running a theater no one needed.'],hint:'Think: calling the fountain directly a theater — the fountain IS the performance, the extravagance'},
+  {type:'metaphor',word:'frugal',q:'Which sentence is a metaphor using FRUGAL?',a:'Her water use was a ledger — every drop entered, accounted for, and never spent without a reason.',ch:['Her water use was a ledger — every drop entered, accounted for, and never spent without a reason.','Her water use was as frugal as a miser keeping a ledger of every penny.','She was so frugal with water that she kept track of every drop like a bookkeeper.','Her approach to water was like keeping a tight financial ledger — nothing wasted.'],hint:'Think: calling her water use directly a ledger — the practice IS the accounting system'},
+  {type:'metaphor',word:'frugal',q:'Which sentence is a metaphor using FRUGAL?',a:'The frugal farmer\'s fields were a conversation with the land — taking only what was offered and giving back what was taken.',ch:['The frugal farmer\'s fields were a conversation with the land — taking only what was offered and giving back what was taken.','The frugal farmer worked his fields as carefully as someone who listens as much as they speak.','Farming frugally was like having a conversation — you take only what is given and return what you receive.','His frugal farming was like a dialogue with nature, give and take in equal measure.'],hint:'Think: calling the fields directly a conversation — the cultivation IS the dialogue'},
+  {type:'metaphor',word:'frugal',q:'Which sentence is a metaphor using FRUGAL?',a:'The frugal city was a closed fist — gripping its water supply through drought and flood alike.',ch:['The frugal city was a closed fist — gripping its water supply through drought and flood alike.','The frugal city held its water supply as tightly as a closed fist holds what it contains.','The city was as frugal as a clenched fist — never letting go of what it had stored.','Being frugal about water was like making a fist and refusing to let anything slip through.'],hint:'Think: calling the city directly a closed fist — the city IS the gripping hand, frugal and unyielding'},
+  {type:'metaphor',word:'impurity',q:'Which sentence is a metaphor using IMPURITY?',a:'Every secret they kept from each other was an impurity — a particle that slowly clouded the water of their trust.',ch:['Every secret they kept from each other was an impurity — a particle that slowly clouded the water of their trust.','Every secret was like an impurity slowly clouding the water of their friendship.','Their secrets contaminated their trust the way impurities cloud water.','Their hidden truths were like impurities that made the water of their relationship murky.'],hint:'Think: calling each secret directly an impurity — no like or as — the secret IS the contaminant'},
+  {type:'metaphor',word:'impurity',q:'Which sentence is a metaphor using IMPURITY?',a:'Greed is an impurity in the economy — a substance that makes the whole system toxic when it accumulates unchecked.',ch:['Greed is an impurity in the economy — a substance that makes the whole system toxic when it accumulates unchecked.','Greed acts like an impurity in the economy, slowly poisoning the whole system.','When greed accumulates, it contaminates the economy the way impurities contaminate water.','Greed spreads through the economy like an impurity through clean water.'],hint:'Think: calling greed directly an impurity — the economic force IS the contaminant'},
+  {type:'metaphor',word:'peril',q:'Which sentence is a metaphor using PERIL?',a:'Every mile of unprotected coastline was a peril waiting to speak — a threat the tide would eventually translate into catastrophe.',ch:['Every mile of unprotected coastline was a peril waiting to speak — a threat the tide would eventually translate into catastrophe.','Every mile of unprotected coastline was as full of peril as a trap set and never sprung.','Each unprotected mile of coast was like a sleeping danger waiting to wake.','The coastline was full of peril, like a hidden trap waiting to be triggered.'],hint:'Think: calling each mile directly a peril — the geography IS the threat, waiting to deliver its message'},
+  {type:'metaphor',word:'peril',q:'Which sentence is a metaphor using PERIL?',a:'Polluted water is a silent peril — it offers itself as refreshment and delivers poison.',ch:['Polluted water is a silent peril — it offers itself as refreshment and delivers poison.','Polluted water is as perilous as a cup that looks clean but contains poison.','Drinking polluted water is like walking into a danger that disguises itself as safety.','Contaminated water is a peril that looks harmless, like a cup of cool, clear poison.'],hint:'Think: calling the water directly a peril — the water IS the danger itself'},
+  {type:'metaphor',word:'perpetual',q:'Which sentence is a metaphor using PERPETUAL?',a:'The water cycle is a perpetual conversation between the sky and the sea — one always answering the other\'s call.',ch:['The water cycle is a perpetual conversation between the sky and the sea — one always answering the other\'s call.','The water cycle is as perpetual as a conversation between two parties who never stop talking.','The cycle between sky and sea is so perpetual it resembles an endless exchange.','The water cycle perpetually moves between sky and sea like an endless conversation.'],hint:'Think: calling the cycle directly a conversation — the water cycle IS the dialogue, and it is perpetual'},
+  {type:'metaphor',word:'perpetual',q:'Which sentence is a metaphor using PERPETUAL?',a:'Their dispute over water rights was a perpetual machine — fueled by old grievances that never burned down.',ch:['Their dispute over water rights was a perpetual machine — fueled by old grievances that never burned down.','Their dispute was as perpetual as a machine that never stops running.','The dispute ran perpetually, like a motor fueled by grievances that would not burn out.','Their disagreement was like a perpetual-motion machine, driven by grudges that never ran out.'],hint:'Think: calling the dispute directly a machine — the conflict IS the perpetual engine'},
+  {type:'metaphor',word:'resource',q:'Which sentence is a metaphor using RESOURCE?',a:'The river was the town\'s only true resource — not a convenience but the spine around which every life was built.',ch:['The river was the town\'s only true resource — not a convenience but the spine around which every life was built.','The river was such a vital resource that it was like the backbone of the community.','The river served as a resource the way a spine serves a body — essential and structural.','Without the river as a resource, the town would be as unstable as a body without a spine.'],hint:'Think: calling the river directly the spine — the river IS the structural resource that everything else depends on'},
+  {type:'metaphor',word:'resource',q:'Which sentence is a metaphor using RESOURCE?',a:'Her creativity was an inexhaustible resource — a spring that flowed more abundantly the more it was drawn upon.',ch:['Her creativity was an inexhaustible resource — a spring that flowed more abundantly the more it was drawn upon.','Her creativity was like an inexhaustible spring that flowed more the more you drew from it.','She was resourceful in the way a deep spring is — always producing more when asked.','Her creative ability was as inexhaustible as a spring that never runs dry.'],hint:'Think: calling creativity directly a resource and then a spring — the abstract quality IS the water supply'},
+  {type:'metaphor',word:'substitute',q:'Which sentence is a metaphor using SUBSTITUTE?',a:'Compromise is the substitute we choose when the original is no longer available — imperfect but the only option on the shelf.',ch:['Compromise is the substitute we choose when the original is no longer available — imperfect but the only option on the shelf.','Compromise functions like a substitute for the solution we actually wanted.','We turn to compromise the way we use a substitute when the real thing is unavailable.','Compromise is as imperfect as a substitute — something we choose when we can\'t have the original.'],hint:'Think: calling compromise directly a substitute — the act IS the replacement product'},
+  {type:'metaphor',word:'substitute',q:'Which sentence is a metaphor using SUBSTITUTE?',a:'Recycled water is not a substitute — it is the original, cleaned and returned to service.',ch:['Recycled water is not a substitute — it is the original, cleaned and returned to service.','Recycled water is not so much a substitute as it is a restored version of the original.','Recycled water isn\'t really a substitute — it\'s more like the original given a second chance.','Using recycled water isn\'t substituting — it\'s restoring what was already there.'],hint:'Think: making an argument about identity using substitute — defining what recycled water IS and IS NOT'},
+  {type:'metaphor',word:'sustain',q:'Which sentence is a metaphor using SUSTAIN?',a:'Water is the earth\'s bloodstream — it sustains every living thing the way blood sustains every cell.',ch:['Water is the earth\'s bloodstream — it sustains every living thing the way blood sustains every cell.','Water sustains the earth the way blood sustains a body.','The role of water in sustaining the earth is like the role of blood in a living body.','Water sustains life the way blood does — circulating through systems and feeding every part.'],hint:'Think: calling water directly the bloodstream — it IS the circulatory system, and it sustains like blood'},
+  {type:'metaphor',word:'sustain',q:'Which sentence is a metaphor using SUSTAIN?',a:'Hope was the raft that sustained them — not comfortable, not safe, but the only thing keeping them above the flood.',ch:['Hope was the raft that sustained them — not comfortable, not safe, but the only thing keeping them above the flood.','Hope sustained them the way a raft sustains a swimmer — imperfect but essential.','They were sustained by hope the way a swimmer is sustained by a raft in rough water.','Hope kept them going the way a raft keeps a person from going under in a flood.'],hint:'Think: calling hope directly a raft — the emotion IS the floating device that sustains them'},
+  {type:'metaphor',word:'sustain',q:'Which sentence is a metaphor using SUSTAIN?',a:'The cheers of the crowd were oxygen — sustaining the runner through the final mile when her legs had nothing left.',ch:['The cheers of the crowd were oxygen — sustaining the runner through the final mile when her legs had nothing left.','The crowd\'s cheers sustained her the way oxygen sustains a runner\'s muscles.','She was sustained by the crowd\'s cheering as a runner is sustained by a fresh supply of oxygen.','The cheers worked like oxygen, sustaining her energy when her body had nearly given out.'],hint:'Think: calling the cheers directly oxygen — the emotional support IS the gas that sustains physical life'},
+  {type:'metaphor',word:'vital',q:'Which sentence is a metaphor using VITAL?',a:'Water is not a resource — it is a vital organ, and we have been slowly removing it from the body of the earth.',ch:['Water is not a resource — it is a vital organ, and we have been slowly removing it from the body of the earth.','Water is so vital that removing it from the earth is like removing an organ from a body.','Without water, the earth is as vulnerable as a body without one of its vital organs.','Destroying the water supply is as dangerous as removing a vital organ from a living creature.'],hint:'Think: calling water directly a vital organ — not comparing it to one, but saying it IS one, embedded in the earth\'s body'},
+  {type:'metaphor',word:'vital',q:'Which sentence is a metaphor using VITAL?',a:'She was the vital spark of the project — without her energy, the whole engine would have gone cold.',ch:['She was the vital spark of the project — without her energy, the whole engine would have gone cold.','She was so vital to the project that losing her would be like losing a spark in an engine.','Her contribution was as vital to the project as a spark is to an engine.','The project depended on her the way an engine depends on a spark to keep running.'],hint:'Think: calling her directly a spark — the person IS the vital ignition source'},
+  {type:'metaphor',word:'vital',q:'Which sentence is a metaphor using VITAL?',a:'Conservation is not an option — it is the vital sign that tells us whether the planet is still alive.',ch:['Conservation is not an option — it is the vital sign that tells us whether the planet is still alive.','Conservation is as vital a sign of planetary health as a heartbeat is of a living person.','The conservation rate is as vital to the earth\'s health as a vital sign is to a patient.','Like a doctor checking vital signs, we must check conservation rates to know if the planet is healthy.'],hint:'Think: calling conservation directly a vital sign — the practice IS the diagnostic indicator of planetary life'}
+];
+
+// ── QUIZ STATE ────────────────────────────────────────────────────────────────
+var pool=[],idx=0,score=0,total=0,streak=0,answered=false;
+
+function shuffle(a){var b=a.slice();for(var i=b.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=b[i];b[i]=b[j];b[j]=t;}return b;}
+
+function startQuiz(){
+  pool=shuffle(QUESTIONS).slice(0,20);
+  idx=0;score=0;total=0;streak=0;answered=false;
+  document.getElementById('result-section').style.display='none';
+  document.getElementById('quiz-section').style.display='';
+  renderQuestion();
+}
+
+function renderQuestion(){
+  var q=pool[idx];
+  document.getElementById('progress-bar').style.width=(idx/20*100)+'%';
+  document.getElementById('score-display').textContent='Score: '+score+'/'+total;
+  document.getElementById('streak-display').textContent='Streak: '+streak+' 🔥';
+  var badge=document.getElementById('q-badge');
+  var ts=TYPE_STYLES[q.type];
+  badge.textContent=ts.label;badge.style.color=ts.color;badge.style.background=ts.bg;
+  document.getElementById('q-word').textContent=q.word.toUpperCase();
+  document.getElementById('q-text').textContent=q.q;
+  document.getElementById('hint-text').style.display='none';
+  document.getElementById('hint-text').textContent=q.hint;
+  document.getElementById('hint-btn').style.display='inline-block';
+  document.getElementById('feedback-area').textContent='';
+  document.getElementById('feedback-area').className='';
+  document.getElementById('next-btn').style.display='none';
+  answered=false;
+  var choices=document.getElementById('choices');
+  clearEl(choices);
+  shuffle(q.ch).forEach(function(c){
+    var btn=mk('button','choice-btn',c);
+    btn.addEventListener('click',function(){handleAnswer(c,q,btn);});
+    choices.appendChild(btn);
+  });
+}
+
+function handleAnswer(chosen,q,btn){
+  if(answered)return;
+  answered=true;total++;
+  document.getElementById('choices').querySelectorAll('.choice-btn').forEach(function(b){
+    b.disabled=true;
+    if(b.textContent===q.a)b.classList.add('correct');
+  });
+  var fb=document.getElementById('feedback-area');
+  if(chosen===q.a){
+    score++;streak++;btn.classList.add('correct');
+    fb.textContent='Correct! ⭐';fb.className='correct';
+    burst(btn,true);if(streak>=3)confetti();
+  }else{
+    streak=0;btn.classList.add('wrong');
+    fb.textContent='Not quite — the answer is: '+q.a;fb.className='wrong';
+    burst(btn,false);
+  }
+  document.getElementById('score-display').textContent='Score: '+score+'/'+total;
+  document.getElementById('streak-display').textContent='Streak: '+streak+' 🔥';
+  document.getElementById('next-btn').style.display='inline-block';
+}
+
+function nextQuestion(){idx++;if(idx>=20){showResult();return;}renderQuestion();}
+
+function showResult(){
+  document.getElementById('quiz-section').style.display='none';
+  var rs=document.getElementById('result-section');rs.style.display='block';
+  document.getElementById('final-score').textContent=score+'/20';
+  var pct=score/20,msg='';
+  if(pct>=.9)msg='Outstanding! Every drop of knowledge counts! 🌊';
+  else if(pct>=.7)msg='Great work! Keep conserving those brain cells! 💧';
+  else if(pct>=.5)msg='Good effort! Review and try again! 📚';
+  else msg='Keep going — even the mightiest river starts as a trickle! 💪';
+  document.getElementById('result-msg').textContent=msg;
+}
+
+function showHint(){
+  document.getElementById('hint-text').textContent=pool[idx].hint;
+  document.getElementById('hint-text').style.display='inline';
+  document.getElementById('hint-btn').style.display='none';
+}
+
+var fcWords=[],fcIdx=0;
+function initFlashcards(){fcWords=WORDS.slice();fcIdx=0;renderCard();}
+function renderCard(){
+  var w=fcWords[fcIdx];
+  document.getElementById('fc-word').textContent=w.word;
+  document.getElementById('fc-pos').textContent=w.pos;
+  document.getElementById('fc-def').textContent=w.def;
+  document.getElementById('fc-ex').textContent=w.ex;
+  document.getElementById('fc-counter').textContent=(fcIdx+1)+' / '+fcWords.length;
+  document.getElementById('fc-card').classList.remove('flipped');
+}
+function fcFlip(){document.getElementById('fc-card').classList.toggle('flipped');}
+function fcNext(){fcIdx=(fcIdx+1)%fcWords.length;renderCard();}
+function fcPrev(){fcIdx=(fcIdx-1+fcWords.length)%fcWords.length;renderCard();}
+function fcShuffle(){fcWords=shuffle(fcWords);fcIdx=0;renderCard();}
+
+function showMode(mode){
+  var qs=document.getElementById('quiz-section');
+  var fs=document.getElementById('flashcard-section');
+  var rs=document.getElementById('result-section');
+  var tq=document.getElementById('tab-quiz');
+  var tf=document.getElementById('tab-flash');
+  if(mode==='quiz'){
+    fs.style.display='none';rs.style.display='none';qs.style.display='';
+    tq.classList.add('active');tf.classList.remove('active');
+  }else{
+    qs.style.display='none';rs.style.display='none';fs.style.display='';
+    tf.classList.add('active');tq.classList.remove('active');
+    initFlashcards();
+  }
+}
+
+function clearEl(el){while(el.firstChild)el.removeChild(el.firstChild);}
+function mk(tag,cls,txt){var el=document.createElement(tag);if(cls)el.className=cls;if(txt!==undefined)el.textContent=txt;return el;}
+
+function burst(el,correct){
+  var rect=el.getBoundingClientRect();
+  var cx=rect.left+rect.width/2,cy=rect.top+rect.height/2;
+  var colors=correct?['#60a5fa','#1d4ed8','#93c5fd','#bfdbfe']:['#ef4444','#fca5a5','#dc2626'];
+  for(var i=0;i<10;i++){
+    var p=document.createElement('div');p.className='particle';
+    var angle=Math.random()*Math.PI*2,dist=40+Math.random()*50;
+    p.style.cssText='left:'+cx+'px;top:'+cy+'px;width:8px;height:8px;background:'+colors[Math.floor(Math.random()*colors.length)]+';--dx:'+Math.cos(angle)*dist+'px;--dy:'+Math.sin(angle)*dist+'px;';
+    document.body.appendChild(p);
+    setTimeout(function(pp){document.body.removeChild(pp);},800,p);
+  }
+}
+function confetti(){
+  var colors=['#60a5fa','#1d4ed8','#93c5fd','#f472b6','#a78bfa','#fbbf24'];
+  for(var i=0;i<22;i++){
+    var c=document.createElement('div');c.className='confetti-piece';
+    var x=Math.random()*window.innerWidth,size=6+Math.random()*8;
+    var dx=(Math.random()-.5)*120,dy=-(80+Math.random()*120);
+    c.style.cssText='left:'+x+'px;top:'+(-size)+'px;width:'+size+'px;height:'+size+'px;background:'+colors[Math.floor(Math.random()*colors.length)]+';border-radius:'+Math.random()*4+'px;--dx:'+dx+'px;--dy:'+dy+'px;';
+    document.body.appendChild(c);
+    setTimeout(function(cc){document.body.removeChild(cc);},1000,c);
+  }
+}
+
+startQuiz();
+</script>
+</body>
+</html>

@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wordly Wise — Lesson 2: The Rosa Parks Challenge</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#0a0a1a;color:#e8e8f0;min-height:100vh;overflow-x:hidden}
+canvas#stars{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.screen{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+.screen.hidden{display:none}
+#home-link{position:fixed;top:14px;left:18px;z-index:100;color:#a78bfa;text-decoration:none;font-size:14px;background:rgba(30,20,60,.7);padding:6px 14px;border-radius:20px;border:1px solid #6d28d9;transition:background .2s}
+#home-link:hover{background:rgba(109,40,217,.35)}
+
+/* START */
+.start-card{background:rgba(15,10,40,.85);border:1px solid #6d28d9;border-radius:24px;padding:48px 40px;max-width:540px;width:100%;text-align:center;box-shadow:0 0 60px rgba(109,40,217,.3)}
+.start-card h1{font-size:2.4rem;font-weight:800;background:linear-gradient(135deg,#a78bfa,#60a5fa,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+.start-card .subtitle{color:#94a3b8;margin-bottom:28px;font-size:1rem}
+.start-card p{color:#cbd5e1;line-height:1.7;margin-bottom:32px;font-size:.97rem}
+.btn{display:inline-block;padding:13px 34px;border-radius:50px;border:none;cursor:pointer;font-size:1rem;font-weight:700;transition:transform .15s,box-shadow .15s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.btn-primary{background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;box-shadow:0 4px 18px rgba(124,58,237,.5)}
+.btn-secondary{background:rgba(30,20,60,.8);color:#a78bfa;border:1px solid #6d28d9;margin-top:14px}
+.btn-sm{padding:8px 20px;font-size:.85rem}
+
+/* QUIZ */
+.quiz-wrap{max-width:680px;width:100%}
+.progress-bar-outer{background:rgba(255,255,255,.08);border-radius:10px;height:8px;margin-bottom:20px;overflow:hidden}
+.progress-bar-inner{height:100%;border-radius:10px;background:linear-gradient(90deg,#7c3aed,#60a5fa);transition:width .4s}
+.q-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.q-counter{color:#94a3b8;font-size:.9rem}
+.streak-badge{background:rgba(251,191,36,.15);border:1px solid #f59e0b;color:#fbbf24;border-radius:20px;padding:4px 12px;font-size:.8rem;font-weight:700}
+.type-badge{border-radius:20px;padding:4px 14px;font-size:.78rem;font-weight:700;display:inline-block;margin-bottom:14px}
+.q-text{font-size:1.2rem;font-weight:600;color:#e2e8f0;line-height:1.6;margin-bottom:24px}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.choice-btn{background:rgba(30,20,60,.7);border:1.5px solid rgba(109,40,217,.4);border-radius:14px;padding:14px 18px;color:#e2e8f0;font-size:.95rem;cursor:pointer;transition:all .15s;text-align:left}
+.choice-btn:hover:not(:disabled){background:rgba(109,40,217,.25);border-color:#7c3aed}
+.choice-btn.correct{background:rgba(16,185,129,.2);border-color:#10b981;color:#6ee7b7}
+.choice-btn.wrong{background:rgba(239,68,68,.2);border-color:#ef4444;color:#fca5a5}
+.hint-text{color:#94a3b8;font-size:.85rem;font-style:italic;margin-top:6px;min-height:20px}
+
+/* RESULTS */
+.results-card{background:rgba(15,10,40,.85);border:1px solid #6d28d9;border-radius:24px;padding:40px 36px;max-width:620px;width:100%;text-align:center}
+.score-ring{width:120px;height:120px;border-radius:50%;margin:0 auto 20px;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:800;border:4px solid #7c3aed;background:rgba(124,58,237,.15)}
+.breakdown{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:20px 0}
+.bd-chip{border-radius:20px;padding:5px 14px;font-size:.8rem;font-weight:600}
+.review-list{margin-top:24px;text-align:left;max-height:280px;overflow-y:auto}
+.review-item{background:rgba(255,255,255,.05);border-radius:10px;padding:10px 14px;margin-bottom:8px;font-size:.85rem;line-height:1.5}
+.review-item .ri-q{color:#94a3b8}
+.review-item .ri-a{color:#6ee7b7;font-weight:600}
+.review-item .ri-yours{color:#fca5a5}
+.results-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:24px}
+
+/* FLASHCARDS */
+.fc-wrap{max-width:540px;width:100%;display:flex;flex-direction:column;align-items:center}
+.fc-wrap h2{font-size:1.5rem;font-weight:700;color:#a78bfa;margin-bottom:6px}
+.fc-count{color:#64748b;font-size:.85rem;margin-bottom:24px}
+.fc-scene{width:100%;max-width:420px;height:260px;perspective:1000px;cursor:pointer;margin-bottom:20px}
+.fc-card{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.4,0,.2,1)}
+.fc-card.flipped{transform:rotateY(180deg)}
+.fc-face{position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center}
+.fc-front{background:linear-gradient(135deg,rgba(109,40,217,.35),rgba(79,70,229,.25));border:1.5px solid #6d28d9}
+.fc-back{background:linear-gradient(135deg,rgba(6,78,59,.4),rgba(16,185,129,.15));border:1.5px solid #10b981;transform:rotateY(180deg)}
+#fc-word{font-size:2rem;font-weight:800;color:#e2e8f0}
+#fc-pos{font-size:.85rem;color:#a78bfa;margin-top:6px}
+#fc-flip-hint{font-size:.75rem;color:#64748b;margin-top:14px}
+#fc-def{font-size:.95rem;color:#d1fae5;line-height:1.6}
+#fc-example{font-size:.82rem;color:#6ee7b7;font-style:italic;margin-top:10px}
+.fc-nav{display:flex;align-items:center;gap:18px}
+.fc-nav button{background:rgba(109,40,217,.3);border:1.5px solid #6d28d9;color:#a78bfa;border-radius:50%;width:42px;height:42px;font-size:1.2rem;cursor:pointer;transition:background .15s}
+.fc-nav button:hover{background:rgba(109,40,217,.6)}
+.fc-nav span{color:#94a3b8;font-size:.9rem;min-width:70px;text-align:center}
+.fc-progress{width:100%;background:rgba(255,255,255,.08);border-radius:10px;height:6px;margin-top:18px;overflow:hidden}
+.fc-progress-inner{height:100%;background:linear-gradient(90deg,#7c3aed,#10b981);transition:width .35s;border-radius:10px}
+
+/* PARTICLES / CONFETTI */
+#particle-canvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:200}
+
+@media(max-width:500px){
+.choices{grid-template-columns:1fr}
+.start-card h1{font-size:1.8rem}
+}
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+<canvas id="particle-canvas"></canvas>
+<a href="../index.html" id="home-link">← Home</a>
+
+<!-- START -->
+<div id="screen-start" class="screen">
+  <div class="start-card">
+    <div style="font-size:3rem;margin-bottom:10px">🪑</div>
+    <h1>Rosa Parks Challenge</h1>
+    <div class="subtitle">Wordly Wise · Lesson 2</div>
+    <p>In December 1955, Rosa Parks refused to give up her seat — an act of courage that sparked the Civil Rights Movement. Test your mastery of 15 powerful words that capture equality, justice, and the fight for human dignity.</p>
+    <div>
+      <button class="btn btn-primary" id="btn-start">Begin the Challenge →</button>
+    </div>
+    <div>
+      <button class="btn btn-secondary" id="btn-flash-start">📚 Study Flashcards</button>
+    </div>
+  </div>
+</div>
+
+<!-- QUIZ -->
+<div id="screen-quiz" class="screen hidden">
+  <div class="quiz-wrap">
+    <div class="progress-bar-outer"><div class="progress-bar-inner" id="prog-bar" style="width:0%"></div></div>
+    <div class="q-header">
+      <span class="q-counter" id="q-counter">Question 1 of 20</span>
+      <span class="streak-badge hidden" id="streak-badge">🔥 0 streak</span>
+    </div>
+    <div id="type-badge" class="type-badge"></div>
+    <div class="q-text" id="q-text"></div>
+    <div class="choices" id="choices"></div>
+    <div class="hint-text" id="hint-text"></div>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div id="screen-results" class="screen hidden">
+  <div class="results-card">
+    <div class="score-ring" id="score-ring"></div>
+    <h2 id="results-title" style="margin-bottom:6px;color:#e2e8f0"></h2>
+    <p id="results-msg" style="color:#94a3b8;margin-bottom:4px"></p>
+    <div class="breakdown" id="breakdown"></div>
+    <div class="review-list" id="review-list"></div>
+    <div class="results-btns">
+      <button class="btn btn-primary btn-sm" id="btn-retry">Try Again</button>
+      <button class="btn btn-secondary btn-sm" id="btn-flash-results">📚 Review Flashcards</button>
+    </div>
+  </div>
+</div>
+
+<!-- FLASHCARDS -->
+<div id="screen-flash" class="screen hidden">
+  <div class="fc-wrap">
+    <h2>📚 Lesson 2 Flashcards</h2>
+    <div class="fc-count" id="fc-count">Card 1 of 15</div>
+    <div class="fc-scene" id="fc-scene">
+      <div class="fc-card" id="fc-card">
+        <div class="fc-face fc-front">
+          <div id="fc-word"></div>
+          <div id="fc-pos"></div>
+          <div id="fc-flip-hint">tap to reveal →</div>
+        </div>
+        <div class="fc-face fc-back">
+          <div id="fc-def"></div>
+          <div id="fc-example"></div>
+        </div>
+      </div>
+    </div>
+    <div class="fc-nav">
+      <button id="fc-prev">‹</button>
+      <span id="fc-nav-label">1 / 15</span>
+      <button id="fc-next">›</button>
+    </div>
+    <div class="fc-progress"><div class="fc-progress-inner" id="fc-prog" style="width:6.67%"></div></div>
+    <button class="btn btn-secondary btn-sm" id="btn-fc-back" style="margin-top:22px">← Back</button>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+// ── STARFIELD ──────────────────────────────────────────────────────────────
+var sc=document.getElementById('stars'),ctx=sc.getContext('2d'),W,H,stars=[];
+function initStars(){W=sc.width=window.innerWidth;H=sc.height=window.innerHeight;stars=[];for(var i=0;i<220;i++)stars.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.4+.3,s:Math.random()*.4+.1,b:Math.random()});}
+function drawStars(){ctx.clearRect(0,0,W,H);var g=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,W*.7);g.addColorStop(0,'rgba(109,40,217,.18)');g.addColorStop(.5,'rgba(79,70,229,.08)');g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);stars.forEach(function(s){s.b+=s.s*.016;var a=.4+.55*Math.abs(Math.sin(s.b));ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle='rgba(200,200,255,'+a+')';ctx.fill();});requestAnimationFrame(drawStars);}
+window.addEventListener('resize',initStars);initStars();drawStars();
+
+// ── PARTICLES ──────────────────────────────────────────────────────────────
+var pc=document.getElementById('particle-canvas'),pctx=pc.getContext('2d'),particles=[];
+function resizePC(){pc.width=window.innerWidth;pc.height=window.innerHeight;}resizePC();window.addEventListener('resize',resizePC);
+function burst(x,y,color,count){for(var i=0;i<count;i++)particles.push({x:x,y:y,vx:(Math.random()-0.5)*7,vy:(Math.random()-2.5)*6,r:Math.random()*5+2,color:color,life:1,dec:Math.random()*.025+.015});}
+function confettiBurst(){var cols=['#a78bfa','#60a5fa','#f472b6','#34d399','#fbbf24'];for(var i=0;i<90;i++){var c=cols[Math.floor(Math.random()*cols.length)];particles.push({x:Math.random()*pc.width,y:-10,vx:(Math.random()-0.5)*4,vy:Math.random()*4+2,r:Math.random()*6+2,color:c,life:1,dec:Math.random()*.012+.008});}}
+function animParticles(){pctx.clearRect(0,0,pc.width,pc.height);particles=particles.filter(function(p){p.x+=p.vx;p.y+=p.vy;p.vy+=0.12;p.life-=p.dec;if(p.life<=0)return false;pctx.globalAlpha=p.life;pctx.beginPath();pctx.arc(p.x,p.y,p.r,0,Math.PI*2);pctx.fillStyle=p.color;pctx.fill();return true;});pctx.globalAlpha=1;requestAnimationFrame(animParticles);}animParticles();
+
+// ── DOM HELPERS ─────────────────────────────────────────────────────────────
+function clearEl(el){while(el.firstChild)el.removeChild(el.firstChild);}
+function mk(tag,cls,txt){var el=document.createElement(tag);if(cls)el.className=cls;if(txt!==undefined)el.textContent=txt;return el;}
+function show(id){document.getElementById(id).classList.remove('hidden');}
+function hide(id){document.getElementById(id).classList.add('hidden');}
+function $(id){return document.getElementById(id);}
+
+// ── DATA ───────────────────────────────────────────────────────────────────
+var WORDS=[
+  {word:'arrogant',pos:'adj.',def:'Showing too much pride in oneself; acting as if you are better than others.',ex:'"The arrogant student refused to listen to advice from the teacher."'},
+  {word:'boycott',pos:'v./n.',def:'To join others in refusing to buy from or support an organization as a form of protest.',ex:'"The community decided to boycott the bus company to protest unfair rules."'},
+  {word:'campaign',pos:'n./v.',def:'A series of planned actions intended to accomplish a goal, such as fighting for rights.',ex:'"Dr. King led a campaign to end segregation on public buses."'},
+  {word:'ceremony',pos:'n.',def:'A formal event held in honor of a special occasion, often with traditions and rituals.',ex:'"The award ceremony honored those who fought for civil rights."'},
+  {word:'custody',pos:'n.',def:'Control over and responsibility for the care of a person, or being held by the police.',ex:'"Rosa Parks was taken into police custody after her arrest."'},
+  {word:'degrade',pos:'v.',def:'To bring shame or disgrace upon someone; to treat someone as less worthy.',ex:'"Forcing people to give up their seats degraded their dignity."'},
+  {word:'detain',pos:'v.',def:'To stop or hold someone; to keep a person from going on their way.',ex:'"The police decided to detain Rosa Parks at the station."'},
+  {word:'extend',pos:'v.',def:'To reach out, offer, or make something longer; to stretch or spread outward.',ex:'"The organizers chose to extend the boycott for another month."'},
+  {word:'integrate',pos:'v.',def:'To unite into a whole; especially to end the separation of people of different races.',ex:'"The court ordered the city to integrate its public schools."'},
+  {word:'segregate',pos:'v.',def:'To keep separate or apart, especially people of different races.',ex:'"Laws once forced cities to segregate buses, parks, and schools."'},
+  {word:'supreme',pos:'adj.',def:'The highest in rank, power, or importance; greatest.',ex:'"The Supreme Court ruled that segregation in schools was unconstitutional."'},
+  {word:'triumph',pos:'n./v.',def:'A noteworthy success or victory; the joy that winning brings; to win.',ex:'"The end of bus segregation was a great triumph for civil rights."'},
+  {word:'vacate',pos:'v.',def:'To make empty, as by leaving; to give up one\'s place.',ex:'"Rosa Parks refused to vacate her seat for a white passenger."'},
+  {word:'verdict',pos:'n.',def:'The decision reached at the end of a trial; a judgment or opinion.',ex:'"The jury\'s verdict declared the law to be unjust."'},
+  {word:'violate',pos:'v.',def:'To break a law or promise; to treat someone in an improper or disrespectful way.',ex:'"Forcing Rosa Parks to move violated her rights as a citizen."'}
+];
+
+var TYPE_STYLES={
+  synonym:{label:'Synonym',color:'#60a5fa',bg:'rgba(96,165,250,.15)'},
+  antonym:{label:'Antonym',color:'#f472b6',bg:'rgba(244,114,182,.15)'},
+  analogy:{label:'Analogy',color:'#a78bfa',bg:'rgba(167,139,250,.15)'},
+  simile:{label:'Simile',color:'#34d399',bg:'rgba(52,211,153,.15)'},
+  metaphor:{label:'Metaphor',color:'#fbbf24',bg:'rgba(251,191,36,.15)'}
+};
+
+var QUESTIONS=[
+  // ── SYNONYMS (50) ────────────────────────────────────────────────────────
+  {type:'synonym',word:'arrogant',q:'Which word is closest in meaning to ARROGANT?',a:'conceited',ch:['conceited','humble','timid','grateful'],hint:'Think: too much pride'},
+  {type:'synonym',word:'arrogant',q:'Choose the best synonym for ARROGANT.',a:'haughty',ch:['haughty','modest','cheerful','careful'],hint:'A haughty person looks down on others'},
+  {type:'synonym',word:'arrogant',q:'Select the word most similar to ARROGANT.',a:'pompous',ch:['pompous','polite','shy','honest'],hint:'Think: full of self-importance'},
+  {type:'synonym',word:'boycott',q:'Which word is closest in meaning to BOYCOTT?',a:'protest',ch:['protest','support','celebrate','attend'],hint:'Think: refusing to participate'},
+  {type:'synonym',word:'boycott',q:'Choose the best synonym for BOYCOTT.',a:'reject',ch:['reject','embrace','fund','praise'],hint:'You turn away from something'},
+  {type:'synonym',word:'campaign',q:'Which word is closest in meaning to CAMPAIGN?',a:'movement',ch:['movement','surrender','silence','retreat'],hint:'Think: organized effort toward a goal'},
+  {type:'synonym',word:'campaign',q:'Choose the best synonym for CAMPAIGN.',a:'drive',ch:['drive','pause','vacation','accident'],hint:'A drive can be a planned effort'},
+  {type:'synonym',word:'ceremony',q:'Which word is closest in meaning to CEREMONY?',a:'ritual',ch:['ritual','argument','battle','nap'],hint:'Think: formal special occasion'},
+  {type:'synonym',word:'ceremony',q:'Choose the best synonym for CEREMONY.',a:'celebration',ch:['celebration','argument','disaster','lesson'],hint:'A formal event often celebrates'},
+  {type:'synonym',word:'custody',q:'Which word is closest in meaning to CUSTODY (police)?',a:'detention',ch:['detention','freedom','reward','travel'],hint:'Think: being held by authorities'},
+  {type:'synonym',word:'custody',q:'Choose the best synonym for CUSTODY (care).',a:'guardianship',ch:['guardianship','neglect','escape','attack'],hint:'Having responsibility for care'},
+  {type:'synonym',word:'degrade',q:'Which word is closest in meaning to DEGRADE?',a:'humiliate',ch:['humiliate','honor','praise','elevate'],hint:'Think: bringing shame'},
+  {type:'synonym',word:'degrade',q:'Choose the best synonym for DEGRADE.',a:'demean',ch:['demean','uplift','reward','respect'],hint:'To demean is to lower someone\'s worth'},
+  {type:'synonym',word:'detain',q:'Which word is closest in meaning to DETAIN?',a:'hold',ch:['hold','release','rush','guide'],hint:'Think: keeping someone from leaving'},
+  {type:'synonym',word:'detain',q:'Choose the best synonym for DETAIN.',a:'restrain',ch:['restrain','free','assist','celebrate'],hint:'To restrain is to hold back'},
+  {type:'synonym',word:'extend',q:'Which word is closest in meaning to EXTEND?',a:'prolong',ch:['prolong','shorten','cancel','hide'],hint:'Think: making longer'},
+  {type:'synonym',word:'extend',q:'Choose the best synonym for EXTEND (to offer).',a:'present',ch:['present','withdraw','ignore','reject'],hint:'To present is to offer something'},
+  {type:'synonym',word:'integrate',q:'Which word is closest in meaning to INTEGRATE?',a:'unite',ch:['unite','separate','divide','exclude'],hint:'Think: bringing together'},
+  {type:'synonym',word:'integrate',q:'Choose the best synonym for INTEGRATE.',a:'merge',ch:['merge','split','isolate','scatter'],hint:'To merge is to combine into one'},
+  {type:'synonym',word:'segregate',q:'Which word is closest in meaning to SEGREGATE?',a:'separate',ch:['separate','unite','blend','mix'],hint:'Think: keeping apart'},
+  {type:'synonym',word:'segregate',q:'Choose the best synonym for SEGREGATE.',a:'isolate',ch:['isolate','integrate','welcome','include'],hint:'To isolate is to set apart'},
+  {type:'synonym',word:'supreme',q:'Which word is closest in meaning to SUPREME?',a:'highest',ch:['highest','lowest','average','minor'],hint:'Think: top rank or power'},
+  {type:'synonym',word:'supreme',q:'Choose the best synonym for SUPREME.',a:'paramount',ch:['paramount','trivial','lesser','basic'],hint:'Paramount means most important'},
+  {type:'synonym',word:'triumph',q:'Which word is closest in meaning to TRIUMPH?',a:'victory',ch:['victory','defeat','failure','surrender'],hint:'Think: winning or succeeding'},
+  {type:'synonym',word:'triumph',q:'Choose the best synonym for TRIUMPH.',a:'achievement',ch:['achievement','loss','mistake','retreat'],hint:'A great achievement is a triumph'},
+  {type:'synonym',word:'vacate',q:'Which word is closest in meaning to VACATE?',a:'leave',ch:['leave','occupy','enter','fill'],hint:'Think: to make empty by going away'},
+  {type:'synonym',word:'vacate',q:'Choose the best synonym for VACATE.',a:'abandon',ch:['abandon','claim','hold','stay'],hint:'To abandon a place is to vacate it'},
+  {type:'synonym',word:'verdict',q:'Which word is closest in meaning to VERDICT?',a:'judgment',ch:['judgment','question','guess','story'],hint:'Think: a final decision'},
+  {type:'synonym',word:'verdict',q:'Choose the best synonym for VERDICT.',a:'ruling',ch:['ruling','doubt','argument','opinion'],hint:'A court ruling is a verdict'},
+  {type:'synonym',word:'violate',q:'Which word is closest in meaning to VIOLATE (a law)?',a:'break',ch:['break','follow','obey','respect'],hint:'Think: not following a rule'},
+  {type:'synonym',word:'violate',q:'Choose the best synonym for VIOLATE (treat wrongly).',a:'disrespect',ch:['disrespect','honor','protect','defend'],hint:'To disrespect is to violate dignity'},
+  {type:'synonym',word:'arrogant',q:'An ARROGANT person acts ___.',a:'superior',ch:['superior','inferior','equal','confused'],hint:'They act above others'},
+  {type:'synonym',word:'boycott',q:'To BOYCOTT something means to ___ it.',a:'shun',ch:['shun','support','fund','attend'],hint:'You shun what you boycott'},
+  {type:'synonym',word:'campaign',q:'A CAMPAIGN can also be called a(n) ___.',a:'crusade',ch:['crusade','accident','hobby','failure'],hint:'A crusade is a strong campaign'},
+  {type:'synonym',word:'degrade',q:'To DEGRADE someone is to ___ them.',a:'belittle',ch:['belittle','honor','reward','elevate'],hint:'You make them feel small'},
+  {type:'synonym',word:'detain',q:'To DETAIN is most like ___.',a:'confine',ch:['confine','release','transport','award'],hint:'Confinement is a form of detention'},
+  {type:'synonym',word:'extend',q:'To EXTEND an olive branch means to ___ peace.',a:'offer',ch:['offer','withdraw','deny','forget'],hint:'You reach out with an offer'},
+  {type:'synonym',word:'integrate',q:'To INTEGRATE schools is to ___ them.',a:'desegregate',ch:['desegregate','close','fund','test'],hint:'The opposite of segregate'},
+  {type:'synonym',word:'supreme',q:'The SUPREME leader holds the ___ power.',a:'ultimate',ch:['ultimate','least','basic','shared'],hint:'Ultimate = highest possible'},
+  {type:'synonym',word:'triumph',q:'To TRIUMPH over injustice means to ___ it.',a:'overcome',ch:['overcome','accept','ignore','spread'],hint:'You conquer what you triumph over'},
+  {type:'synonym',word:'vacate',q:'To VACATE a seat means to ___ it.',a:'give up',ch:['give up','keep','fight for','claim'],hint:'You stop occupying it'},
+  {type:'synonym',word:'verdict',q:'After deliberation, the jury reached a(n) ___.',a:'verdict',ch:['verdict','question','debate','argument'],hint:'This is a formal decision word'},
+  {type:'synonym',word:'violate',q:'To VIOLATE a right means to ___ it.',a:'infringe on',ch:['infringe on','protect','grant','extend'],hint:'Infringe means to step on a right'},
+  {type:'synonym',word:'segregate',q:'To SEGREGATE communities is to ___ them.',a:'divide',ch:['divide','unite','blend','connect'],hint:'Think: keeping groups apart'},
+  {type:'synonym',word:'custody',q:'The child was placed in the ___ of her grandmother.',a:'custody',ch:['custody','boycott','ceremony','verdict'],hint:'Care and responsibility'},
+  {type:'synonym',word:'ceremony',q:'The graduation ___ honored the students.',a:'ceremony',ch:['ceremony','boycott','verdict','custody'],hint:'Formal special event'},
+  {type:'synonym',word:'campaign',q:'The senator ran a ___ for equal rights.',a:'campaign',ch:['campaign','verdict','custody','ceremony'],hint:'Planned series of actions toward a goal'},
+  {type:'synonym',word:'triumph',q:'The civil rights leaders celebrated their ___.',a:'triumph',ch:['triumph','degrade','vacate','detain'],hint:'A great success or victory'},
+  {type:'synonym',word:'supreme',q:'The ___ Court is the highest court in the land.',a:'supreme',ch:['supreme','arrogant','boycott','segregate'],hint:'Highest in rank'},
+  {type:'synonym',word:'extend',q:'The school agreed to ___ the deadline for students.',a:'extend',ch:['extend','vacate','detain','degrade'],hint:'To make longer or offer'},
+
+  // ── ANTONYMS (35) ────────────────────────────────────────────────────────
+  {type:'antonym',word:'arrogant',q:'What is the ANTONYM (opposite) of ARROGANT?',a:'humble',ch:['humble','proud','bold','loud'],hint:'The opposite of too much pride'},
+  {type:'antonym',word:'arrogant',q:'Choose the word most OPPOSITE to ARROGANT.',a:'modest',ch:['modest','conceited','rude','vain'],hint:'Modesty is the opposite of arrogance'},
+  {type:'antonym',word:'boycott',q:'What is the ANTONYM of BOYCOTT?',a:'support',ch:['support','avoid','ignore','reject'],hint:'The opposite of refusing to participate'},
+  {type:'antonym',word:'boycott',q:'Choose the word most OPPOSITE to BOYCOTT.',a:'patronize',ch:['patronize','shun','protest','refuse'],hint:'Patronizing means to use/support a business'},
+  {type:'antonym',word:'campaign',q:'The opposite of waging a CAMPAIGN is ___.',a:'surrendering',ch:['surrendering','organizing','planning','marching'],hint:'Giving up is the opposite of campaigning'},
+  {type:'antonym',word:'degrade',q:'What is the ANTONYM of DEGRADE?',a:'honor',ch:['honor','shame','belittle','embarrass'],hint:'The opposite of bringing shame'},
+  {type:'antonym',word:'degrade',q:'Choose the word most OPPOSITE to DEGRADE.',a:'elevate',ch:['elevate','demean','humiliate','disgrace'],hint:'To elevate is to raise up'},
+  {type:'antonym',word:'detain',q:'What is the ANTONYM of DETAIN?',a:'release',ch:['release','hold','confine','arrest'],hint:'The opposite of holding someone back'},
+  {type:'antonym',word:'detain',q:'Choose the word most OPPOSITE to DETAIN.',a:'free',ch:['free','restrain','delay','trap'],hint:'To free someone is the opposite of detaining'},
+  {type:'antonym',word:'extend',q:'What is the ANTONYM of EXTEND?',a:'shorten',ch:['shorten','lengthen','offer','stretch'],hint:'Making smaller is the opposite of extending'},
+  {type:'antonym',word:'integrate',q:'What is the ANTONYM of INTEGRATE?',a:'segregate',ch:['segregate','unite','merge','blend'],hint:'Keeping apart is the opposite of uniting'},
+  {type:'antonym',word:'integrate',q:'Choose the word most OPPOSITE to INTEGRATE.',a:'separate',ch:['separate','combine','include','join'],hint:'Separating is the opposite of integrating'},
+  {type:'antonym',word:'segregate',q:'What is the ANTONYM of SEGREGATE?',a:'integrate',ch:['integrate','divide','exclude','isolate'],hint:'Bringing together is the opposite'},
+  {type:'antonym',word:'segregate',q:'Choose the word most OPPOSITE to SEGREGATE.',a:'unify',ch:['unify','separate','isolate','ban'],hint:'To unify is to bring into one'},
+  {type:'antonym',word:'supreme',q:'What is the ANTONYM of SUPREME?',a:'inferior',ch:['inferior','highest','dominant','greatest'],hint:'The lowest rank is opposite to supreme'},
+  {type:'antonym',word:'triumph',q:'What is the ANTONYM of TRIUMPH?',a:'defeat',ch:['defeat','victory','success','win'],hint:'Losing is the opposite of triumphing'},
+  {type:'antonym',word:'triumph',q:'Choose the word most OPPOSITE to TRIUMPH.',a:'failure',ch:['failure','achievement','glory','conquest'],hint:'Failure is the opposite of triumph'},
+  {type:'antonym',word:'vacate',q:'What is the ANTONYM of VACATE?',a:'occupy',ch:['occupy','leave','abandon','depart'],hint:'Filling a space is opposite to vacating'},
+  {type:'antonym',word:'vacate',q:'Choose the word most OPPOSITE to VACATE.',a:'claim',ch:['claim','surrender','exit','flee'],hint:'To claim a seat is to keep it'},
+  {type:'antonym',word:'violate',q:'What is the ANTONYM of VIOLATE?',a:'obey',ch:['obey','break','ignore','disregard'],hint:'Following rules is the opposite'},
+  {type:'antonym',word:'violate',q:'Choose the word most OPPOSITE to VIOLATE.',a:'respect',ch:['respect','disrespect','betray','dishonor'],hint:'Respecting a rule or person'},
+  {type:'antonym',word:'custody',q:'The opposite of being in CUSTODY is being ___.',a:'free',ch:['free','arrested','confined','detained'],hint:'Not held or controlled'},
+  {type:'antonym',word:'arrogant',q:'Rosa Parks was determined, not arrogant — she was ___.',a:'humble',ch:['humble','proud','rude','boastful'],hint:'She was down-to-earth, not full of herself'},
+  {type:'antonym',word:'degrade',q:'Good leaders ___ their followers rather than degrade them.',a:'uplift',ch:['uplift','shame','belittle','mock'],hint:'To uplift is the opposite of degrading'},
+  {type:'antonym',word:'campaign',q:'Rather than launch a new campaign, the group chose to ___.',a:'quit',ch:['quit','organize','march','rally'],hint:'Stopping is the opposite of campaigning'},
+  {type:'antonym',word:'extend',q:'Instead of extending the curfew, they chose to ___ it.',a:'reduce',ch:['reduce','prolong','offer','stretch'],hint:'Making shorter or smaller'},
+  {type:'antonym',word:'integrate',q:'The court refused to ___ the schools, choosing to integrate them instead.',a:'segregate',ch:['segregate','unite','include','welcome'],hint:'The opposite of integrating'},
+  {type:'antonym',word:'triumph',q:'What followed the initial triumph was an unexpected ___.',a:'setback',ch:['setback','victory','win','celebration'],hint:'A setback is the opposite of a triumph'},
+  {type:'antonym',word:'supreme',q:'The ___ court has the least power; the supreme court has the most.',a:'inferior',ch:['inferior','highest','supreme','dominant'],hint:'Lowest in the legal hierarchy'},
+  {type:'antonym',word:'vacate',q:'She refused to ___ her seat — she chose to vacate instead.',a:'occupy',ch:['occupy','leave','exit','flee'],hint:'To stay and keep is the opposite of vacating'},
+  {type:'antonym',word:'violate',q:'They pledged to ___ the law rather than violate it.',a:'uphold',ch:['uphold','break','ignore','bypass'],hint:'To uphold is to honor and follow'},
+  {type:'antonym',word:'verdict',q:'A verdict ends a trial; a ___ begins it.',a:'charge',ch:['charge','ruling','decision','judgment'],hint:'A charge starts the legal process'},
+  {type:'antonym',word:'boycott',q:'After the boycott ended, people decided to ___ the buses again.',a:'use',ch:['use','avoid','ignore','refuse'],hint:'To use something is the opposite of boycotting it'},
+  {type:'antonym',word:'ceremony',q:'A quiet, private meeting is the opposite of a formal ___.',a:'ceremony',ch:['ceremony','boycott','verdict','custody'],hint:'No pomp, no ritual'},
+  {type:'antonym',word:'detain',q:'The officers chose to ___ the peaceful protesters rather than detain them.',a:'release',ch:['release','arrest','confine','hold'],hint:'Let them go'},
+
+  // ── ANALOGIES (40) ────────────────────────────────────────────────────────
+  {type:'analogy',word:'segregate',q:'SEGREGATE is to SEPARATE as INTEGRATE is to ___.',a:'unite',ch:['unite','divide','scatter','exclude'],hint:'Find the relationship: each verb means the same as its pair'},
+  {type:'analogy',word:'triumph',q:'TRIUMPH is to VICTORY as DEFEAT is to ___.',a:'failure',ch:['failure','success','win','achievement'],hint:'Triumph and victory are synonyms; find the synonym of defeat'},
+  {type:'analogy',word:'arrogant',q:'ARROGANT is to HUMBLE as RUDE is to ___.',a:'polite',ch:['polite','mean','cruel','loud'],hint:'Arrogant and humble are opposites; find the opposite of rude'},
+  {type:'analogy',word:'violate',q:'VIOLATE is to LAW as BREAK is to ___.',a:'promise',ch:['promise','keep','honor','respect'],hint:'You violate a law; what else can you break?'},
+  {type:'analogy',word:'boycott',q:'BOYCOTT is to PROTEST as CAMPAIGN is to ___.',a:'movement',ch:['movement','surrender','silence','loss'],hint:'A boycott is a type of protest; a campaign is a type of what?'},
+  {type:'analogy',word:'supreme',q:'SUPREME is to HIGHEST as INFERIOR is to ___.',a:'lowest',ch:['lowest','best','top','finest'],hint:'Supreme = highest; inferior = ?'},
+  {type:'analogy',word:'vacate',q:'VACATE is to LEAVE as OCCUPY is to ___.',a:'stay',ch:['stay','exit','flee','depart'],hint:'Vacate means to leave; occupy means to ?'},
+  {type:'analogy',word:'custody',q:'CUSTODY is to JAIL as FREEDOM is to ___.',a:'release',ch:['release','arrest','detain','confine'],hint:'Jail implies custody; what implies freedom?'},
+  {type:'analogy',word:'degrade',q:'DEGRADE is to SHAME as HONOR is to ___.',a:'pride',ch:['pride','embarrass','disgrace','mock'],hint:'Degrading causes shame; honoring causes what?'},
+  {type:'analogy',word:'detain',q:'DETAIN is to POLICE as IMPRISON is to ___.',a:'judge',ch:['judge','teacher','doctor','coach'],hint:'Police detain; judges imprison'},
+  {type:'analogy',word:'extend',q:'EXTEND is to LONGER as SHORTEN is to ___.',a:'shorter',ch:['shorter','longer','wider','deeper'],hint:'Extend makes things longer; shorten makes things what?'},
+  {type:'analogy',word:'campaign',q:'CAMPAIGN is to GOAL as JOURNEY is to ___.',a:'destination',ch:['destination','start','accident','delay'],hint:'A campaign aims for a goal; a journey aims for a destination'},
+  {type:'analogy',word:'verdict',q:'VERDICT is to TRIAL as DIAGNOSIS is to ___.',a:'examination',ch:['examination','verdict','crime','law'],hint:'A verdict ends a trial; a diagnosis ends an examination'},
+  {type:'analogy',word:'integrate',q:'INTEGRATE is to SCHOOLS as DESEGREGATE is to ___.',a:'buses',ch:['buses','cities','schools','courts'],hint:'Rosa Parks helped desegregate buses'},
+  {type:'analogy',word:'segregate',q:'SEGREGATE is to EXCLUDE as INTEGRATE is to ___.',a:'include',ch:['include','remove','ban','divide'],hint:'Segregate excludes; integrate does the opposite'},
+  {type:'analogy',word:'arrogant',q:'ARROGANT is to CONCEITED as HONEST is to ___.',a:'truthful',ch:['truthful','rude','mean','proud'],hint:'Arrogant and conceited are synonyms; find the synonym of honest'},
+  {type:'analogy',word:'ceremony',q:'CEREMONY is to WEDDING as PERFORMANCE is to ___.',a:'concert',ch:['concert','arrest','trial','meeting'],hint:'A wedding is a type of ceremony; a concert is a type of what?'},
+  {type:'analogy',word:'boycott',q:'BOYCOTT is to BUS as STRIKE is to ___.',a:'factory',ch:['factory','home','school','park'],hint:'The Montgomery Bus Boycott; workers strike at factories'},
+  {type:'analogy',word:'triumph',q:'TRIUMPH is to CHAMPION as FAILURE is to ___.',a:'loser',ch:['loser','winner','hero','leader'],hint:'Champions triumph; losers fail'},
+  {type:'analogy',word:'custody',q:'CUSTODY is to DETENTION as FREEDOM is to ___.',a:'release',ch:['release','custody','arrest','confinement'],hint:'Detention = custody; release = freedom'},
+  {type:'analogy',word:'supreme',q:'SUPREME COURT is to NATION as PRINCIPAL is to ___.',a:'school',ch:['school','city','team','family'],hint:'The Supreme Court leads the nation; a principal leads a school'},
+  {type:'analogy',word:'violate',q:'VIOLATE is to RIGHT as STEAL is to ___.',a:'property',ch:['property','law','rule','freedom'],hint:'You violate someone\'s rights; you steal their property'},
+  {type:'analogy',word:'campaign',q:'CAMPAIGN is to ACTIVIST as EXPERIMENT is to ___.',a:'scientist',ch:['scientist','artist','athlete','merchant'],hint:'Activists run campaigns; scientists run experiments'},
+  {type:'analogy',word:'degrade',q:'DEGRADE is to DIGNITY as DAMAGE is to ___.',a:'property',ch:['property','honor','pride','freedom'],hint:'Degrading harms dignity; damaging harms property'},
+  {type:'analogy',word:'extend',q:'EXTEND is to ARM as STRETCH is to ___.',a:'muscle',ch:['muscle','bone','nerve','heart'],hint:'You extend your arm; you stretch your muscle'},
+  {type:'analogy',word:'verdict',q:'VERDICT is to JUDGE as GRADE is to ___.',a:'teacher',ch:['teacher','student','parent','coach'],hint:'A judge gives a verdict; a teacher gives a grade'},
+  {type:'analogy',word:'vacate',q:'VACATE is to ROOM as EVACUATE is to ___.',a:'building',ch:['building','seat','bench','desk'],hint:'You vacate a room; you evacuate a building'},
+  {type:'analogy',word:'detain',q:'DETAIN is to SUSPECT as QUARANTINE is to ___.',a:'patient',ch:['patient','officer','judge','lawyer'],hint:'Police detain suspects; doctors quarantine patients'},
+  {type:'analogy',word:'integrate',q:'INTEGRATE is to UNITY as SEGREGATE is to ___.',a:'division',ch:['division','peace','joy','harmony'],hint:'Integration leads to unity; segregation leads to what?'},
+  {type:'analogy',word:'boycott',q:'BOYCOTT is to COMPANY as PROTEST is to ___.',a:'policy',ch:['policy','victory','freedom','reward'],hint:'You boycott companies; you protest policies'},
+  {type:'analogy',word:'triumph',q:'TRIUMPH is to STRUGGLE as HARVEST is to ___.',a:'planting',ch:['planting','rain','soil','seed'],hint:'Triumph follows struggle; harvest follows planting'},
+  {type:'analogy',word:'arrogant',q:'ARROGANT is to PRIDE as TIMID is to ___.',a:'fear',ch:['fear','anger','joy','hope'],hint:'Arrogance comes from excessive pride; timidity comes from fear'},
+  {type:'analogy',word:'supreme',q:'SUPREME is to POWER as PRICELESS is to ___.',a:'value',ch:['value','cost','size','weight'],hint:'Supreme means greatest in power; priceless means greatest in value'},
+  {type:'analogy',word:'ceremony',q:'CEREMONY is to GRADUATION as RITUAL is to ___.',a:'worship',ch:['worship','protest','trial','game'],hint:'Graduation has ceremonies; worship has rituals'},
+  {type:'analogy',word:'degrade',q:'DEGRADE is to SELF-WORTH as POLLUTE is to ___.',a:'environment',ch:['environment','dignity','honor','pride'],hint:'Degrading harms self-worth; pollution harms the environment'},
+  {type:'analogy',word:'vacate',q:'VACATE is to TENANT as RESIGN is to ___.',a:'employee',ch:['employee','judge','voter','citizen'],hint:'Tenants vacate apartments; employees resign from jobs'},
+  {type:'analogy',word:'violate',q:'VIOLATE is to AGREEMENT as BREACH is to ___.',a:'contract',ch:['contract','law','custom','belief'],hint:'Violate an agreement; breach a contract — same idea'},
+  {type:'analogy',word:'custody',q:'CUSTODY is to GUARDIAN as OWNERSHIP is to ___.',a:'owner',ch:['owner','tenant','visitor','stranger'],hint:'A guardian has custody; an owner has ownership'},
+  {type:'analogy',word:'extend',q:'EXTEND is to DEADLINE as PROLONG is to ___.',a:'meeting',ch:['meeting','grade','test','award'],hint:'You extend a deadline; you prolong a meeting'},
+  {type:'analogy',word:'campaign',q:'CAMPAIGN is to ELECTION as REHEARSAL is to ___.',a:'performance',ch:['performance','practice','game','study'],hint:'A campaign prepares for election; rehearsal prepares for performance'},
+
+  // ── SIMILES (35) ────────────────────────────────────────────────────────
+  {type:'simile',word:'arrogant',q:'Which simile best shows what ARROGANT means?',a:'as proud as a peacock',ch:['as proud as a peacock','as shy as a mouse','as gentle as a lamb','as quick as a fox'],hint:'The peacock is famous for showing off'},
+  {type:'simile',word:'boycott',q:'Which simile best describes a BOYCOTT?',a:'like a wall that keeps a business out',ch:['like a wall that keeps a business out','like a door left open','like a handshake of agreement','like a gift freely given'],hint:'A boycott blocks support'},
+  {type:'simile',word:'campaign',q:'Which simile best shows what a CAMPAIGN is like?',a:'like a river carving its path through rock',ch:['like a river carving its path through rock','like a raindrop on still water','like a single pebble on a beach','like a passing cloud'],hint:'A campaign is persistent and shapes things'},
+  {type:'simile',word:'ceremony',q:'Which simile best describes a CEREMONY?',a:'like a carefully rehearsed dance',ch:['like a carefully rehearsed dance','like a wild storm','like a casual chat','like an ordinary day'],hint:'Ceremonies are formal and practiced'},
+  {type:'simile',word:'custody',q:'Being in CUSTODY is like ___.',a:'being a bird in a cage',ch:['being a bird in a cage','running free in a field','soaring above the clouds','swimming in the ocean'],hint:'Custody means being confined and controlled'},
+  {type:'simile',word:'degrade',q:'To DEGRADE someone is like ___.',a:'crushing a flower underfoot',ch:['crushing a flower underfoot','watering a seed','building a bridge','planting a garden'],hint:'Degrading destroys someone\'s worth'},
+  {type:'simile',word:'detain',q:'Being DETAINED is like ___.',a:'being caught in a spider\'s web',ch:['being caught in a spider\'s web','gliding on ice','floating in water','climbing to the sky'],hint:'A web holds you and won\'t let you go'},
+  {type:'simile',word:'extend',q:'To EXTEND a helping hand is like ___.',a:'throwing a rope to a drowning swimmer',ch:['throwing a rope to a drowning swimmer','building a wall','closing a door','turning away'],hint:'Extending help saves someone'},
+  {type:'simile',word:'integrate',q:'To INTEGRATE a community is like ___.',a:'weaving threads of many colors into one cloth',ch:['weaving threads of many colors into one cloth','unraveling a sweater','sorting seeds by type','building separate houses'],hint:'Integration brings different things together into one'},
+  {type:'simile',word:'segregate',q:'To SEGREGATE people is like ___.',a:'sorting apples from oranges into different bins',ch:['sorting apples from oranges into different bins','mixing all fruits in a bowl','planting a garden together','sharing one table'],hint:'Segregation separates and sorts'},
+  {type:'simile',word:'supreme',q:'The SUPREME Court is like ___.',a:'the captain of a ship that steers the whole nation',ch:['the captain of a ship that steers the whole nation','a single oar in a rowboat','a passenger on the journey','a small wave in the sea'],hint:'The captain has the highest authority'},
+  {type:'simile',word:'triumph',q:'Rosa Parks\' TRIUMPH felt like ___.',a:'a sunrise after the longest night',ch:['a sunrise after the longest night','a storm without end','a locked door','a fading shadow'],hint:'Triumph brings light after darkness'},
+  {type:'simile',word:'vacate',q:'Being asked to VACATE her seat felt to Rosa Parks like ___.',a:'being told she was invisible',ch:['being told she was invisible','being given a gift','winning a prize','receiving an invitation'],hint:'Vacating under threat means being treated as unimportant'},
+  {type:'simile',word:'verdict',q:'A fair VERDICT is like ___.',a:'a balanced scale that tips for truth',ch:['a balanced scale that tips for truth','a mirror that distorts your face','a locked room with no key','a puzzle with missing pieces'],hint:'A verdict should be fair and accurate'},
+  {type:'simile',word:'violate',q:'To VIOLATE someone\'s rights is like ___.',a:'tearing a page from someone\'s book',ch:['tearing a page from someone\'s book','writing a new chapter','reading carefully','sharing a story'],hint:'Violating rights removes something that belongs to someone'},
+  {type:'simile',word:'arrogant',q:'An arrogant leader acts like ___.',a:'a king who never listens',ch:['a king who never listens','a shepherd who cares for the flock','a student who asks questions','a neighbor who shares food'],hint:'Arrogance ignores others'},
+  {type:'simile',word:'campaign',q:'A civil rights CAMPAIGN is like ___.',a:'a marathon — slow, hard, but worth finishing',ch:['a marathon — slow, hard, but worth finishing','a sprint that ends quickly','a nap that restores energy','a shortcut through the woods'],hint:'Campaigns take great effort over time'},
+  {type:'simile',word:'boycott',q:'A successful BOYCOTT is like ___.',a:'closing a faucet until the tank runs dry',ch:['closing a faucet until the tank runs dry','flooding a garden with water','turning up the heat','filling a bucket'],hint:'A boycott cuts off support like closing a faucet'},
+  {type:'simile',word:'degrade',q:'Segregation laws were like ___ to those they targeted.',a:'a constant rain that soaks you to the bone',ch:['a constant rain that soaks you to the bone','a warm sun on your face','a fresh breeze in summer','a gentle stream'],hint:'They wore people down day after day'},
+  {type:'simile',word:'integrate',q:'Integrating the schools felt like ___.',a:'opening a window in a stuffy room',ch:['opening a window in a stuffy room','boarding up the windows','painting the walls darker','locking the front door'],hint:'Integration brought fresh air and change'},
+  {type:'simile',word:'supreme',q:'Having supreme confidence is like ___.',a:'standing on a mountaintop with no higher peak',ch:['standing on a mountaintop with no higher peak','climbing the first hill','looking up at the sky','walking in a valley'],hint:'Nothing above you — that is supreme'},
+  {type:'simile',word:'triumph',q:'The end of the bus boycott felt like ___.',a:'breaking free from chains that had held for years',ch:['breaking free from chains that had held for years','finding a lock with no key','walking into a wall','starting over from zero'],hint:'After years of struggle, freedom felt like release'},
+  {type:'simile',word:'custody',q:'Custody without cause is like ___.',a:'being trapped in a room you did nothing to deserve',ch:['being trapped in a room you did nothing to deserve','relaxing in your own home','exploring a new city','winning an award'],hint:'Unjust custody punishes the innocent'},
+  {type:'simile',word:'verdict',q:'A corrupt verdict is like ___.',a:'a compass that always points in the wrong direction',ch:['a compass that always points in the wrong direction','a map drawn by explorers','a clear view of the horizon','a lighthouse in the fog'],hint:'It misleads instead of guiding to truth'},
+  {type:'simile',word:'ceremony',q:'The civil rights march was like a CEREMONY because it was ___.',a:'solemn, purposeful, and filled with meaning',ch:['solemn, purposeful, and filled with meaning','random and unplanned','quiet and hidden','short and forgotten'],hint:'Marches were formal acts of collective purpose'},
+  {type:'simile',word:'violate',q:'Breaking a civil rights law is like ___.',a:'breaking a promise to every citizen',ch:['breaking a promise to every citizen','keeping a careful record','writing a new agreement','planting a seed of hope'],hint:'Rights are a promise the government makes'},
+  {type:'simile',word:'extend',q:'Extending rights to all people is like ___.',a:'widening a road so everyone has room to travel',ch:['widening a road so everyone has room to travel','blocking the entrance','building a wall','narrowing the path'],hint:'Extending makes room for more'},
+  {type:'simile',word:'segregate',q:'Segregated water fountains were like ___.',a:'two separate worlds side by side',ch:['two separate worlds side by side','a shared table for all','a single river joining the sea','one sky above everyone'],hint:'They created invisible walls between people'},
+  {type:'simile',word:'detain',q:'Being DETAINED unfairly is like ___.',a:'being held by invisible chains',ch:['being held by invisible chains','flying without wings','running on open ground','swimming freely'],hint:'You are stopped without physical walls'},
+  {type:'simile',word:'vacate',q:'Being forced to VACATE a seat you earned is like ___.',a:'being erased from a story you helped write',ch:['being erased from a story you helped write','being crowned for your effort','being thanked publicly','receiving a new chapter'],hint:'Forced removal denies your presence and contribution'},
+  {type:'simile',word:'arrogant',q:'An ARROGANT official is like ___.',a:'a mirror that only reflects itself',ch:['a mirror that only reflects itself','a window that lets in light','a door that welcomes all','a lamp that lights the way'],hint:'Arrogance sees only itself'},
+  {type:'simile',word:'campaign',q:'Rosa Parks\' courage during the CAMPAIGN was like ___.',a:'a spark that lit the whole forest',ch:['a spark that lit the whole forest','a cloud without rain','a locked gate','a fading echo'],hint:'One small act ignited a movement'},
+  {type:'simile',word:'boycott',q:'Ending a BOYCOTT in victory is like ___.',a:'a storm finally clearing after a long siege',ch:['a storm finally clearing after a long siege','the storm growing stronger','hiding from the rain','pulling the blinds down'],hint:'Victory after boycott brings relief and change'},
+  {type:'simile',word:'triumph',q:'The activists\' TRIUMPH was like ___.',a:'planting a flag on a mountain they had climbed for years',ch:['planting a flag on a mountain they had climbed for years','arriving late to a party','missing the bus again','reading the last page of a closed book'],hint:'After long struggle, they claimed their summit'},
+  {type:'simile',word:'supreme',q:'The supreme authority of the Constitution is like ___.',a:'the foundation stone that holds up the whole building',ch:['the foundation stone that holds up the whole building','a loose brick in the wall','a roof that leaks','a door without hinges'],hint:'Everything rests on this foundation'},
+
+  // ── METAPHORS (35) ────────────────────────────────────────────────────────
+  {type:'metaphor',word:'arrogant',q:'Complete the METAPHOR: An arrogant person is ___ who thinks no one else matters.',a:'a sun',ch:['a sun','a star','a moon','a planet'],hint:'The sun is the center of everything — arrogant people feel that way'},
+  {type:'metaphor',word:'boycott',q:'Complete the METAPHOR: The bus boycott was ___ that slowly drained the company\'s power.',a:'a drought',ch:['a drought','a flood','a storm','a breeze'],hint:'A drought removes what something needs to survive'},
+  {type:'metaphor',word:'campaign',q:'Complete the METAPHOR: The civil rights campaign was ___ that could not be extinguished.',a:'a wildfire',ch:['a wildfire','a puddle','a fog','a shadow'],hint:'A wildfire spreads and cannot be stopped'},
+  {type:'metaphor',word:'ceremony',q:'Complete the METAPHOR: The graduation ceremony was ___ that capped years of effort.',a:'a crown',ch:['a crown','a seed','a root','a stem'],hint:'A crown marks achievement'},
+  {type:'metaphor',word:'custody',q:'Complete the METAPHOR: Being in custody was ___ from which Rosa Parks refused to be broken.',a:'a cage',ch:['a cage','a garden','a shelter','a home'],hint:'Custody can confine like a cage'},
+  {type:'metaphor',word:'degrade',q:'Complete the METAPHOR: Segregation was ___ poured over the dignity of millions.',a:'acid',ch:['acid','honey','water','sunlight'],hint:'Acid destroys what it touches'},
+  {type:'metaphor',word:'detain',q:'Complete the METAPHOR: The unjust laws were ___ that held citizens in place.',a:'invisible chains',ch:['invisible chains','open roads','clear skies','warm blankets'],hint:'You are held without seeing what holds you'},
+  {type:'metaphor',word:'extend',q:'Complete the METAPHOR: Each new right extended was ___ added to the bridge toward equality.',a:'a plank',ch:['a plank','a crack','a gap','a hole'],hint:'A bridge is built one plank at a time'},
+  {type:'metaphor',word:'integrate',q:'Complete the METAPHOR: Integrating the schools was ___ that let all children grow.',a:'opening the garden to every seed',ch:['opening the garden to every seed','closing the garden gate','watering only some plants','planting a fence'],hint:'A garden where all seeds grow is integrated'},
+  {type:'metaphor',word:'segregate',q:'Complete the METAPHOR: Segregation was ___ that split one river into two.',a:'a dam',ch:['a dam','a bridge','a current','a wave'],hint:'A dam divides what was once one'},
+  {type:'metaphor',word:'supreme',q:'Complete the METAPHOR: The Supreme Court\'s ruling was ___ for civil rights.',a:'the final key that unlocked the door',ch:['the final key that unlocked the door','a lock without a key','a closed window','a broken tool'],hint:'The key unlocks what was blocked'},
+  {type:'metaphor',word:'triumph',q:'Complete the METAPHOR: The end of the boycott was ___ after a long darkness.',a:'dawn',ch:['dawn','midnight','dusk','fog'],hint:'Dawn brings light after darkness'},
+  {type:'metaphor',word:'vacate',q:'Complete the METAPHOR: Forcing Rosa Parks to vacate her seat was ___ in her heart.',a:'a wound',ch:['a wound','a gift','a bridge','a window'],hint:'It caused pain and left a mark'},
+  {type:'metaphor',word:'verdict',q:'Complete the METAPHOR: A just verdict is ___ that shows the truth.',a:'a mirror',ch:['a mirror','a mask','a curtain','a shadow'],hint:'A mirror shows things accurately'},
+  {type:'metaphor',word:'violate',q:'Complete the METAPHOR: To violate someone\'s rights is to ___ their humanity.',a:'erase',ch:['erase','write','draw','paint'],hint:'Erasing removes what was written — what was earned'},
+  {type:'metaphor',word:'arrogant',q:'An arrogant official is a ___ who never looks down to see those below.',a:'mountain',ch:['mountain','valley','river','field'],hint:'A mountain towers over everything and looks down at nothing'},
+  {type:'metaphor',word:'boycott',q:'The Montgomery Bus Boycott was ___ that moved the whole nation.',a:'an earthquake',ch:['an earthquake','a gentle rain','a still pond','a quiet wind'],hint:'An earthquake shifts the ground beneath everything'},
+  {type:'metaphor',word:'campaign',q:'A civil rights campaign is ___ that must be tended every day.',a:'a garden',ch:['a garden','a desert','a cave','a ruin'],hint:'Gardens need constant care, like campaigns'},
+  {type:'metaphor',word:'degrade',q:'Racist laws were ___ designed to crush the human spirit.',a:'a weight',ch:['a weight','a wing','a ladder','a key'],hint:'A weight pushes down, as degradation does'},
+  {type:'metaphor',word:'integrate',q:'A fully integrated society is ___ of many threads in one.',a:'a tapestry',ch:['a tapestry','a blank canvas','a torn fabric','a single thread'],hint:'A tapestry combines different threads into one work'},
+  {type:'metaphor',word:'triumph',q:'Rosa Parks\' courage was ___ of a great movement.',a:'the seed',ch:['the seed','the shadow','the wall','the end'],hint:'A seed gives birth to everything that follows'},
+  {type:'metaphor',word:'supreme',q:'The Constitution is ___ that all other laws must answer to.',a:'the compass',ch:['the compass','a decoration','a suggestion','an obstacle'],hint:'A compass guides direction — so does the supreme law'},
+  {type:'metaphor',word:'custody',q:'Unjust custody is ___ built of laws instead of stone.',a:'a prison',ch:['a prison','a home','a school','a library'],hint:'Both confine — one with walls, one with rules'},
+  {type:'metaphor',word:'verdict',q:'A guilty verdict for an innocent person is ___ turned upside down.',a:'justice',ch:['justice','guilt','law','order'],hint:'The verdict negates its own purpose'},
+  {type:'metaphor',word:'violate',q:'Each violated right is ___ stolen from the community.',a:'a voice',ch:['a voice','a noise','a burden','a rule'],hint:'Rights give people a voice; violation silences them'},
+  {type:'metaphor',word:'segregate',q:'Segregation was ___ between Americans who should have shared one country.',a:'a wall',ch:['a wall','a bridge','a road','a door'],hint:'It divided when it should have connected'},
+  {type:'metaphor',word:'extend',q:'Extending equal rights to all is ___ that reaches across the entire nation.',a:'a bridge',ch:['a bridge','a wall','a barrier','a fence'],hint:'A bridge connects separated places'},
+  {type:'metaphor',word:'detain',q:'Being detained for standing up for rights made Rosa Parks ___ of the movement.',a:'a flame',ch:['a flame','a shadow','a fog','a secret'],hint:'Her imprisonment lit the fire of protest'},
+  {type:'metaphor',word:'vacate',q:'Each person who refused to vacate their seat was ___ in the fight for equality.',a:'a soldier',ch:['a soldier','a bystander','a spectator','a visitor'],hint:'They held their ground like soldiers'},
+  {type:'metaphor',word:'campaign',q:'Without the campaign, civil rights progress would have been ___ with no wind.',a:'a sailboat',ch:['a sailboat','a motorboat','a submarine','a rocket'],hint:'A sailboat needs wind to move, just as change needs effort'},
+  {type:'metaphor',word:'ceremony',q:'The swearing-in of a new president is ___ of the democratic process.',a:'the heartbeat',ch:['the heartbeat','the shadow','the echo','the memory'],hint:'A heartbeat keeps something alive and going'},
+  {type:'metaphor',word:'boycott',q:'To those who ran the buses, the boycott was ___ that threatened their survival.',a:'a drought',ch:['a drought','a flood','a harvest','a gift'],hint:'Without riders (water), the company dried up'},
+  {type:'metaphor',word:'arrogant',q:'An arrogant ruler is ___ who controls all but sees nothing beyond himself.',a:'a blind king',ch:['a blind king','a wise elder','a humble servant','a kind neighbor'],hint:'Power without humility creates blindness'},
+  {type:'metaphor',word:'triumph',q:'For the boycotters, desegregating the buses was ___ planted in the soil of struggle.',a:'a flower',ch:['a flower','a weed','a thorn','a stone'],hint:'Beauty grows from difficulty'},
+  {type:'metaphor',word:'supreme',q:'Rosa Parks became ___ of the civil rights movement.',a:'the cornerstone',ch:['the cornerstone','the ceiling','the window','the shadow'],hint:'A cornerstone is the foundation on which everything is built'}
+];
+
+// ── STATE ──────────────────────────────────────────────────────────────────
+var quiz={questions:[],index:0,score:0,streak:0,answers:[],answered:false};
+var fcIndex=0,fcFlipped=false;
+
+// ── SHUFFLE ────────────────────────────────────────────────────────────────
+function shuffle(arr){var a=arr.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+
+// ── SCREEN MANAGEMENT ──────────────────────────────────────────────────────
+function showStart(){show('screen-start');hide('screen-quiz');hide('screen-results');hide('screen-flash');}
+function showQuiz(){hide('screen-start');show('screen-quiz');hide('screen-results');hide('screen-flash');}
+function showResults(){hide('screen-start');hide('screen-quiz');show('screen-results');hide('screen-flash');}
+function showFlashcards(){hide('screen-start');hide('screen-quiz');hide('screen-results');show('screen-flash');fcIndex=0;fcFlipped=false;renderFlashcard();}
+
+// ── QUIZ ───────────────────────────────────────────────────────────────────
+function startQuiz(){
+  var pool=shuffle(QUESTIONS).slice(0,20);
+  quiz.questions=pool;quiz.index=0;quiz.score=0;quiz.streak=0;quiz.answers=[];quiz.answered=false;
+  showQuiz();renderQuestion();
+}
+
+function renderQuestion(){
+  var q=quiz.questions[quiz.index];
+  var pct=Math.round((quiz.index/20)*100);
+  $('prog-bar').style.width=pct+'%';
+  $('q-counter').textContent='Question '+(quiz.index+1)+' of 20';
+  var sb=$('streak-badge');
+  if(quiz.streak>=3){sb.classList.remove('hidden');sb.textContent='🔥 '+quiz.streak+' streak';}else{sb.classList.add('hidden');}
+  var ts=TYPE_STYLES[q.type];
+  var badge=$('type-badge');
+  badge.textContent=ts.label;badge.style.color=ts.color;badge.style.background=ts.bg;badge.style.border='1px solid '+ts.color;
+  $('q-text').textContent=q.q;
+  var choiceBox=$('choices');clearEl(choiceBox);
+  var shuffled=shuffle(q.ch);
+  shuffled.forEach(function(c){
+    var btn=document.createElement('button');
+    btn.className='choice-btn';btn.textContent=c;
+    btn.addEventListener('click',function(){selectAnswer(c,btn,q);});
+    choiceBox.appendChild(btn);
+  });
+  $('hint-text').textContent='';
+  quiz.answered=false;
+}
+
+function selectAnswer(choice,btn,q){
+  if(quiz.answered)return;
+  quiz.answered=true;
+  var correct=choice===q.a;
+  var allBtns=$('choices').querySelectorAll('.choice-btn');
+  allBtns.forEach(function(b){
+    b.disabled=true;
+    if(b.textContent===q.a)b.classList.add('correct');
+    else if(b===btn&&!correct)b.classList.add('wrong');
+  });
+  if(correct){
+    quiz.score++;quiz.streak++;
+    burst(btn.getBoundingClientRect().left+btn.offsetWidth/2,btn.getBoundingClientRect().top,'#34d399',22);
+    if(quiz.streak>0&&quiz.streak%3===0)confettiBurst();
+  }else{
+    quiz.streak=0;
+    $('hint-text').textContent='💡 '+q.hint;
+    burst(btn.getBoundingClientRect().left+btn.offsetWidth/2,btn.getBoundingClientRect().top,'#ef4444',14);
+  }
+  quiz.answers.push({q:q,chosen:choice,correct:correct});
+  setTimeout(function(){
+    quiz.index++;
+    if(quiz.index<quiz.questions.length){renderQuestion();}
+    else{buildResults();}
+  },1100);
+}
+
+function buildResults(){
+  showResults();
+  var pct=Math.round((quiz.score/20)*100);
+  var ring=$('score-ring');clearEl(ring);
+  var span=mk('span','',quiz.score+'/20');ring.appendChild(span);
+  ring.style.borderColor=pct>=80?'#34d399':pct>=60?'#fbbf24':'#ef4444';
+  var title=$('results-title');
+  if(pct===100)title.textContent='Perfect! You\'re a Civil Rights Scholar! 🏆';
+  else if(pct>=80)title.textContent='Excellent Work! Keep it up! ⭐';
+  else if(pct>=60)title.textContent='Good Effort! Keep Studying! 📚';
+  else title.textContent='Keep Practicing — You\'ll Get There! 💪';
+  $('results-msg').textContent='You scored '+quiz.score+' out of 20 ('+pct+'%)';
+  var bd=$('breakdown');clearEl(bd);
+  var counts={synonym:0,antonym:0,analogy:0,simile:0,metaphor:0};
+  var totals={synonym:0,antonym:0,analogy:0,simile:0,metaphor:0};
+  quiz.answers.forEach(function(a){totals[a.q.type]++;if(a.correct)counts[a.q.type]++;});
+  Object.keys(counts).forEach(function(t){
+    if(totals[t]===0)return;
+    var ts=TYPE_STYLES[t];var chip=mk('span','bd-chip',ts.label+': '+counts[t]+'/'+totals[t]);
+    chip.style.color=ts.color;chip.style.background=ts.bg;chip.style.border='1px solid '+ts.color;
+    bd.appendChild(chip);
+  });
+  var rl=$('review-list');clearEl(rl);
+  var wrong=quiz.answers.filter(function(a){return!a.correct;});
+  if(wrong.length===0){var p=mk('p','','✨ Perfect score — no missed questions!');p.style.color='#34d399';p.style.textAlign='center';rl.appendChild(p);}
+  else{
+    wrong.forEach(function(a){
+      var div=mk('div','review-item');
+      div.appendChild(mk('div','ri-q',a.q.q));
+      div.appendChild(mk('div','ri-a','✓ Correct: '+a.q.a));
+      div.appendChild(mk('div','ri-yours','✗ Your answer: '+a.chosen));
+      rl.appendChild(div);
+    });
+  }
+}
+
+// ── FLASHCARDS ──────────────────────────────────────────────────────────────
+function renderFlashcard(){
+  var w=WORDS[fcIndex];fcFlipped=false;
+  $('fc-card').classList.remove('flipped');
+  $('fc-word').textContent=w.word;
+  $('fc-pos').textContent=w.pos;
+  $('fc-def').textContent=w.def;
+  $('fc-example').textContent=w.ex;
+  $('fc-count').textContent='Card '+(fcIndex+1)+' of '+WORDS.length;
+  $('fc-nav-label').textContent=(fcIndex+1)+' / '+WORDS.length;
+  $('fc-prog').style.width=(((fcIndex+1)/WORDS.length)*100)+'%';
+}
+
+function flipCard(){
+  fcFlipped=!fcFlipped;
+  if(fcFlipped)$('fc-card').classList.add('flipped');
+  else $('fc-card').classList.remove('flipped');
+}
+
+function fcNav(dir){
+  fcIndex=(fcIndex+dir+WORDS.length)%WORDS.length;
+  renderFlashcard();
+}
+
+// ── EVENTS ──────────────────────────────────────────────────────────────────
+$('btn-start').addEventListener('click',startQuiz);
+$('btn-flash-start').addEventListener('click',showFlashcards);
+$('btn-retry').addEventListener('click',startQuiz);
+$('btn-flash-results').addEventListener('click',showFlashcards);
+$('btn-fc-back').addEventListener('click',showStart);
+$('fc-scene').addEventListener('click',flipCard);
+$('fc-prev').addEventListener('click',function(){fcNav(-1);});
+$('fc-next').addEventListener('click',function(){fcNav(1);});
+
+})();
+</script>
+</body>
+</html>

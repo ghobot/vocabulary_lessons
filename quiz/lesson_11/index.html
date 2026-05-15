@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wordly Wise – Lesson 11</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#1c0404;color:#f1f5f9;font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;overflow-x:hidden}
+canvas#bg{position:fixed;inset:0;z-index:0;pointer-events:none}
+#app{position:relative;z-index:1;max-width:780px;margin:0 auto;padding:16px}
+a.home{display:inline-flex;align-items:center;gap:6px;color:#f87171;text-decoration:none;font-size:.85rem;margin-bottom:12px;opacity:.8}
+a.home:hover{opacity:1}
+h1{font-size:1.6rem;font-weight:700;color:#f87171;text-align:center;margin-bottom:4px}
+.subtitle{text-align:center;color:#fca5a5;font-size:.85rem;margin-bottom:18px;opacity:.75}
+/* MODE TOGGLE */
+.mode-bar{display:flex;justify-content:center;gap:10px;margin-bottom:18px}
+.mode-btn{padding:7px 22px;border-radius:20px;border:2px solid #dc2626;background:transparent;color:#f87171;font-size:.88rem;cursor:pointer;transition:.2s}
+.mode-btn.active,.mode-btn:hover{background:#dc2626;color:#fff}
+/* FLASHCARD */
+#flashcard-section{display:none}
+.fc-controls{display:flex;justify-content:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.fc-btn{padding:7px 18px;border-radius:10px;border:none;background:#7f1d1d;color:#fca5a5;font-size:.85rem;cursor:pointer;transition:.2s}
+.fc-btn:hover{background:#991b1b}
+.fc-progress{text-align:center;color:#fca5a5;font-size:.82rem;margin-bottom:10px}
+.card-wrap{perspective:900px;width:100%;max-width:560px;height:240px;margin:0 auto 16px}
+.card-inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.4,0,.2,1);cursor:pointer}
+.card-inner.flipped{transform:rotateY(180deg)}
+.card-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px;text-align:center}
+.card-front{background:linear-gradient(135deg,#7f1d1d,#450a0a);border:1px solid #dc2626}
+.card-back{background:linear-gradient(135deg,#450a0a,#1c0404);border:1px solid #f87171;transform:rotateY(180deg)}
+.card-word{font-size:2rem;font-weight:700;color:#f87171}
+.card-pos{font-size:.8rem;color:#fca5a5;margin-top:4px;font-style:italic}
+.card-tap{font-size:.75rem;color:#f8717155;margin-top:12px}
+.card-def{font-size:.95rem;color:#fde8e8;line-height:1.5}
+.card-ex{font-size:.8rem;color:#fca5a5;margin-top:10px;font-style:italic}
+/* QUIZ */
+#quiz-section{}
+.quiz-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px}
+.q-counter{font-size:.85rem;color:#fca5a5}
+.q-score{font-size:.85rem;color:#86efac}
+.streak-badge{font-size:.8rem;padding:3px 10px;border-radius:12px;background:#7f1d1d;color:#fca5a5}
+.progress-bar{width:100%;height:6px;background:#3d0404;border-radius:3px;margin-bottom:16px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,#dc2626,#f87171);border-radius:3px;transition:width .4s}
+.type-badge{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.06em;padding:3px 10px;border-radius:12px;margin-bottom:10px}
+.q-word{font-size:1.05rem;color:#fde8e8;font-weight:600;margin-bottom:6px}
+.q-text{font-size:1rem;color:#f1f5f9;line-height:1.5;margin-bottom:16px}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+@media(max-width:500px){.choices{grid-template-columns:1fr}}
+.choice-btn{padding:11px 14px;border-radius:10px;border:1px solid #7f1d1d;background:#3d0404;color:#fde8e8;font-size:.9rem;cursor:pointer;text-align:left;transition:.2s;line-height:1.4}
+.choice-btn:hover:not(:disabled){background:#7f1d1d;border-color:#dc2626}
+.choice-btn.correct{background:#14532d;border-color:#4ade80;color:#bbf7d0}
+.choice-btn.wrong{background:#7f1d1d;border-color:#f87171;color:#fecaca}
+.choice-btn:disabled{cursor:default}
+.hint-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px}
+.hint-btn{font-size:.78rem;padding:4px 12px;border-radius:8px;border:1px solid #dc2626;background:transparent;color:#f87171;cursor:pointer}
+.hint-btn:hover{background:#7f1d1d}
+.hint-box{background:#2d0606;border:1px solid #7f1d1d;border-radius:10px;padding:10px 14px;font-size:.83rem;color:#fca5a5;margin-bottom:12px;display:none}
+.feedback{text-align:center;font-size:.95rem;font-weight:600;min-height:24px;margin-bottom:10px}
+.feedback.ok{color:#4ade80}
+.feedback.no{color:#f87171}
+.next-btn{display:block;width:100%;padding:12px;border-radius:12px;border:none;background:#dc2626;color:#fff;font-size:1rem;font-weight:600;cursor:pointer;display:none;transition:.2s}
+.next-btn:hover{background:#b91c1c}
+/* RESULT */
+#result-section{display:none;text-align:center;padding:20px 0}
+.result-title{font-size:1.8rem;font-weight:700;color:#f87171;margin-bottom:8px}
+.result-score{font-size:3rem;font-weight:800;color:#f87171;margin-bottom:4px}
+.result-label{font-size:.9rem;color:#fca5a5;margin-bottom:16px}
+.result-msg{font-size:1rem;color:#fde8e8;max-width:480px;margin:0 auto 20px;line-height:1.6;font-style:italic}
+.result-breakdown{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-bottom:20px}
+.rb-item{background:#3d0404;border:1px solid #7f1d1d;border-radius:10px;padding:8px 16px;font-size:.82rem;color:#fca5a5}
+.rb-item span{font-weight:700;color:#f87171}
+.restart-btn{padding:12px 36px;border-radius:12px;border:none;background:#dc2626;color:#fff;font-size:1rem;font-weight:600;cursor:pointer}
+.restart-btn:hover{background:#b91c1c}
+/* canvas particles */
+#pcanvas{position:fixed;inset:0;z-index:2;pointer-events:none}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<canvas id="pcanvas"></canvas>
+<div id="app">
+  <a class="home" href="../index.html">&#8592; Home</a>
+  <h1>Wordly Wise &mdash; Lesson 11</h1>
+  <p class="subtitle">Elizabeth Blackwell, M.D. &bull; 15 words &bull; 195 questions</p>
+  <div class="mode-bar">
+    <button class="mode-btn active" id="btn-quiz">Quiz Mode</button>
+    <button class="mode-btn" id="btn-flash">Flashcard Mode</button>
+  </div>
+
+  <!-- FLASHCARD -->
+  <div id="flashcard-section">
+    <div class="fc-controls">
+      <button class="fc-btn" id="fc-prev">&#8592; Prev</button>
+      <button class="fc-btn" id="fc-flip">Flip</button>
+      <button class="fc-btn" id="fc-next">Next &#8594;</button>
+      <button class="fc-btn" id="fc-shuffle">Shuffle</button>
+    </div>
+    <div class="fc-progress" id="fc-progress"></div>
+    <div class="card-wrap">
+      <div class="card-inner" id="card-inner">
+        <div class="card-face card-front" id="card-front"></div>
+        <div class="card-face card-back" id="card-back"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUIZ -->
+  <div id="quiz-section">
+    <div class="quiz-meta">
+      <span class="q-counter" id="q-counter"></span>
+      <span class="streak-badge" id="streak-badge">&#128293; 0 streak</span>
+      <span class="q-score" id="q-score"></span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+    <div id="type-badge-wrap"></div>
+    <div class="q-word" id="q-word"></div>
+    <div class="q-text" id="q-text"></div>
+    <div class="hint-row">
+      <button class="hint-btn" id="hint-btn">&#128161; Hint</button>
+    </div>
+    <div class="hint-box" id="hint-box"></div>
+    <div class="choices" id="choices"></div>
+    <div class="feedback" id="feedback"></div>
+    <button class="next-btn" id="next-btn">Next Question &#8594;</button>
+  </div>
+
+  <!-- RESULT -->
+  <div id="result-section">
+    <div class="result-title">Round Complete!</div>
+    <div class="result-score" id="result-score"></div>
+    <div class="result-label">out of 20</div>
+    <div class="result-msg" id="result-msg"></div>
+    <div class="result-breakdown" id="result-breakdown"></div>
+    <button class="restart-btn" id="restart-btn">Play Again</button>
+  </div>
+</div>
+
+<script>
+// ── Starfield ──────────────────────────────────────────────────────────────
+(function(){
+  var c=document.getElementById('bg'),ctx=c.getContext('2d'),stars=[];
+  function resize(){c.width=innerWidth;c.height=innerHeight;}
+  resize();window.addEventListener('resize',resize);
+  for(var i=0;i<220;i++)stars.push({x:Math.random(),y:Math.random(),r:Math.random()*1.5+.3,s:Math.random()*.4+.1});
+  function draw(){
+    ctx.clearRect(0,0,c.width,c.height);
+    var g=ctx.createRadialGradient(c.width/2,c.height/2,0,c.width/2,c.height/2,c.width*.7);
+    g.addColorStop(0,'#350808');g.addColorStop(.5,'#1c0404');g.addColorStop(1,'#0a0101');
+    ctx.fillStyle=g;ctx.fillRect(0,0,c.width,c.height);
+    var t=Date.now()/1000;
+    stars.forEach(function(s){
+      var op=.3+.4*Math.abs(Math.sin(t*s.s+s.x*10));
+      ctx.beginPath();ctx.arc(s.x*c.width,s.y*c.height,s.r,0,Math.PI*2);
+      ctx.fillStyle='rgba(248,113,113,'+op+')';ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// ── Particles ─────────────────────────────────────────────────────────────
+var pc=document.getElementById('pcanvas'),pctx=pc.getContext('2d'),particles=[];
+pc.width=innerWidth;pc.height=innerHeight;
+window.addEventListener('resize',function(){pc.width=innerWidth;pc.height=innerHeight;});
+function spawnBurst(x,y,color,n){
+  for(var i=0;i<n;i++){
+    var ang=Math.random()*Math.PI*2,spd=Math.random()*5+2;
+    particles.push({x:x,y:y,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,life:1,color:color,r:Math.random()*4+2});
+  }
+}
+function spawnConfetti(){
+  var colors=['#f87171','#fb923c','#facc15','#4ade80','#60a5fa','#c084fc'];
+  for(var i=0;i<60;i++){
+    particles.push({x:Math.random()*pc.width,y:-10,vx:(Math.random()-.5)*4,vy:Math.random()*4+2,
+      life:1,color:colors[Math.floor(Math.random()*colors.length)],r:Math.random()*5+3,confetti:true});
+  }
+}
+(function ploop(){
+  pctx.clearRect(0,0,pc.width,pc.height);
+  particles=particles.filter(function(p){return p.life>0;});
+  particles.forEach(function(p){
+    p.x+=p.vx;p.y+=p.vy;p.life-=p.confetti?.012:.03;
+    if(p.confetti)p.vy+=.1;
+    pctx.globalAlpha=Math.max(0,p.life);
+    pctx.fillStyle=p.color;pctx.beginPath();
+    pctx.arc(p.x,p.y,p.r,0,Math.PI*2);pctx.fill();
+  });
+  pctx.globalAlpha=1;
+  requestAnimationFrame(ploop);
+})();
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function clearEl(el){while(el.firstChild)el.removeChild(el.firstChild);}
+function mk(tag,cls,txt){var el=document.createElement(tag);if(cls)el.className=cls;if(txt!==undefined)el.textContent=txt;return el;}
+function shuffle(a){var b=a.slice();for(var i=b.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=b[i];b[i]=b[j];b[j]=t;}return b;}
+
+var TYPE_STYLES={
+  synonym:{label:'SYNONYM',color:'#34d399',bg:'rgba(6,95,70,.4)'},
+  antonym:{label:'ANTONYM',color:'#f472b6',bg:'rgba(157,23,77,.35)'},
+  analogy:{label:'ANALOGY',color:'#a78bfa',bg:'rgba(109,40,217,.35)'},
+  simile:{label:'SIMILE',color:'#fbbf24',bg:'rgba(161,98,7,.35)'},
+  metaphor:{label:'METAPHOR',color:'#38bdf8',bg:'rgba(7,89,133,.35)'}
+};
+
+// ── Data ───────────────────────────────────────────────────────────────────
+var WORDS=[
+  {word:'abbreviate',pos:'v.',def:'To shorten by leaving out certain parts.',ex:'"Main Street can be abbreviated to Main St."'},
+  {word:'appropriate',pos:'adj./v.',def:'(adj.) Suitable or right for the purpose. (v.) To set aside for a particular purpose.',ex:'"Sandals are not appropriate footwear for hiking."'},
+  {word:'exclude',pos:'v.',def:'To leave out; to keep from being a part of.',ex:'"The gym teacher excluded everyone who could not run a mile from the advanced class."'},
+  {word:'fanciful',pos:'adj.',def:'1. Not based on reason; unrealistic. 2. Not real; imaginary.',ex:'"One inventor came up with a fanciful scheme to turn water into gasoline."'},
+  {word:'futile',pos:'adj.',def:'Certain to fail; hopeless or useless.',ex:'"We made several futile attempts to retrieve the car keys that had fallen into the lake."'},
+  {word:'grudge',pos:'n./v.',def:'(n.) A feeling of resentment. (v.) To be unwilling to give. Grudging (adj.): done or said with reluctance.',ex:'"Rosa held a grudge against her friends because of the way they treated her brother."'},
+  {word:'inspire',pos:'v.',def:'To fill with emotion or great excitement. Inspiration (n.): the power to affect the mind or emotions.',ex:'"Einstein\'s discoveries inspired me to become a scientist."'},
+  {word:'majority',pos:'n.',def:'1. The greater number or part; more than half. 2. The amount by which one number of votes is greater than another.',ex:'"The majority of teachers at this school live in town."'},
+  {word:'persevere',pos:'v.',def:'To refuse to give up despite difficulties. Perseverance (n.): continued efforts in spite of difficulties.',ex:'"The workers persevered through the blizzard until the house was complete."'},
+  {word:'possess',pos:'v.',def:'1. To have or to own. 2. To get power or control over. Possession (n.): 1. The act of owning. 2. The thing that is owned.',ex:'"The children possess three pairs of shoes."'},
+  {word:'prejudice',pos:'n./v.',def:'(n.) An opinion or strong feeling formed without careful thought or regard to the facts. (v.) To cause to have such a feeling.',ex:'"Her prejudice against tomatoes keeps her from trying many delicious dishes."'},
+  {word:'resolute',pos:'adj.',def:'Determined not to give in; unyielding.',ex:'"The shelter was resolute about finding good homes for the kittens."'},
+  {word:'sneer',pos:'v./n.',def:'(v.) To look down on with scorn; to mock or insult by words or manner. (n.) A scornful look; a mocking or insulting remark.',ex:'"\'That was the most mediocre acting I\'ve ever seen,\' someone sneered."'},
+  {word:'unanimous',pos:'adj.',def:'Without any disagreement. Unanimity (n.): the condition of being unanimous.',ex:'"The motion passed by a unanimous vote of 57 to 0."'},
+  {word:'unruly',pos:'adj.',def:'1. Badly behaved. 2. Hard to control.',ex:'"An unruly child in a restaurant can be very annoying to the other diners."'}
+];
+
+var QUESTIONS=[
+// ── SYNONYMS (50) ──────────────────────────────────────────────────────────
+{type:'synonym',word:'abbreviate',q:'Which word is closest in meaning to ABBREVIATE?',a:'shorten',ch:['shorten','expand','elaborate','lengthen'],hint:'To abbreviate is to make something shorter — to reduce its length'},
+{type:'synonym',word:'abbreviate',q:'ABBREVIATE most nearly means:',a:'condense',ch:['condense','inflate','extend','stretch'],hint:'Abbreviating condenses something into a smaller form without changing its meaning'},
+{type:'synonym',word:'abbreviate',q:'Which word is a synonym for ABBREVIATE?',a:'truncate',ch:['truncate','amplify','add to','prolong'],hint:'To truncate is to cut short — the same idea as abbreviate'},
+{type:'synonym',word:'appropriate',q:'APPROPRIATE (adj.) most nearly means:',a:'suitable',ch:['suitable','improper','irrelevant','excessive'],hint:'Appropriate means right or fitting for the situation'},
+{type:'synonym',word:'appropriate',q:'Which word is a synonym for APPROPRIATE?',a:'fitting',ch:['fitting','unseemly','bizarre','mismatched'],hint:'Fitting means well-suited — like appropriate'},
+{type:'synonym',word:'appropriate',q:'APPROPRIATE is closest in meaning to:',a:'proper',ch:['proper','random','forbidden','awkward'],hint:'Proper means correct for the occasion — just like appropriate'},
+{type:'synonym',word:'appropriate',q:'Which of the following is a synonym for APPROPRIATE?',a:'apt',ch:['apt','absurd','clumsy','wrong'],hint:'Apt means exactly right for the purpose — a near synonym for appropriate'},
+{type:'synonym',word:'exclude',q:'Which word is closest in meaning to EXCLUDE?',a:'omit',ch:['omit','welcome','add','invite'],hint:'To omit is to leave out — the same as exclude'},
+{type:'synonym',word:'exclude',q:'EXCLUDE most nearly means:',a:'bar',ch:['bar','include','accept','invite'],hint:'To bar someone is to keep them from entering — like exclude'},
+{type:'synonym',word:'exclude',q:'Which word is a synonym for EXCLUDE?',a:'eliminate',ch:['eliminate','incorporate','add','welcome'],hint:'Eliminate means to remove entirely — like exclude'},
+{type:'synonym',word:'exclude',q:'EXCLUDE is closest in meaning to:',a:'shut out',ch:['shut out','bring in','include','admit'],hint:'To shut out is to prevent from being part of something — that\'s exclude'},
+{type:'synonym',word:'fanciful',q:'FANCIFUL most nearly means:',a:'whimsical',ch:['whimsical','realistic','practical','sensible'],hint:'Whimsical means playfully unrealistic — like fanciful'},
+{type:'synonym',word:'fanciful',q:'Which word is a synonym for FANCIFUL?',a:'imaginative',ch:['imaginative','logical','grounded','factual'],hint:'Imaginative means existing in the imagination — like fanciful'},
+{type:'synonym',word:'fanciful',q:'FANCIFUL is closest in meaning to:',a:'unrealistic',ch:['unrealistic','rational','plausible','sensible'],hint:'Fanciful means not based on reason — unrealistic'},
+{type:'synonym',word:'futile',q:'FUTILE most nearly means:',a:'hopeless',ch:['hopeless','promising','worthwhile','effective'],hint:'Futile means certain to fail — hopeless'},
+{type:'synonym',word:'futile',q:'Which word is a synonym for FUTILE?',a:'useless',ch:['useless','productive','valuable','effective'],hint:'Useless means serving no purpose — like futile'},
+{type:'synonym',word:'futile',q:'FUTILE is closest in meaning to:',a:'vain',ch:['vain','successful','fruitful','worthwhile'],hint:'Vain (in this sense) means without result — like a futile effort'},
+{type:'synonym',word:'grudge',q:'GRUDGE (n.) most nearly means:',a:'resentment',ch:['resentment','goodwill','affection','admiration'],hint:'A grudge is a feeling of resentment held over time'},
+{type:'synonym',word:'grudge',q:'Which word is a synonym for GRUDGE?',a:'bitterness',ch:['bitterness','forgiveness','warmth','kindness'],hint:'Bitterness is a lasting negative feeling — like a grudge'},
+{type:'synonym',word:'grudge',q:'GRUDGE is closest in meaning to:',a:'grievance',ch:['grievance','pardon','goodwill','praise'],hint:'A grievance is a complaint or resentment — the same as a grudge'},
+{type:'synonym',word:'inspire',q:'INSPIRE most nearly means:',a:'motivate',ch:['motivate','discourage','weaken','dampen'],hint:'To inspire is to fill someone with motivation or excitement'},
+{type:'synonym',word:'inspire',q:'Which word is a synonym for INSPIRE?',a:'encourage',ch:['encourage','depress','exhaust','deflate'],hint:'Encourage means to give courage or hope — like inspire'},
+{type:'synonym',word:'inspire',q:'INSPIRE is closest in meaning to:',a:'stimulate',ch:['stimulate','crush','dishearten','bore'],hint:'To stimulate is to energize and drive — like inspire'},
+{type:'synonym',word:'inspire',q:'Which of the following is a synonym for INSPIRE?',a:'uplift',ch:['uplift','discourage','deflate','burden'],hint:'Uplift means to raise spirits — similar to inspire'},
+{type:'synonym',word:'majority',q:'MAJORITY most nearly means:',a:'most',ch:['most','few','least','minority'],hint:'Majority means more than half — the most'},
+{type:'synonym',word:'majority',q:'Which word is a synonym for MAJORITY?',a:'bulk',ch:['bulk','minority','fraction','least'],hint:'The bulk means the greater part — like the majority'},
+{type:'synonym',word:'majority',q:'MAJORITY is closest in meaning to:',a:'greater part',ch:['greater part','lesser part','fraction','minority'],hint:'Majority literally means the greater part of a whole'},
+{type:'synonym',word:'persevere',q:'PERSEVERE most nearly means:',a:'persist',ch:['persist','quit','surrender','abandon'],hint:'To persist is to keep going despite obstacles — same as persevere'},
+{type:'synonym',word:'persevere',q:'Which word is a synonym for PERSEVERE?',a:'endure',ch:['endure','yield','retreat','give up'],hint:'To endure is to keep going through hardship — like persevere'},
+{type:'synonym',word:'persevere',q:'PERSEVERE is closest in meaning to:',a:'press on',ch:['press on','back down','give in','abandon'],hint:'To press on means to continue despite difficulty — like persevere'},
+{type:'synonym',word:'possess',q:'POSSESS most nearly means:',a:'own',ch:['own','lack','want','borrow'],hint:'To possess is to have or own something'},
+{type:'synonym',word:'possess',q:'Which word is a synonym for POSSESS?',a:'hold',ch:['hold','lose','lack','give away'],hint:'To hold means to have under your control — like possess'},
+{type:'synonym',word:'possess',q:'POSSESS is closest in meaning to:',a:'have',ch:['have','need','want','lack'],hint:'To have is the simplest synonym for possess'},
+{type:'synonym',word:'prejudice',q:'PREJUDICE (n.) most nearly means:',a:'bias',ch:['bias','fairness','objectivity','impartiality'],hint:'A prejudice is a bias — a judgment formed without fair consideration'},
+{type:'synonym',word:'prejudice',q:'Which word is a synonym for PREJUDICE?',a:'partiality',ch:['partiality','neutrality','fairness','openness'],hint:'Partiality means unfair favoritism — like prejudice'},
+{type:'synonym',word:'prejudice',q:'PREJUDICE is closest in meaning to:',a:'discrimination',ch:['discrimination','fairness','balance','equity'],hint:'Discrimination based on preconceived ideas — that\'s prejudice'},
+{type:'synonym',word:'resolute',q:'RESOLUTE most nearly means:',a:'determined',ch:['determined','wavering','uncertain','hesitant'],hint:'Resolute means firm and determined — not backing down'},
+{type:'synonym',word:'resolute',q:'Which word is a synonym for RESOLUTE?',a:'steadfast',ch:['steadfast','irresolute','indecisive','fickle'],hint:'Steadfast means not moving from a position — like resolute'},
+{type:'synonym',word:'resolute',q:'RESOLUTE is closest in meaning to:',a:'unwavering',ch:['unwavering','hesitant','undecided','flexible'],hint:'Unwavering means not changing course — like resolute'},
+{type:'synonym',word:'resolute',q:'Which of the following is a synonym for RESOLUTE?',a:'firm',ch:['firm','uncertain','shaky','doubtful'],hint:'Firm means decided and not easily changed — like resolute'},
+{type:'synonym',word:'sneer',q:'SNEER (v.) most nearly means:',a:'mock',ch:['mock','praise','admire','compliment'],hint:'To sneer is to mock with contempt or scorn'},
+{type:'synonym',word:'sneer',q:'Which word is a synonym for SNEER?',a:'scoff',ch:['scoff','honor','respect','applaud'],hint:'To scoff is to express scorn — just like a sneer'},
+{type:'synonym',word:'sneer',q:'SNEER is closest in meaning to:',a:'jeer',ch:['jeer','compliment','praise','encourage'],hint:'To jeer is to make rude mocking remarks — like a sneer'},
+{type:'synonym',word:'unanimous',q:'UNANIMOUS most nearly means:',a:'united',ch:['united','divided','split','disputed'],hint:'Unanimous means all in agreement — united as one'},
+{type:'synonym',word:'unanimous',q:'Which word is a synonym for UNANIMOUS?',a:'agreed',ch:['agreed','disagreed','divided','opposed'],hint:'Agreed means all having the same view — like unanimous'},
+{type:'synonym',word:'unanimous',q:'UNANIMOUS is closest in meaning to:',a:'undivided',ch:['undivided','split','contested','partial'],hint:'Undivided means complete — a unanimous vote is undivided'},
+{type:'synonym',word:'unruly',q:'UNRULY most nearly means:',a:'disobedient',ch:['disobedient','obedient','orderly','compliant'],hint:'Unruly means badly behaved or disobedient'},
+{type:'synonym',word:'unruly',q:'Which word is a synonym for UNRULY?',a:'disorderly',ch:['disorderly','disciplined','tidy','orderly'],hint:'Disorderly means without order — like unruly'},
+{type:'synonym',word:'unruly',q:'UNRULY is closest in meaning to:',a:'wild',ch:['wild','calm','obedient','tamed'],hint:'Wild means hard to control — like unruly'},
+{type:'synonym',word:'unruly',q:'Which of the following is a synonym for UNRULY?',a:'uncontrollable',ch:['uncontrollable','disciplined','manageable','restrained'],hint:'Uncontrollable means impossible to direct — like unruly'},
+// ── ANTONYMS (35) ──────────────────────────────────────────────────────────
+{type:'antonym',word:'abbreviate',q:'Which word is most nearly OPPOSITE in meaning to ABBREVIATE?',a:'expand',ch:['expand','shorten','condense','truncate'],hint:'Abbreviate means to shorten — the opposite is to expand or lengthen'},
+{type:'antonym',word:'abbreviate',q:'ABBREVIATE is most nearly opposite in meaning to:',a:'lengthen',ch:['lengthen','trim','reduce','cut'],hint:'To lengthen is to make longer — the opposite of abbreviate'},
+{type:'antonym',word:'appropriate',q:'Which word is most nearly OPPOSITE in meaning to APPROPRIATE?',a:'unsuitable',ch:['unsuitable','fitting','apt','proper'],hint:'Appropriate means suitable — the opposite is unsuitable'},
+{type:'antonym',word:'appropriate',q:'APPROPRIATE is most nearly opposite in meaning to:',a:'inappropriate',ch:['inappropriate','fitting','correct','proper'],hint:'Inappropriate means not right for the situation — the direct opposite of appropriate'},
+{type:'antonym',word:'appropriate',q:'Which word is OPPOSITE to APPROPRIATE?',a:'improper',ch:['improper','suitable','apt','correct'],hint:'Improper means not right or suitable — opposite of appropriate'},
+{type:'antonym',word:'exclude',q:'Which word is most nearly OPPOSITE in meaning to EXCLUDE?',a:'include',ch:['include','omit','bar','reject'],hint:'Exclude means to leave out — the opposite is to include'},
+{type:'antonym',word:'exclude',q:'EXCLUDE is most nearly opposite in meaning to:',a:'admit',ch:['admit','eliminate','ban','expel'],hint:'To admit means to let in — the opposite of exclude'},
+{type:'antonym',word:'fanciful',q:'Which word is most nearly OPPOSITE in meaning to FANCIFUL?',a:'realistic',ch:['realistic','whimsical','imaginary','dreamy'],hint:'Fanciful means not based in reality — the opposite is realistic'},
+{type:'antonym',word:'fanciful',q:'FANCIFUL is most nearly opposite in meaning to:',a:'practical',ch:['practical','inventive','dreamy','fantastic'],hint:'Fanciful means unrealistic — the opposite is practical or down-to-earth'},
+{type:'antonym',word:'futile',q:'Which word is most nearly OPPOSITE in meaning to FUTILE?',a:'effective',ch:['effective','useless','hopeless','fruitless'],hint:'Futile means bound to fail — the opposite is effective or worthwhile'},
+{type:'antonym',word:'futile',q:'FUTILE is most nearly opposite in meaning to:',a:'worthwhile',ch:['worthwhile','vain','pointless','useless'],hint:'Worthwhile means producing good results — the opposite of futile'},
+{type:'antonym',word:'grudge',q:'Which word is most nearly OPPOSITE in meaning to GRUDGE?',a:'goodwill',ch:['goodwill','resentment','bitterness','hostility'],hint:'A grudge is resentment — the opposite is goodwill or forgiveness'},
+{type:'antonym',word:'grudge',q:'GRUDGE is most nearly opposite in meaning to:',a:'forgiveness',ch:['forgiveness','grievance','bitterness','hatred'],hint:'Forgiveness releases resentment — the opposite of holding a grudge'},
+{type:'antonym',word:'inspire',q:'Which word is most nearly OPPOSITE in meaning to INSPIRE?',a:'discourage',ch:['discourage','motivate','uplift','encourage'],hint:'Inspire fills with enthusiasm — the opposite is to discourage or deflate'},
+{type:'antonym',word:'inspire',q:'INSPIRE is most nearly opposite in meaning to:',a:'dampen',ch:['dampen','stimulate','encourage','uplift'],hint:'To dampen means to reduce enthusiasm — the opposite of inspire'},
+{type:'antonym',word:'majority',q:'Which word is most nearly OPPOSITE in meaning to MAJORITY?',a:'minority',ch:['minority','bulk','most','greater part'],hint:'Majority means more than half — the opposite is minority (less than half)'},
+{type:'antonym',word:'majority',q:'MAJORITY is most nearly opposite in meaning to:',a:'fewer',ch:['fewer','most','bulk','greater part'],hint:'Majority means most — the opposite is fewer or the lesser part'},
+{type:'antonym',word:'majority',q:'Which word is the ANTONYM of MAJORITY?',a:'lesser part',ch:['lesser part','greater part','bulk','most'],hint:'Majority is the greater part — the opposite is the lesser part'},
+{type:'antonym',word:'persevere',q:'Which word is most nearly OPPOSITE in meaning to PERSEVERE?',a:'quit',ch:['quit','persist','endure','press on'],hint:'Persevere means to keep going — the opposite is to quit or give up'},
+{type:'antonym',word:'persevere',q:'PERSEVERE is most nearly opposite in meaning to:',a:'surrender',ch:['surrender','persist','continue','strive'],hint:'To surrender means to give up — the opposite of persevere'},
+{type:'antonym',word:'possess',q:'Which word is most nearly OPPOSITE in meaning to POSSESS?',a:'lack',ch:['lack','own','hold','have'],hint:'Possess means to have — the opposite is to lack or be without'},
+{type:'antonym',word:'possess',q:'POSSESS is most nearly opposite in meaning to:',a:'want',ch:['want','own','keep','hold'],hint:'To want (in the sense of being without) is the opposite of possessing'},
+{type:'antonym',word:'prejudice',q:'Which word is most nearly OPPOSITE in meaning to PREJUDICE?',a:'fairness',ch:['fairness','bias','discrimination','partiality'],hint:'Prejudice is unfair bias — the opposite is fairness or open-mindedness'},
+{type:'antonym',word:'prejudice',q:'PREJUDICE is most nearly opposite in meaning to:',a:'open-mindedness',ch:['open-mindedness','bias','partiality','intolerance'],hint:'Open-mindedness means judging only after examining the facts — opposite of prejudice'},
+{type:'antonym',word:'resolute',q:'Which word is most nearly OPPOSITE in meaning to RESOLUTE?',a:'wavering',ch:['wavering','determined','steadfast','firm'],hint:'Resolute means unwavering — the opposite is wavering or uncertain'},
+{type:'antonym',word:'resolute',q:'RESOLUTE is most nearly opposite in meaning to:',a:'indecisive',ch:['indecisive','firm','unwavering','determined'],hint:'Indecisive means unable to make up your mind — the opposite of resolute'},
+{type:'antonym',word:'resolute',q:'Which word is the ANTONYM of RESOLUTE?',a:'irresolute',ch:['irresolute','steadfast','unwavering','committed'],hint:'Irresolute means lacking determination — the direct opposite of resolute'},
+{type:'antonym',word:'sneer',q:'Which word is most nearly OPPOSITE in meaning to SNEER?',a:'admire',ch:['admire','mock','jeer','scoff'],hint:'A sneer expresses contempt — the opposite is to admire or praise'},
+{type:'antonym',word:'sneer',q:'SNEER is most nearly opposite in meaning to:',a:'praise',ch:['praise','scoff','taunt','ridicule'],hint:'To praise is to express approval — the opposite of a sneer'},
+{type:'antonym',word:'unanimous',q:'Which word is most nearly OPPOSITE in meaning to UNANIMOUS?',a:'divided',ch:['divided','united','agreed','undivided'],hint:'Unanimous means all in agreement — the opposite is divided'},
+{type:'antonym',word:'unanimous',q:'UNANIMOUS is most nearly opposite in meaning to:',a:'split',ch:['split','agreed','undivided','united'],hint:'Split means not in agreement — the opposite of unanimous'},
+{type:'antonym',word:'unruly',q:'Which word is most nearly OPPOSITE in meaning to UNRULY?',a:'obedient',ch:['obedient','disorderly','wild','defiant'],hint:'Unruly means badly behaved — the opposite is obedient'},
+{type:'antonym',word:'unruly',q:'UNRULY is most nearly opposite in meaning to:',a:'orderly',ch:['orderly','chaotic','uncontrolled','defiant'],hint:'Orderly means following rules properly — the opposite of unruly'},
+{type:'antonym',word:'sneer',q:'Which word is OPPOSITE to SNEER (v.)?',a:'compliment',ch:['compliment','jeer','mock','ridicule'],hint:'To sneer is to insult with scorn — the opposite is to compliment or praise'},
+{type:'antonym',word:'unruly',q:'UNRULY is most nearly opposite in meaning to:',a:'disciplined',ch:['disciplined','wild','defiant','uncontrollable'],hint:'Unruly means badly behaved — the opposite is disciplined or well-behaved'},
+// ── ANALOGIES (40) ─────────────────────────────────────────────────────────
+{type:'analogy',word:'abbreviate',q:'ABBREVIATE is to SHORTEN as EXPAND is to ___',a:'lengthen',ch:['lengthen','reduce','condense','trim'],hint:'Think: abbreviate means to shorten; expand means to lengthen — opposite direction, same type of change'},
+{type:'analogy',word:'abbreviate',q:'DR. is to DOCTOR as ST. is to ___',a:'Street',ch:['Street','State','Start','Station'],hint:'Think: Dr. is the abbreviation of Doctor; St. is the abbreviation of Street'},
+{type:'analogy',word:'abbreviate',q:'ABBREVIATE is to WORDS as SUMMARIZE is to ___',a:'ideas',ch:['ideas','letters','sentences','pictures'],hint:'Think: you abbreviate words (shorten them); you summarize ideas (condense them)'},
+{type:'analogy',word:'appropriate',q:'APPROPRIATE is to SUITABLE as INAPPROPRIATE is to ___',a:'unsuitable',ch:['unsuitable','fitting','correct','proper'],hint:'Think: appropriate = suitable; inappropriate = unsuitable — direct antonym pair'},
+{type:'analogy',word:'appropriate',q:'TUXEDO is to FORMAL EVENT as SWIMSUIT is to ___',a:'beach',ch:['beach','office','funeral','classroom'],hint:'Think: a tuxedo is appropriate for a formal event; a swimsuit is appropriate at the beach'},
+{type:'analogy',word:'appropriate',q:'APPROPRIATE is to FITTING as AWKWARD is to ___',a:'clumsy',ch:['clumsy','suitable','apt','proper'],hint:'Think: appropriate means fitting; awkward means clumsy — synonyms in each pair'},
+{type:'analogy',word:'exclude',q:'EXCLUDE is to OMIT as INCLUDE is to ___',a:'add',ch:['add','remove','eliminate','bar'],hint:'Think: exclude means to omit (take out); include means to add (put in)'},
+{type:'analogy',word:'exclude',q:'EXCLUDE is to OUT as ADMIT is to ___',a:'in',ch:['in','away','outside','rejected'],hint:'Think: to exclude someone is to keep them out; to admit them is to bring them in'},
+{type:'analogy',word:'exclude',q:'BOUNCER is to EXCLUDE as DOORMAN is to ___',a:'admit',ch:['admit','remove','bar','reject'],hint:'Think: a bouncer\'s job is to exclude people; a doorman\'s job is to admit them'},
+{type:'analogy',word:'fanciful',q:'FANCIFUL is to UNREALISTIC as PRACTICAL is to ___',a:'sensible',ch:['sensible','dreamy','imaginary','fantastic'],hint:'Think: fanciful = unrealistic; practical = sensible — parallel meanings'},
+{type:'analogy',word:'fanciful',q:'FANCIFUL is to FANTASY as FACTUAL is to ___',a:'reality',ch:['reality','fiction','dream','imagination'],hint:'Think: fanciful things belong in fantasy; factual things belong in reality'},
+{type:'analogy',word:'futile',q:'FUTILE is to HOPELESS as PROMISING is to ___',a:'hopeful',ch:['hopeful','useless','vain','pointless'],hint:'Think: futile = hopeless; promising = hopeful — antonym pair across the analogy'},
+{type:'analogy',word:'futile',q:'FUTILE EFFORT is to FAILURE as EFFECTIVE PLAN is to ___',a:'success',ch:['success','defeat','wasted','pointless'],hint:'Think: a futile effort leads to failure; an effective plan leads to success'},
+{type:'analogy',word:'futile',q:'FUTILE is to WASTED as PRODUCTIVE is to ___',a:'worthwhile',ch:['worthwhile','useless','vain','empty'],hint:'Think: futile = wasted; productive = worthwhile — parallel meanings'},
+{type:'analogy',word:'grudge',q:'GRUDGE is to RESENTMENT as AFFECTION is to ___',a:'warmth',ch:['warmth','hatred','bitterness','hostility'],hint:'Think: a grudge is a form of resentment; affection is a form of warmth — category relationships'},
+{type:'analogy',word:'grudge',q:'GRUDGE is to HARBOR as REGRET is to ___',a:'carry',ch:['carry','release','forget','discard'],hint:'Think: you harbor a grudge (hold it over time); you carry regret — same verb relationship'},
+{type:'analogy',word:'inspire',q:'INSPIRE is to MOTIVATION as DISCOURAGE is to ___',a:'apathy',ch:['apathy','drive','enthusiasm','energy'],hint:'Think: inspire creates motivation; discouraging creates apathy — cause and effect'},
+{type:'analogy',word:'inspire',q:'BLACKWELL is to INSPIRE as EINSTEIN is to ___',a:'enlighten',ch:['enlighten','confuse','discourage','bore'],hint:'Think: Blackwell inspired women in medicine; Einstein enlightened people in science'},
+{type:'analogy',word:'inspire',q:'INSPIRE is to UPLIFT as DEPRESS is to ___',a:'deflate',ch:['deflate','encourage','motivate','excite'],hint:'Think: inspire = uplift (raise up); depress = deflate (bring down)'},
+{type:'analogy',word:'majority',q:'MAJORITY is to MOST as MINORITY is to ___',a:'few',ch:['few','all','many','most'],hint:'Think: majority = most (more than half); minority = few (less than half)'},
+{type:'analogy',word:'majority',q:'51% is to MAJORITY as 49% is to ___',a:'minority',ch:['minority','majority','plurality','unanimous'],hint:'Think: 51% is more than half — a majority; 49% is less than half — a minority'},
+{type:'analogy',word:'majority',q:'MAJORITY VOTE is to PASS as UNANIMOUS VOTE is to ___',a:'overwhelming approval',ch:['overwhelming approval','failure','split decision','tie'],hint:'Think: a majority vote passes a measure; a unanimous vote shows overwhelming (100%) approval'},
+{type:'analogy',word:'persevere',q:'PERSEVERE is to SUCCEED as QUIT is to ___',a:'fail',ch:['fail','persist','endure','strive'],hint:'Think: persevering leads to success; quitting leads to failure'},
+{type:'analogy',word:'persevere',q:'PERSEVERE is to DETERMINATION as SURRENDER is to ___',a:'defeat',ch:['defeat','courage','strength','persistence'],hint:'Think: perseverance is driven by determination; surrender leads to defeat'},
+{type:'analogy',word:'persevere',q:'MARATHON is to PERSEVERE as SPRINT is to ___',a:'dash',ch:['dash','endure','persist','struggle'],hint:'Think: a marathon requires perseverance (keep going over distance); a sprint is a dash (short burst)'},
+{type:'analogy',word:'possess',q:'POSSESS is to OWN as BORROW is to ___',a:'return',ch:['return','keep','hold','claim'],hint:'Think: to possess is to own (permanent); to borrow is to return (temporary)'},
+{type:'analogy',word:'possess',q:'POSSESS is to OWNER as RENT is to ___',a:'tenant',ch:['tenant','landlord','seller','buyer'],hint:'Think: someone who possesses is an owner; someone who rents is a tenant'},
+{type:'analogy',word:'possess',q:'POSSESS is to HAVE as LACK is to ___',a:'want',ch:['want','own','hold','keep'],hint:'Think: possess = have; lack = want (be without) — antonym pair'},
+{type:'analogy',word:'prejudice',q:'PREJUDICE is to BIAS as FAIRNESS is to ___',a:'objectivity',ch:['objectivity','discrimination','partiality','intolerance'],hint:'Think: prejudice = bias (unfair judgment); fairness = objectivity (balanced judgment)'},
+{type:'analogy',word:'prejudice',q:'PREJUDICED JUDGE is to UNFAIR as IMPARTIAL JUDGE is to ___',a:'fair',ch:['fair','biased','partial','unjust'],hint:'Think: a prejudiced judge is unfair; an impartial judge is fair — contrasting qualities'},
+{type:'analogy',word:'prejudice',q:'PREJUDICE is to JUDGMENT as EVIDENCE is to ___',a:'proof',ch:['proof','assumption','guess','bias'],hint:'Think: prejudice leads to judgment (without facts); evidence leads to proof (with facts)'},
+{type:'analogy',word:'resolute',q:'RESOLUTE is to DETERMINED as WAVERING is to ___',a:'uncertain',ch:['uncertain','firm','steadfast','committed'],hint:'Think: resolute = determined; wavering = uncertain — antonym pair'},
+{type:'analogy',word:'resolute',q:'RESOLUTE is to IRON as WEAK-WILLED is to ___',a:'paper',ch:['paper','steel','rock','granite'],hint:'Think: resolute strength is like iron — hard, unyielding; weak-willed is like paper — thin, easily bent'},
+{type:'analogy',word:'sneer',q:'SNEER is to SCORN as SMILE is to ___',a:'warmth',ch:['warmth','contempt','mockery','hatred'],hint:'Think: a sneer expresses scorn; a smile expresses warmth — emotion expressed by facial gesture'},
+{type:'analogy',word:'sneer',q:'SNEER is to MOCK as COMPLIMENT is to ___',a:'praise',ch:['praise','insult','taunt','ridicule'],hint:'Think: to sneer is to mock; to compliment is to praise — opposite intents'},
+{type:'analogy',word:'unanimous',q:'UNANIMOUS is to ALL as MAJORITY is to ___',a:'most',ch:['most','none','some','few'],hint:'Think: unanimous = all agree; majority = most agree — degrees of agreement'},
+{type:'analogy',word:'unanimous',q:'UNANIMOUS is to AGREEMENT as DIVIDED is to ___',a:'disagreement',ch:['disagreement','consensus','unity','accord'],hint:'Think: unanimous = agreement; divided = disagreement — antonym pair'},
+{type:'analogy',word:'unruly',q:'UNRULY is to CHAOS as ORDERLY is to ___',a:'calm',ch:['calm','wild','disorderly','defiant'],hint:'Think: unruly behavior creates chaos; orderly behavior creates calm'},
+{type:'analogy',word:'unruly',q:'UNRULY HAIR is to TANGLE as COMBED HAIR is to ___',a:'neat',ch:['neat','messy','wild','knotted'],hint:'Think: unruly hair is tangled; combed hair is neat — opposite conditions'},
+{type:'analogy',word:'unruly',q:'UNRULY is to DISCIPLINE as RECKLESS is to ___',a:'caution',ch:['caution','chaos','disorder','wildness'],hint:'Think: unruly = lacking discipline; reckless = lacking caution — each word names what\'s missing'},
+// ── SIMILES (35) ───────────────────────────────────────────────────────────
+{type:'simile',word:'abbreviate',q:'Complete the simile: She abbreviated the speech as efficiently as ___',a:'a surgeon who cuts only what needs to come out — precise, no excess',ch:['a surgeon who cuts only what needs to come out — precise, no excess','a chef who adds ingredients at random','a painter who leaves the canvas completely blank','someone who reads every footnote before writing a single sentence'],hint:'Think: abbreviating is surgical — removing exactly what isn\'t needed, leaving exactly what is'},
+{type:'simile',word:'abbreviate',q:'Complete the simile: His abbreviated notes were like ___',a:'a treasure map — stripped to bare essentials, useless to anyone who didn\'t already know the territory',ch:['a treasure map — stripped to bare essentials, useless to anyone who didn\'t already know the territory','a dictionary — long, detailed, and filled with examples','an encyclopedia — covering every angle of the subject','a novel — every detail present and accounted for'],hint:'Think: abbreviated notes are compressed codes — meaningful only to the one who made them'},
+{type:'simile',word:'appropriate',q:'Complete the simile: Her response at the ceremony was as appropriate as ___',a:'a key sliding perfectly into its lock — the right shape for the right moment',ch:['a key sliding perfectly into its lock — the right shape for the right moment','a hammer swung at a glass window','a book opened to the wrong chapter','a shout in an empty library'],hint:'Think: appropriate = perfect fit — like the right key for the lock'},
+{type:'simile',word:'appropriate',q:'Complete the simile: Wearing a tuxedo to a beach picnic is about as appropriate as ___',a:'bringing a snowplow to clear a path in the Sahara',ch:['bringing a snowplow to clear a path in the Sahara','dressing in a swimsuit for a swim meet','bringing sunscreen on a beach day','wearing boots on a hiking trail'],hint:'Think: wildly wrong for the environment — like using a tool completely inappropriate for the setting'},
+{type:'simile',word:'appropriate',q:'His tone at the meeting was as appropriate as ___',a:'a quiet knock — enough to be noticed, not enough to alarm',ch:['a quiet knock — enough to be noticed, not enough to alarm','a fire alarm ringing during a meditation session','a shout echoing through an empty cathedral','a loud horn honked in a hospital hallway'],hint:'Think: appropriateness is calibrated to the setting — just enough, never too much'},
+{type:'simile',word:'exclude',q:'Complete the simile: Being excluded from the group felt like ___',a:'standing outside in the cold with your face pressed to a warm window',ch:['standing outside in the cold with your face pressed to a warm window','being invited to sit in the best seat at the table','walking through the front door to a chorus of cheers','finding your name written first on the guest list'],hint:'Think: exclusion = close enough to see what you\'re missing, too far to be part of it'},
+{type:'simile',word:'exclude',q:'Complete the simile: He was excluded from the plan as completely as ___',a:'a wrong piece excluded from a jigsaw puzzle — the shape simply doesn\'t fit',ch:['a wrong piece excluded from a jigsaw puzzle — the shape simply doesn\'t fit','the last piece of a puzzle that clicks perfectly into place','a cornerstone that holds the whole structure together','the key ingredient in a recipe that makes everything work'],hint:'Think: exclusion = wrong fit — like a wrong puzzle piece that cannot be forced in'},
+{type:'simile',word:'fanciful',q:'Complete the simile: Her ideas drifted through the meeting like ___',a:'soap bubbles — beautiful, fanciful, and gone before anyone could grasp them',ch:['soap bubbles — beautiful, fanciful, and gone before anyone could grasp them','bricks being carefully mortared into a wall','a blueprint being measured and redrawn until perfect','facts in a scientific report — precise and verifiable'],hint:'Think: fanciful ideas are like soap bubbles — lovely but without substance, they vanish when tested'},
+{type:'simile',word:'fanciful',q:'Complete the simile: His fanciful invention plan was as grounded as ___',a:'a castle built entirely out of clouds',ch:['a castle built entirely out of clouds','a bridge made of reinforced steel','a foundation poured six feet into bedrock','a house built from stone quarried on site'],hint:'Think: fanciful = not grounded in reality — like a castle in the clouds with no foundation'},
+{type:'simile',word:'futile',q:'Complete the simile: Their attempts to change her mind were as futile as ___',a:'trying to empty the ocean with a teaspoon — each effort tiny against the immensity of the task',ch:['trying to empty the ocean with a teaspoon — each effort tiny against the immensity of the task','following a well-marked trail with a reliable map','using the right tool for the right job at the right moment','pushing on a door that someone has already opened for you'],hint:'Think: futile = effort with no possible result — like trying to empty the ocean with a teaspoon'},
+{type:'simile',word:'futile',q:'Complete the simile: Arguing with him was as futile as ___',a:'shouting at a stone wall — it hears you and does not change',ch:['shouting at a stone wall — it hears you and does not change','knocking on a door that someone answers immediately','planting a seed in soil that yields a harvest','sending a letter that arrives and gets a reply'],hint:'Think: futile argument = no response, no change — like shouting at a wall'},
+{type:'simile',word:'futile',q:'Complete the simile: His search for the missing key was as futile as ___',a:'hunting for a single snowflake in a blizzard',ch:['hunting for a single snowflake in a blizzard','finding your keys right where you left them','following a trail of breadcrumbs directly to the answer','reading the last page of a book to solve the mystery'],hint:'Think: futile search = looking for something essentially impossible to find in that environment'},
+{type:'simile',word:'grudge',q:'Complete the simile: She carried that grudge like ___',a:'a stone in her shoe — small enough to ignore at first, too painful to walk on for long',ch:['a stone in her shoe — small enough to ignore at first, too painful to walk on for long','a feather she could set down and forget at any moment','a bright torch that lit her path forward','a map that guided her toward forgiveness'],hint:'Think: a grudge causes continuous low-level pain — like a stone in your shoe with every step'},
+{type:'simile',word:'grudge',q:'Complete the simile: His grudge against the school clung to him like ___',a:'a burr on a wool sweater — invisible to everyone else, but he felt every sharp point',ch:['a burr on a wool sweater — invisible to everyone else, but he felt every sharp point','morning dew that evaporates as soon as the sun rises','a loose button that falls off and is quickly forgotten','a light jacket easy to shrug off on a warm day'],hint:'Think: a grudge sticks and irritates — like a burr, you can\'t easily shake it loose'},
+{type:'simile',word:'inspire',q:'Complete the simile: Her courage inspired the crowd like ___',a:'a spark dropped into dry kindling — one small act and then everything alight',ch:['a spark dropped into dry kindling — one small act and then everything alight','a bucket of water poured on a smoldering fire','a heavy stone dropped into a still pond with no ripple','a cloud passing over the sun, casting everything into shadow'],hint:'Think: to inspire is to ignite others — one spark, then everything catches fire'},
+{type:'simile',word:'inspire',q:'Complete the simile: Blackwell\'s story inspires women today like ___',a:'a lighthouse inspires sailors lost in the fog — visible from a distance, guiding them safely home',ch:['a lighthouse inspires sailors lost in the fog — visible from a distance, guiding them safely home','a storm that disorients every ship in its path','a fog that hides the shore from view','a current that pulls ships away from their destination'],hint:'Think: to inspire is to show the way — like a lighthouse cutting through fog'},
+{type:'simile',word:'inspire',q:'Complete the simile: He was inspired by her perseverance like ___',a:'a wilting plant given water after a long drought — suddenly upright, suddenly alive',ch:['a wilting plant given water after a long drought — suddenly upright, suddenly alive','a plant left in full sun without water for another week','a seed that never receives rain and fails to germinate','a garden abandoned and left to dry out completely'],hint:'Think: inspiration revives you — like water reviving a wilting plant'},
+{type:'simile',word:'majority',q:'Complete the simile: The majority of the students agreed like ___',a:'a river flowing steadily in one direction — individual drops, one current',ch:['a river flowing steadily in one direction — individual drops, one current','water spilled in every direction with no clear flow','a crossroads where every traveler takes a different road','a wind that shifts with every passing minute'],hint:'Think: majority = many moving the same way — like a river with one unified current'},
+{type:'simile',word:'majority',q:'Complete the simile: Winning the majority vote felt like ___',a:'the tide finally turning after a long upstream battle',ch:['the tide finally turning after a long upstream battle','swimming against a current that only gets stronger','watching the tide pull everything farther from shore','rowing in circles with no wind to fill the sails'],hint:'Think: a majority win = the force of numbers finally on your side — like a turning tide'},
+{type:'simile',word:'persevere',q:'Complete the simile: Blackwell persevered through rejections like ___',a:'a river carving its path through rock — not by force alone, but by never stopping',ch:['a river carving its path through rock — not by force alone, but by never stopping','a stream that dries up at the first sign of summer heat','a flood that sweeps everything away in a single rush','a river that turns back whenever it hits a large stone'],hint:'Think: perseverance is like water on rock — patient, persistent, unstoppable over time'},
+{type:'simile',word:'persevere',q:'Complete the simile: He persevered through every obstacle as stubbornly as ___',a:'a seed pushing through frozen ground toward the light',ch:['a seed pushing through frozen ground toward the light','a seed that waits for the soil to be perfectly warm before germinating','a plant that wilts at the first cold night of autumn','a flower that blooms only when conditions are ideal'],hint:'Think: perseverance = life force pushing upward no matter the conditions'},
+{type:'simile',word:'persevere',q:'Complete the simile: She persevered through the program like ___',a:'a ship pushing through pack ice — slowly, steadily, and without turning back',ch:['a ship pushing through pack ice — slowly, steadily, and without turning back','a ship that drops anchor at the first sign of rough weather','a boat that turns back when it sees ice on the horizon','a sailor who waits in port until conditions are perfect'],hint:'Think: perseverance requires steady forward motion against resistance — like a ship in pack ice'},
+{type:'simile',word:'possess',q:'Complete the simile: She possessed a determination as solid as ___',a:'granite — nothing could chip it away or change its shape',ch:['granite — nothing could chip it away or change its shape','wet sand — firm enough to stand on but shifting with the tide','thin ice — beautiful until it cracks under pressure','dry leaves — light and scattered by the first strong wind'],hint:'Think: to possess real determination is to have something solid and permanent — like granite'},
+{type:'simile',word:'possess',q:'Complete the simile: The fear that possessed him spread like ___',a:'cold fog creeping into every corner of the room until there was no warm place left',ch:['cold fog creeping into every corner of the room until there was no warm place left','sunlight streaming through a window, warming everything it touched','a fire that burned bright and then quickly consumed itself','morning dew that evaporates the moment the sun arrives'],hint:'Think: to be possessed by fear is total — it fills every space, like fog in every corner'},
+{type:'simile',word:'prejudice',q:'Complete the simile: His prejudice blinded him like ___',a:'cataracts on an eye — he thought he was seeing clearly, but everything was distorted',ch:['cataracts on an eye — he thought he was seeing clearly, but everything was distorted','a perfectly polished lens that brings every detail into focus','glasses that sharpen the edges of every object','eyes wide open in bright morning light'],hint:'Think: prejudice distorts your vision — like cataracts, you don\'t realize how much you\'re missing'},
+{type:'simile',word:'prejudice',q:'Complete the simile: Her prejudice against women in medicine was as stubborn as ___',a:'a rust stain that scrubbing only seems to spread',ch:['a rust stain that scrubbing only seems to spread','morning frost that melts completely the moment the sun appears','a shadow that shrinks the moment you turn on a light','a cloud that blows away the first time the wind picks up'],hint:'Think: deep-seated prejudice resists removal — like rust, it spreads instead of dissolving'},
+{type:'simile',word:'prejudice',q:'Complete the simile: The professors\' prejudice hung over the medical school like ___',a:'a wall of fog — you couldn\'t see through it, but it blocked everything just the same',ch:['a wall of fog — you couldn\'t see through it, but it blocked everything just the same','a clear window that let every applicant be seen on their merits','a bright lamp that illuminated the facts fairly','an open door that welcomed everyone equally'],hint:'Think: prejudice obscures judgment — like fog, it prevents you from seeing what\'s actually there'},
+{type:'simile',word:'resolute',q:'Complete the simile: Blackwell stood as resolute as ___',a:'a mountain — storms broke against her, seasons changed, but she did not move',ch:['a mountain — storms broke against her, seasons changed, but she did not move','a sand dune that reshapes with every wind','a candle flame in an open window — flickering, easily extinguished','a leaf caught in a current, carried wherever the water leads'],hint:'Think: resolute = unmoved by pressure — like a mountain that endures without shifting'},
+{type:'simile',word:'resolute',q:'Complete the simile: Her resolve held like ___',a:'a compass needle — no matter how you turned the situation, it pointed in one direction',ch:['a compass needle — no matter how you turned the situation, it pointed in one direction','a spinning top slowing to a stop the moment you stop pushing','a weather vane that spins with every change in the wind','a boat at anchor drifting sideways on the current'],hint:'Think: resolute people never lose their direction — like a compass, always pointing the same way'},
+{type:'simile',word:'sneer',q:'Complete the simile: His sneer curled across his face like ___',a:'smoke from a fire set to destroy rather than to warm',ch:['smoke from a fire set to destroy rather than to warm','sunlight spreading across a clearing in the morning','warm light glowing in a window on a cold night','a gentle breeze that arrives just in time to cool the room'],hint:'Think: a sneer is dark, curling scorn — like smoke from a destructive fire, not a warming hearth'},
+{type:'simile',word:'sneer',q:'Complete the simile: She delivered the sneer as coolly as ___',a:'someone dropping a single cold stone into perfectly still water — precise, deliberate, devastating',ch:['someone dropping a single cold stone into perfectly still water — precise, deliberate, devastating','a friend handing you exactly what you needed without being asked','a host offering a warm welcome at the door','a teacher patiently explaining a difficult concept'],hint:'Think: a well-aimed sneer is cold and precise — like a cold stone dropped with calculation'},
+{type:'simile',word:'sneer',q:'Complete the simile: Their sneers bounced off Blackwell like ___',a:'paper darts off a stone wall — a great deal of effort, not a single mark',ch:['paper darts off a stone wall — a great deal of effort, not a single mark','arrows finding their mark on a target with no armor','rain soaking through a coat that offers no protection','a storm breaking through a window left open'],hint:'Think: Blackwell\'s dignity made her immune — their sneers, like paper darts, couldn\'t penetrate her composure'},
+{type:'simile',word:'unanimous',q:'Complete the simile: The unanimous vote rang through the room like ___',a:'a bell struck once — clear, undeniable, and impossible to argue with',ch:['a bell struck once — clear, undeniable, and impossible to argue with','a dozen people all speaking at once in different languages','a vote with half the room raising hands and half refusing','a murmur that no one could quite make out'],hint:'Think: unanimous = one clear sound — like a single bell, not a chaotic chorus'},
+{type:'simile',word:'unanimous',q:'Complete the simile: Their unanimous support lifted Blackwell like ___',a:'a current of warm air beneath a hawk\'s wings — unexpected, strong, carrying her higher than she\'d planned',ch:['a current of warm air beneath a hawk\'s wings — unexpected, strong, carrying her higher than she\'d planned','a current pulling her back toward the shore she\'d already left','a headwind that made every forward step cost twice the effort','a fog that closed in and hid the path ahead'],hint:'Think: unanimous support = a force that lifts — like a thermal current lifting a hawk without effort'},
+{type:'simile',word:'unruly',q:'Complete the simile: The students behaved like ___',a:'a disturbed beehive — unruly, buzzing, and impossible to calm until they\'d worn themselves out',ch:['a disturbed beehive — unruly, buzzing, and impossible to calm until they\'d worn themselves out','a library on a quiet afternoon — each student absorbed in their own silent work','a well-rehearsed orchestra — each player precisely in time with the others','a garden in careful order — nothing out of place, everything tended'],hint:'Think: unruly = chaotic and impossible to direct — like a disturbed beehive'},
+// ── METAPHORS (35) ─────────────────────────────────────────────────────────
+{type:'metaphor',word:'abbreviate',q:'Which sentence is a metaphor using ABBREVIATE?',a:'Life is the universe\'s abbreviation — all of eternity compressed into the few decades we\'re given to understand it.',ch:['Life is the universe\'s abbreviation — all of eternity compressed into the few decades we\'re given to understand it.','Life feels like an abbreviation compared to how long eternity must be.','Like an abbreviation, life feels far too short compared to everything we need to do.','Our lives are abbreviated in comparison to the vast sweep of time that surrounds them.'],hint:'Think: calling life directly an abbreviation — it IS the compressed form of something infinite'},
+{type:'metaphor',word:'abbreviate',q:'Which sentence is a metaphor using ABBREVIATE?',a:'Her argument was an abbreviation of justice — it had the shape of fairness but left out everything that mattered.',ch:['Her argument was an abbreviation of justice — it had the shape of fairness but left out everything that mattered.','Her argument felt as abbreviated as a legal summary without the key facts.','Like an abbreviation, her version of the story left out the most important details.','Her abbreviated argument felt as incomplete as a summary that missed the main point.'],hint:'Think: calling the argument directly an abbreviation — it IS a shorthand version missing the substance'},
+{type:'metaphor',word:'appropriate',q:'Which sentence is a metaphor using APPROPRIATE?',a:'Courage is the most appropriate garment — it fits every occasion and never goes out of style.',ch:['Courage is the most appropriate garment — it fits every occasion and never goes out of style.','Courage feels as appropriate as wearing the right outfit to any occasion.','Like the most appropriate garment, courage suits every situation.','Courage seems appropriate no matter what challenge you face.'],hint:'Think: calling courage directly a garment — it IS clothing you wear, always the right fit'},
+{type:'metaphor',word:'appropriate',q:'Which sentence is a metaphor using APPROPRIATE?',a:'Her silence was the most appropriate response — a clean white wall that let their ugly words speak for themselves.',ch:['Her silence was the most appropriate response — a clean white wall that let their ugly words speak for themselves.','Her silence felt as appropriate as the right response to an impossible situation.','Like an appropriate response, her silence let their words echo back uncomfortably.','Her silence seemed appropriate — it reflected their cruelty back at them.'],hint:'Think: calling her silence a clean white wall — it IS a surface that reflects rather than absorbs'},
+{type:'metaphor',word:'exclude',q:'Which sentence is a metaphor using EXCLUDE?',a:'History was a door that excluded women — and Blackwell was the woman who finally kicked it open.',ch:['History was a door that excluded women — and Blackwell was the woman who finally kicked it open.','History excluded women the way a closed door excludes those who don\'t have a key.','Like a door that only certain people could open, history excluded women for centuries.','Women were excluded from history the way someone is excluded when a door is shut in their face.'],hint:'Think: calling history directly a door — it IS the barrier, and Blackwell IS the one who opened it'},
+{type:'metaphor',word:'exclude',q:'Which sentence is a metaphor using EXCLUDE?',a:'Every rejection was a door slamming in her face — but Blackwell excluded failure from her vocabulary.',ch:['Every rejection was a door slamming in her face — but Blackwell excluded failure from her vocabulary.','Every rejection felt like a door being slammed, excluding her from the path she wanted.','Like a door slamming, each rejection seemed to exclude her more firmly.','She was excluded by each rejection the way someone is excluded by a locked door.'],hint:'Think: calling rejection directly a door slamming — it IS the physical barrier, exclusion in action'},
+{type:'metaphor',word:'fanciful',q:'Which sentence is a metaphor using FANCIFUL?',a:'Her mind was a fanciful garden — every idea a flower that grew in no climate anyone else recognized.',ch:['Her mind was a fanciful garden — every idea a flower that grew in no climate anyone else recognized.','Her mind felt like a fanciful garden filled with ideas that seemed imaginary to everyone else.','Like a fanciful garden, her mind was full of ideas that bloomed beyond ordinary reality.','Her ideas were as fanciful as flowers in a garden that existed only in imagination.'],hint:'Think: calling her mind directly a garden — it IS the place where fanciful ideas grow like strange flowers'},
+{type:'metaphor',word:'fanciful',q:'Which sentence is a metaphor using FANCIFUL?',a:'The inventor\'s plan was pure fanciful architecture — a palace in the sky with no ground beneath it.',ch:['The inventor\'s plan was pure fanciful architecture — a palace in the sky with no ground beneath it.','The inventor\'s plan was as fanciful as a palace built with no foundation.','Like fanciful architecture, the inventor\'s scheme had no practical foundation.','The inventor\'s fanciful plan felt like building a palace where no ground exists.'],hint:'Think: calling the plan directly fanciful architecture — it IS a building constructed in unreality'},
+{type:'metaphor',word:'futile',q:'Which sentence is a metaphor using FUTILE?',a:'Their resistance was a futile net — they cast it wide, but she swam through every gap.',ch:['Their resistance was a futile net — they cast it wide, but she swam through every gap.','Their resistance was as futile as a net full of holes trying to catch a small, quick fish.','Like a futile net, their resistance had too many gaps for her to slip through.','She found their resistance as futile as a fisherman\'s net that can\'t hold what it catches.'],hint:'Think: calling their resistance directly a net — it IS the trap, and futile because she passes through it anyway'},
+{type:'metaphor',word:'futile',q:'Which sentence is a metaphor using FUTILE?',a:'His pride was a futile fortress — it kept nothing out and only locked him inside.',ch:['His pride was a futile fortress — it kept nothing out and only locked him inside.','His pride was as futile as a fortress that protects nothing and only traps its owner.','Like a futile fortress, his pride seemed to keep out the world but only imprisoned him.','His pride felt futile — a fortress with no walls that only kept him from what he wanted.'],hint:'Think: calling his pride directly a fortress — it IS the structure, and futile because it imprisons rather than protects'},
+{type:'metaphor',word:'futile',q:'Which sentence is a metaphor using FUTILE?',a:'A closed mind is a futile door — you knock and knock, but the person inside has bolted it from within.',ch:['A closed mind is a futile door — you knock and knock, but the person inside has bolted it from within.','A closed mind is as futile as a door that no one can open from the outside.','Like a futile door, a closed mind resists every knock and never opens.','A closed mind feels as futile as knocking on a door whose owner refuses to answer.'],hint:'Think: calling a closed mind directly a door — it IS the barrier, and futile because it never opens'},
+{type:'metaphor',word:'grudge',q:'Which sentence is a metaphor using GRUDGE?',a:'Her grudge was a shadow she carried — it fell over every bright thing she might have enjoyed.',ch:['Her grudge was a shadow she carried — it fell over every bright thing she might have enjoyed.','Her grudge felt like a shadow that fell over every happy moment she tried to enjoy.','Like a shadow, her grudge dimmed every bright thing she might have experienced.','She carried her grudge the way a shadow follows you — darkening everything it touches.'],hint:'Think: calling the grudge directly a shadow — it IS the darkness, and she carries it everywhere'},
+{type:'metaphor',word:'grudge',q:'Which sentence is a metaphor using GRUDGE?',a:'A grudge is a slow fire — it burns the one holding it long before it ever reaches its target.',ch:['A grudge is a slow fire — it burns the one holding it long before it ever reaches its target.','A grudge burns like a slow fire in the hands of the person holding it.','Like a slow fire, a grudge burns through the resentment of the one who carries it.','Holding a grudge is as dangerous as holding a slow fire — it burns you first.'],hint:'Think: calling the grudge directly a fire — it IS the burning thing, and it consumes the one who holds it'},
+{type:'metaphor',word:'inspire',q:'Which sentence is a metaphor using INSPIRE?',a:'Blackwell was a door — by pushing it open, she inspired every woman who came after her to walk through.',ch:['Blackwell was a door — by pushing it open, she inspired every woman who came after her to walk through.','Blackwell inspired women like a door that has been pushed open for everyone to use.','Like a door swung wide open, Blackwell\'s courage inspired every woman who followed.','Blackwell\'s achievements were as inspiring as an open door that invites everyone to enter.'],hint:'Think: calling Blackwell directly a door — she IS the opening, the passage through which others follow'},
+{type:'metaphor',word:'inspire',q:'Which sentence is a metaphor using INSPIRE?',a:'Her story is a torch — once lit, it inspired others to carry the flame forward through every generation.',ch:['Her story is a torch — once lit, it inspired others to carry the flame forward through every generation.','Her story inspired others the way a torch lights the way forward.','Like a torch, her story inspired others to carry her flame into the future.','Her inspiring story passed from person to person like a torch lighting the way.'],hint:'Think: calling her story directly a torch — it IS the light, and inspiration IS the flame passed forward'},
+{type:'metaphor',word:'inspire',q:'Which sentence is a metaphor using INSPIRE?',a:'Every act of perseverance is a seed of inspiration — planted in one mind, it blooms in a thousand.',ch:['Every act of perseverance is a seed of inspiration — planted in one mind, it blooms in a thousand.','Every act of perseverance inspires others the way a seed planted in good soil blooms.','Like a seed that becomes a flower, every act of perseverance can inspire many others.','An act of perseverance is as inspiring as a seed — once planted, it grows in unexpected places.'],hint:'Think: calling perseverance directly a seed — it IS what\'s planted, and inspiration IS the bloom'},
+{type:'metaphor',word:'majority',q:'Which sentence is a metaphor using MAJORITY?',a:'The majority was a wave — it lifted the motion and carried it to shore before anyone could object.',ch:['The majority was a wave — it lifted the motion and carried it to shore before anyone could object.','The majority voted as powerfully as a wave carrying the motion to shore.','Like a wave, the majority lifted the vote and carried it to an inevitable conclusion.','The majority\'s power felt like a wave — overwhelming, unstoppable, carrying everything with it.'],hint:'Think: calling the majority directly a wave — it IS the force, and the motion IS what it carries'},
+{type:'metaphor',word:'majority',q:'Which sentence is a metaphor using MAJORITY?',a:'The students\' majority was a single current — their yes vote a river that swept every obstacle aside.',ch:['The students\' majority was a single current — their yes vote a river that swept every obstacle aside.','The majority of students voted like a current sweeping every objection aside.','Like a river\'s current, the majority carried the vote over every obstacle.','The majority felt like a current — strong, unified, sweeping everything before it.'],hint:'Think: calling the majority directly a current — it IS the unified force of water moving one way'},
+{type:'metaphor',word:'persevere',q:'Which sentence is a metaphor using PERSEVERE?',a:'Blackwell\'s entire life was perseverance made flesh — each year of her career a new chapter in the same stubborn story.',ch:['Blackwell\'s entire life was perseverance made flesh — each year of her career a new chapter in the same stubborn story.','Blackwell\'s life was as much an act of perseverance as anything ever recorded.','Like perseverance itself walking the earth, Blackwell refused to give up at every turn.','Blackwell persevered so consistently that her life felt like the embodiment of the word.'],hint:'Think: calling her life directly perseverance made flesh — she IS the concept embodied'},
+{type:'metaphor',word:'persevere',q:'Which sentence is a metaphor using PERSEVERE?',a:'Her willingness to persevere was a compass — no matter how the weather changed, it pointed always toward the goal.',ch:['Her willingness to persevere was a compass — no matter how the weather changed, it pointed always toward the goal.','Her willingness to persevere was as reliable as a compass pointing toward the goal.','Like a compass pointing toward its mark, her perseverance never wavered.','She persevered as reliably as a compass — always oriented toward what she wanted to achieve.'],hint:'Think: calling her perseverance directly a compass — it IS the navigational tool, always pointing the same way'},
+{type:'metaphor',word:'persevere',q:'Which sentence is a metaphor using PERSEVERE?',a:'To persevere is to be a river — the rock does not move, but the water never stops carving its path.',ch:['To persevere is to be a river — the rock does not move, but the water never stops carving its path.','To persevere is to flow like a river — always finding a way past the obstacles in the path.','Like a river that carves through rock, those who persevere eventually get past every obstacle.','Perseverance works the way a river does — patient, steady, wearing down every obstacle.'],hint:'Think: calling the act of perseverance directly being a river — you ARE the water, carving relentlessly'},
+{type:'metaphor',word:'possess',q:'Which sentence is a metaphor using POSSESS?',a:'Her courage was a fire she possessed — and it lit every cold room she entered.',ch:['Her courage was a fire she possessed — and it lit every cold room she entered.','Her courage, which she seemed to possess naturally, warmed every cold situation.','Like fire, the courage she possessed burned bright in cold or difficult situations.','She possessed her courage like a fire — bright, warming, and visible to everyone.'],hint:'Think: calling her courage directly a fire she possessed — it IS the flame, carried as a possession'},
+{type:'metaphor',word:'possess',q:'Which sentence is a metaphor using POSSESS?',a:'The fear that possessed them was a fog — it rolled in silently and swallowed everything they could see clearly.',ch:['The fear that possessed them was a fog — it rolled in silently and swallowed everything they could see clearly.','The fear that possessed them was as disorienting as a fog that hides familiar landmarks.','Like a fog, the fear that possessed them blurred everything and made clarity impossible.','Being possessed by fear felt like being surrounded by fog — they couldn\'t see the way forward.'],hint:'Think: calling the fear directly a fog — it IS the obscuring force, and to be possessed IS to be surrounded by it'},
+{type:'metaphor',word:'prejudice',q:'Which sentence is a metaphor using PREJUDICE?',a:'Prejudice is a pair of painted glasses — you see only the world you\'ve decided is there, not the one that is.',ch:['Prejudice is a pair of painted glasses — you see only the world you\'ve decided is there, not the one that is.','Prejudice works like painted glasses — it colors everything you see with what you already believe.','Like painted glasses, prejudice distorts your vision so you see what you expect rather than what\'s there.','Prejudice felt like wearing painted glasses — the world looked exactly as she\'d expected it to.'],hint:'Think: calling prejudice directly painted glasses — it IS the lens distorting reality'},
+{type:'metaphor',word:'prejudice',q:'Which sentence is a metaphor using PREJUDICE?',a:'The professors\' prejudice was a wall — built before Blackwell arrived, designed to keep her from what she\'d earned.',ch:['The professors\' prejudice was a wall — built before Blackwell arrived, designed to keep her from what she\'d earned.','The professors\' prejudice worked like a wall — blocking Blackwell from what she deserved.','Like a wall of prejudice, the professors\' bias kept Blackwell from entering the profession.','Their prejudice blocked Blackwell as effectively as a wall built specifically to stop her.'],hint:'Think: calling the prejudice directly a wall — it IS the barrier, constructed before she could even apply'},
+{type:'metaphor',word:'prejudice',q:'Which sentence is a metaphor using PREJUDICE?',a:'Prejudice is a locked door that mistakes itself for a window — you think you\'re seeing clearly, but you\'re only seeing your own reflection.',ch:['Prejudice is a locked door that mistakes itself for a window — you think you\'re seeing clearly, but you\'re only seeing your own reflection.','Prejudice works like a locked door disguised as a window — it shows you only what you already believe.','Like a door that looks like a window, prejudice makes you think you\'re seeing clearly when you\'re actually blocked.','Prejudice felt like a locked door pretending to be a window — false clarity, real obstruction.'],hint:'Think: calling prejudice directly a locked door mistaken for a window — the obstruction masquerades as clarity'},
+{type:'metaphor',word:'resolute',q:'Which sentence is a metaphor using RESOLUTE?',a:'Blackwell was a rock in the current — the stream of rejection bent around her, but she did not move.',ch:['Blackwell was a rock in the current — the stream of rejection bent around her, but she did not move.','Blackwell remained resolute like a rock in a stream — unmoved despite the current of rejection.','Like a rock in a river, Blackwell\'s resolute character let the current of rejection flow around her.','She was as resolute as a rock in a current — steady, immovable, letting rejection flow past.'],hint:'Think: calling Blackwell directly a rock — she IS the unmovable object, rejection IS the stream bending around her'},
+{type:'metaphor',word:'resolute',q:'Which sentence is a metaphor using RESOLUTE?',a:'Her resolve was iron — heated by every rejection, it only came out stronger and harder.',ch:['Her resolve was iron — heated by every rejection, it only came out stronger and harder.','Her resolve was as strong as iron — heated by rejection, it became even harder.','Like iron heated in a forge, her resolute determination only strengthened with each challenge.','Her resolute will felt like iron under heat — every rejection making it harder, not weaker.'],hint:'Think: calling her resolve directly iron — it IS the metal, and rejection IS the heat that tempers it'},
+{type:'metaphor',word:'sneer',q:'Which sentence is a metaphor using SNEER?',a:'Their sneers were paper darts — thrown to wound, they only skimmed the surface of someone truly armored.',ch:['Their sneers were paper darts — thrown to wound, they only skimmed the surface of someone truly armored.','Their sneers felt like paper darts — aimed to hurt but harmless against someone with real dignity.','Like paper darts, their sneers were thrown to wound but couldn\'t penetrate Blackwell\'s composure.','Their sneers were as harmless as paper darts against someone as resolute as Blackwell.'],hint:'Think: calling the sneers directly paper darts — they ARE the projectiles, lightweight and harmless against real armor'},
+{type:'metaphor',word:'sneer',q:'Which sentence is a metaphor using SNEER?',a:'A sneer is a door slamming in someone\'s face — loud, decisive, and it tells you exactly where you stand.',ch:['A sneer is a door slamming in someone\'s face — loud, decisive, and it tells you exactly where you stand.','A sneer works like a slamming door — it shuts you out and lets you know it.','Like a door slammed in your face, a sneer communicates rejection clearly and forcefully.','A sneer felt like having a door slammed — sudden, loud, and unmistakably dismissive.'],hint:'Think: calling the sneer directly a door slamming — it IS the physical act, the barrier raised in contempt'},
+{type:'metaphor',word:'sneer',q:'Which sentence is a metaphor using SNEER?',a:'His sneer was a weapon — not the sharp kind that draws blood, but the cold kind that leaves no mark and all the damage.',ch:['His sneer was a weapon — not the sharp kind that draws blood, but the cold kind that leaves no mark and all the damage.','His sneer worked like a weapon — cold, precise, designed to wound without leaving visible marks.','Like a weapon that leaves no mark, his sneer inflicted invisible damage with cold precision.','His sneer felt like a weapon — cold, deliberate, and aimed to hurt in ways that wouldn\'t show.'],hint:'Think: calling the sneer directly a weapon — it IS the instrument of harm, cold and precise'},
+{type:'metaphor',word:'unanimous',q:'Which sentence is a metaphor using UNANIMOUS?',a:'The unanimous vote was a sunrise — sudden, undeniable, and impossible to argue with.',ch:['The unanimous vote was a sunrise — sudden, undeniable, and impossible to argue with.','The unanimous vote was as undeniable as a sunrise — impossible to argue against.','Like a sunrise, the unanimous vote was sudden and impossible to deny or dispute.','The unanimous vote felt like a sunrise — clear, complete, leaving no room for objection.'],hint:'Think: calling the vote directly a sunrise — it IS the undeniable event, impossible to stop or dispute'},
+{type:'metaphor',word:'unanimous',q:'Which sentence is a metaphor using UNANIMOUS?',a:'Their unanimous agreement was a foundation — poured all at once, solid, and bearing the weight of everything built on it.',ch:['Their unanimous agreement was a foundation — poured all at once, solid, and bearing the weight of everything built on it.','Their unanimous agreement acted like a foundation — solid, poured at once, supporting what came next.','Like a foundation poured in one pour, their unanimous agreement held everything together solidly.','Their unanimous agreement felt like a foundation — strong, solid, and supporting the structure above it.'],hint:'Think: calling the agreement directly a foundation — it IS the base, poured all at once (unanimous) and load-bearing'},
+{type:'metaphor',word:'unruly',q:'Which sentence is a metaphor using UNRULY?',a:'The classroom was an unruly hurricane when the substitute arrived — desks as debris, voices as wind.',ch:['The classroom was an unruly hurricane when the substitute arrived — desks as debris, voices as wind.','The classroom was as unruly as a hurricane — desks out of place, voices rising like wind.','Like a hurricane, the unruly classroom scattered desks and filled the air with noise.','The unruly students turned the classroom into something as chaotic as a hurricane.'],hint:'Think: calling the classroom directly a hurricane — it IS the storm, with desks as debris and voices as wind'},
+{type:'metaphor',word:'unruly',q:'Which sentence is a metaphor using UNRULY?',a:'His unruly spirit was a wild river — everyone tried to dam it, but it always found a new way around.',ch:['His unruly spirit was a wild river — everyone tried to dam it, but it always found a new way around.','His unruly spirit flowed like a wild river — impossible to contain no matter what barriers you built.','Like a wild river, his unruly spirit defied every dam or channel built to contain it.','His spirit was as unruly as a wild river — rushing past every barrier placed in its way.'],hint:'Think: calling his spirit directly a wild river — it IS the unstoppable force, and every attempt to contain him IS the dam'}
+];
+
+// ── State ──────────────────────────────────────────────────────────────────
+var queue=[],qIdx=0,score=0,streak=0,typeTally={},answered=false;
+var fcIdx=0,fcOrder=[],fcFlipped=false;
+
+// ── Flashcard ──────────────────────────────────────────────────────────────
+function renderCard(){
+  fcFlipped=false;
+  var ci=document.getElementById('card-inner');
+  ci.classList.remove('flipped');
+  var w=WORDS[fcOrder[fcIdx]];
+  var fp=document.getElementById('fc-progress');
+  fp.textContent=(fcIdx+1)+' / '+WORDS.length;
+  var front=document.getElementById('card-front');
+  clearEl(front);
+  var wEl=mk('div','card-word',w.word);
+  var pEl=mk('div','card-pos',w.pos);
+  var tap=mk('div','card-tap','Tap to reveal');
+  front.appendChild(wEl);front.appendChild(pEl);front.appendChild(tap);
+  var back=document.getElementById('card-back');
+  clearEl(back);
+  var dEl=mk('div','card-def',w.def);
+  var eEl=mk('div','card-ex',w.ex);
+  back.appendChild(dEl);back.appendChild(eEl);
+}
+function initFlashcards(){
+  fcOrder=[];for(var i=0;i<WORDS.length;i++)fcOrder.push(i);
+  fcIdx=0;renderCard();
+}
+document.getElementById('card-inner').addEventListener('click',function(){
+  fcFlipped=!fcFlipped;
+  this.classList.toggle('flipped',fcFlipped);
+});
+document.getElementById('fc-flip').addEventListener('click',function(){
+  fcFlipped=!fcFlipped;
+  document.getElementById('card-inner').classList.toggle('flipped',fcFlipped);
+});
+document.getElementById('fc-prev').addEventListener('click',function(){
+  fcIdx=(fcIdx-1+WORDS.length)%WORDS.length;renderCard();
+});
+document.getElementById('fc-next').addEventListener('click',function(){
+  fcIdx=(fcIdx+1)%WORDS.length;renderCard();
+});
+document.getElementById('fc-shuffle').addEventListener('click',function(){
+  fcOrder=shuffle(fcOrder);fcIdx=0;renderCard();
+});
+
+// ── Quiz ───────────────────────────────────────────────────────────────────
+function startQuiz(){
+  queue=shuffle(QUESTIONS).slice(0,20);
+  qIdx=0;score=0;streak=0;typeTally={};answered=false;
+  document.getElementById('result-section').style.display='none';
+  document.getElementById('quiz-section').style.display='';
+  showQuestion();
+}
+function showQuestion(){
+  answered=false;
+  var q=queue[qIdx];
+  var ts=TYPE_STYLES[q.type]||{label:q.type.toUpperCase(),color:'#94a3b8',bg:'rgba(51,65,85,.4)'};
+  // counter
+  document.getElementById('q-counter').textContent='Question '+(qIdx+1)+' of '+queue.length;
+  document.getElementById('q-score').textContent='Score: '+score;
+  document.getElementById('streak-badge').textContent='🔥 '+streak+' streak';
+  // progress
+  document.getElementById('progress-fill').style.width=((qIdx/queue.length)*100)+'%';
+  // badge
+  var bw=document.getElementById('type-badge-wrap');
+  clearEl(bw);
+  var badge=mk('span','type-badge',ts.label);
+  badge.style.color=ts.color;badge.style.background=ts.bg;
+  bw.appendChild(badge);
+  // word
+  document.getElementById('q-word').textContent=q.word.toUpperCase();
+  // question text
+  document.getElementById('q-text').textContent=q.q;
+  // hint
+  var hb=document.getElementById('hint-box');
+  hb.style.display='none';
+  hb.textContent=q.hint;
+  // choices
+  var cc=document.getElementById('choices');
+  clearEl(cc);
+  var opts=shuffle(q.ch);
+  opts.forEach(function(opt){
+    var btn=mk('button','choice-btn',opt);
+    btn.addEventListener('click',function(){selectAnswer(this,opt,q);});
+    cc.appendChild(btn);
+  });
+  // feedback / next
+  document.getElementById('feedback').textContent='';
+  document.getElementById('feedback').className='feedback';
+  document.getElementById('next-btn').style.display='none';
+}
+document.getElementById('hint-btn').addEventListener('click',function(){
+  var hb=document.getElementById('hint-box');
+  hb.style.display=hb.style.display==='none'?'block':'none';
+});
+function selectAnswer(btn,opt,q){
+  if(answered)return;
+  answered=true;
+  var correct=opt===q.a;
+  var fb=document.getElementById('feedback');
+  var rect=btn.getBoundingClientRect();
+  var cx=rect.left+rect.width/2,cy=rect.top+rect.height/2;
+  if(correct){
+    btn.classList.add('correct');
+    score++;streak++;
+    fb.textContent='Correct! ✓';fb.className='feedback ok';
+    spawnBurst(cx,cy,'#4ade80',18);
+    if(streak>=3)spawnConfetti();
+  } else {
+    btn.classList.add('wrong');
+    streak=0;
+    fb.textContent='Incorrect. The answer is: '+q.a;fb.className='feedback no';
+    spawnBurst(cx,cy,'#f87171',12);
+    // highlight correct
+    var btns=document.getElementById('choices').querySelectorAll('.choice-btn');
+    btns.forEach(function(b){if(b.textContent===q.a)b.classList.add('correct');});
+  }
+  typeTally[q.type]=(typeTally[q.type]||{c:0,t:0});
+  typeTally[q.type].t++;
+  if(correct)typeTally[q.type].c++;
+  document.querySelectorAll('.choice-btn').forEach(function(b){b.disabled=true;});
+  document.getElementById('next-btn').style.display='block';
+}
+document.getElementById('next-btn').addEventListener('click',function(){
+  qIdx++;
+  if(qIdx>=queue.length){showResult();}else{showQuestion();}
+});
+function showResult(){
+  document.getElementById('quiz-section').style.display='none';
+  var rs=document.getElementById('result-section');
+  rs.style.display='block';
+  document.getElementById('result-score').textContent=score;
+  var pct=score/queue.length;
+  var msgs=[
+    'With perseverance, you can overcome any obstacle — and a perfect score proves it.',
+    'Like Blackwell, you refused to give up. Outstanding work.',
+    'Resolute and brilliant — that\'s the mark of a true scholar.',
+    'You persevered through every question. Blackwell would be proud.',
+    'Keep going — every attempt is one step closer to mastery.'
+  ];
+  var msg=pct===1?msgs[0]:pct>=.85?msgs[1]:pct>=.7?msgs[2]:pct>=.5?msgs[3]:msgs[4];
+  document.getElementById('result-msg').textContent=msg;
+  var bd=document.getElementById('result-breakdown');
+  clearEl(bd);
+  Object.keys(typeTally).forEach(function(k){
+    var d=typeTally[k];
+    var item=mk('div','rb-item');
+    var lbl=mk('span',null,(TYPE_STYLES[k]||{label:k}).label+': ');
+    var val=mk('span',null,d.c+'/'+d.t);
+    item.appendChild(lbl);item.appendChild(val);
+    bd.appendChild(item);
+  });
+  document.getElementById('progress-fill').style.width='100%';
+}
+document.getElementById('restart-btn').addEventListener('click',startQuiz);
+
+// ── Mode toggle ────────────────────────────────────────────────────────────
+document.getElementById('btn-quiz').addEventListener('click',function(){
+  this.classList.add('active');
+  document.getElementById('btn-flash').classList.remove('active');
+  document.getElementById('flashcard-section').style.display='none';
+  document.getElementById('quiz-section').style.display='';
+  document.getElementById('result-section').style.display='none';
+});
+document.getElementById('btn-flash').addEventListener('click',function(){
+  this.classList.add('active');
+  document.getElementById('btn-quiz').classList.remove('active');
+  document.getElementById('quiz-section').style.display='none';
+  document.getElementById('result-section').style.display='none';
+  document.getElementById('flashcard-section').style.display='';
+  initFlashcards();
+});
+
+// ── Init ───────────────────────────────────────────────────────────────────
+initFlashcards();
+startQuiz();
+</script>
+</body>
+</html>

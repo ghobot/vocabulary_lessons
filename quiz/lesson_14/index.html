@@ -2,524 +2,555 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Wordly Wise Lesson 14 — Vocabulary Quest</title>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.0/dist/confetti.browser.min.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wordly Wise – Lesson 14</title>
 <style>
-  *{margin:0;padding:0;box-sizing:border-box}
-  :root{
-    --gold:#f0c040;--gold2:#e8a820;--teal:#1fcfb0;--teal2:#0fa890;
-    --navy:#0d1b2a;--navy2:#152436;--navy3:#1e3450;
-    --correct:#22c97a;--wrong:#e84040;--white:#f0f4ff;--muted:#7a9ab8;
-  }
-  body{
-    font-family:'Nunito',sans-serif;background:var(--navy);
-    color:var(--white);min-height:100vh;overflow-x:hidden;
-    display:flex;flex-direction:column;align-items:center;
-  }
-  canvas#bg{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
-
-  #app{position:relative;z-index:1;width:100%;max-width:680px;padding:1.5rem 1rem 3rem;min-height:100vh;display:flex;flex-direction:column}
-
-  /* Header */
-  #header{text-align:center;margin-bottom:1.5rem}
-  #header h1{font-family:'Cinzel',serif;font-size:1.5rem;color:var(--gold);letter-spacing:.06em;text-shadow:0 0 20px rgba(240,192,64,.4)}
-  #header p{font-size:.8rem;color:var(--muted);margin-top:.25rem;letter-spacing:.08em;text-transform:uppercase}
-
-  /* Score bar */
-  #scorebar{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;padding:.6rem 1rem;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px}
-  .sb-item{text-align:center}
-  .sb-label{font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
-  .sb-val{font-size:1.1rem;font-weight:800;color:var(--white)}
-  .sb-val.gold{color:var(--gold)}
-  .sb-val.teal{color:var(--teal)}
-
-  /* Progress */
-  #progress-wrap{margin-bottom:1.25rem}
-  #progress-bar-bg{height:6px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden}
-  #progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--teal2),var(--teal));border-radius:4px;transition:width .5s cubic-bezier(.4,0,.2,1)}
-  #progress-label{font-size:.7rem;color:var(--muted);text-align:right;margin-top:.3rem}
-
-  /* Type badge */
-  #type-badge{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .8rem;border-radius:20px;font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:.9rem;border:1px solid currentColor;opacity:.9}
-
-  /* Question card */
-  #q-card{
-    background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
-    border-radius:18px;padding:1.5rem;margin-bottom:1rem;
-    backdrop-filter:blur(10px);
-    transition:transform .15s,box-shadow .15s;
-    position:relative;overflow:hidden;
-  }
-  #q-card::before{content:'';position:absolute;inset:0;border-radius:18px;background:linear-gradient(135deg,rgba(255,255,255,.04) 0%,transparent 60%);pointer-events:none}
-  #q-text{font-size:1.1rem;font-weight:700;line-height:1.55;white-space:pre-line;color:var(--white)}
-
-  /* Hint */
-  #hint-box{margin-top:.9rem;padding:.6rem .9rem;background:rgba(240,192,64,.08);border:1px solid rgba(240,192,64,.2);border-radius:10px;font-size:.8rem;color:var(--gold);line-height:1.5;display:none}
-  #hint-box.show{display:block;animation:fadeIn .2s ease}
-
-  /* Choices */
-  #choices{display:grid;gap:.6rem;margin-bottom:1rem}
-  .choice{
-    width:100%;padding:.85rem 1.1rem;background:rgba(255,255,255,.05);
-    border:1.5px solid rgba(255,255,255,.12);border-radius:12px;
-    font-family:'Nunito',sans-serif;font-size:.95rem;font-weight:600;
-    color:var(--white);cursor:pointer;text-align:left;
-    display:flex;justify-content:space-between;align-items:center;
-    transition:background .15s,border-color .15s,transform .1s;
-    position:relative;overflow:hidden;
-  }
-  .choice:hover:not(:disabled){background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.25);transform:translateX(3px)}
-  .choice:disabled{cursor:default}
-  .choice.correct{background:rgba(34,201,122,.15);border-color:var(--correct);color:var(--correct)}
-  .choice.wrong{background:rgba(232,64,64,.12);border-color:var(--wrong);color:var(--wrong)}
-  .choice.dim{opacity:.4}
-  .choice-icon{font-size:1.1rem;flex-shrink:0;margin-left:.5rem}
-
-  /* Bottom actions */
-  #actions{display:flex;justify-content:space-between;align-items:center;min-height:42px}
-  #hint-btn{background:transparent;border:1px solid rgba(240,192,64,.3);color:var(--gold);border-radius:20px;padding:.4rem .9rem;font-family:'Nunito',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;transition:background .15s,border-color .15s;letter-spacing:.04em}
-  #hint-btn:hover{background:rgba(240,192,64,.1);border-color:var(--gold)}
-  #feedback-text{font-size:.95rem;font-weight:800}
-  #next-btn{display:none;background:var(--teal2);border:none;color:#fff;border-radius:22px;padding:.55rem 1.4rem;font-family:'Nunito',sans-serif;font-size:.9rem;font-weight:800;cursor:pointer;transition:background .15s,transform .1s;letter-spacing:.03em}
-  #next-btn:hover{background:var(--teal);transform:translateX(2px)}
-
-  /* Results screen */
-  #results{display:none;flex-direction:column;align-items:center;text-align:center;animation:fadeIn .4s ease}
-  #results.show{display:flex}
-  #results-score{font-family:'Cinzel',serif;font-size:4rem;font-weight:900;line-height:1;margin:.5rem 0}
-  #results-grade{font-size:1.2rem;font-weight:800;margin-bottom:.3rem}
-  #results-sub{font-size:.8rem;color:var(--muted);margin-bottom:1.5rem}
-  #type-breakdown{display:grid;grid-template-columns:repeat(5,1fr);gap:.5rem;width:100%;margin-bottom:1.5rem}
-  .tb-cell{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:.6rem .3rem;text-align:center}
-  .tb-type{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.2rem}
-  .tb-score{font-size:1.1rem;font-weight:800}
-  #review-list{width:100%;text-align:left;margin-bottom:1.5rem}
-  .review-item{display:flex;gap:.7rem;padding:.6rem .8rem;border-bottom:1px solid rgba(255,255,255,.05);font-size:.8rem;align-items:flex-start}
-  .review-item:last-child{border-bottom:none}
-  .ri-icon{font-size:1rem;flex-shrink:0;margin-top:.05rem}
-  .ri-wrong-ans{color:var(--wrong);font-size:.75rem;margin-top:.2rem}
-  .ri-meta{color:var(--muted);font-size:.72rem}
-  #retry-btn{background:var(--gold2);border:none;color:var(--navy);border-radius:24px;padding:.7rem 2rem;font-family:'Cinzel',serif;font-size:.95rem;font-weight:700;cursor:pointer;letter-spacing:.05em;transition:background .15s,transform .1s}
-  #retry-btn:hover{background:var(--gold);transform:scale(1.03)}
-
-  /* Shake animation */
-  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
-  .shake{animation:shake .35s ease}
-  @keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.04)}100%{transform:scale(1)}}
-  .pop{animation:pop .25s ease}
-  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-
-  /* Start screen */
-  #start-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;text-align:center;animation:fadeIn .4s ease}
-  #start-screen h2{font-family:'Cinzel',serif;font-size:2rem;color:var(--gold);margin-bottom:.5rem;text-shadow:0 0 30px rgba(240,192,64,.3)}
-  #start-screen p{color:var(--muted);max-width:380px;line-height:1.6;margin-bottom:.4rem;font-size:.9rem}
-  .pill-grid{display:flex;flex-wrap:wrap;gap:.4rem;justify-content:center;margin:1rem 0 1.5rem}
-  .pill{padding:.3rem .8rem;border-radius:20px;font-size:.72rem;font-weight:700;letter-spacing:.05em;border:1px solid currentColor;text-transform:uppercase}
-  #start-btn{background:var(--gold2);border:none;color:var(--navy);border-radius:24px;padding:.8rem 2.4rem;font-family:'Cinzel',serif;font-size:1rem;font-weight:700;cursor:pointer;letter-spacing:.06em;transition:background .15s,transform .1s;box-shadow:0 0 30px rgba(240,192,64,.2)}
-  #start-btn:hover{background:var(--gold);transform:scale(1.04)}
-
-  /* Quiz container hidden initially */
-  #quiz{display:none;flex-direction:column;width:100%;animation:fadeIn .3s ease}
-  #quiz.show{display:flex}
-
-  /* Canvas particle overlay */
-  #particle-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:2;pointer-events:none}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#030a1c;color:#f1f5f9;font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;overflow-x:hidden}
+canvas#bg{position:fixed;inset:0;z-index:0;pointer-events:none}
+#app{position:relative;z-index:1;max-width:780px;margin:0 auto;padding:16px}
+a.home{display:inline-flex;align-items:center;gap:6px;color:#22d3ee;text-decoration:none;font-size:.85rem;margin-bottom:12px;opacity:.8}
+a.home:hover{opacity:1}
+h1{font-size:1.6rem;font-weight:700;color:#22d3ee;text-align:center;margin-bottom:4px}
+.subtitle{text-align:center;color:#a5f3fc;font-size:.85rem;margin-bottom:18px;opacity:.75}
+.mode-bar{display:flex;justify-content:center;gap:10px;margin-bottom:18px}
+.mode-btn{padding:7px 22px;border-radius:20px;border:2px solid #0891b2;background:transparent;color:#22d3ee;font-size:.88rem;cursor:pointer;transition:.2s}
+.mode-btn.active,.mode-btn:hover{background:#0891b2;color:#fff}
+#flashcard-section{display:none}
+.fc-controls{display:flex;justify-content:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.fc-btn{padding:7px 18px;border-radius:10px;border:none;background:#061428;color:#a5f3fc;font-size:.85rem;cursor:pointer;transition:.2s}
+.fc-btn:hover{background:#0c2a4a}
+.fc-progress{text-align:center;color:#a5f3fc;font-size:.82rem;margin-bottom:10px}
+.card-wrap{perspective:900px;width:100%;max-width:560px;height:240px;margin:0 auto 16px}
+.card-inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.4,0,.2,1);cursor:pointer}
+.card-inner.flipped{transform:rotateY(180deg)}
+.card-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px;text-align:center}
+.card-front{background:linear-gradient(135deg,#0c2a4a,#061428);border:1px solid #0891b2}
+.card-back{background:linear-gradient(135deg,#061428,#030a1c);border:1px solid #22d3ee;transform:rotateY(180deg)}
+.card-word{font-size:2rem;font-weight:700;color:#22d3ee}
+.card-pos{font-size:.8rem;color:#a5f3fc;margin-top:4px;font-style:italic}
+.card-tap{font-size:.75rem;color:#22d3ee55;margin-top:12px}
+.card-def{font-size:.95rem;color:#e0f2fe;line-height:1.5}
+.card-ex{font-size:.8rem;color:#a5f3fc;margin-top:10px;font-style:italic}
+.quiz-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px}
+.q-counter{font-size:.85rem;color:#a5f3fc}
+.q-score{font-size:.85rem;color:#86efac}
+.streak-badge{font-size:.8rem;padding:3px 10px;border-radius:12px;background:#061428;color:#a5f3fc}
+.progress-bar{width:100%;height:6px;background:#0a1a2e;border-radius:3px;margin-bottom:16px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,#0891b2,#22d3ee);border-radius:3px;transition:width .4s}
+.type-badge{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.06em;padding:3px 10px;border-radius:12px;margin-bottom:10px}
+.q-word{font-size:1.05rem;color:#e0f2fe;font-weight:600;margin-bottom:6px}
+.q-text{font-size:1rem;color:#f1f5f9;line-height:1.5;margin-bottom:16px}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+@media(max-width:500px){.choices{grid-template-columns:1fr}}
+.choice-btn{padding:11px 14px;border-radius:10px;border:1px solid #0c2a4a;background:#050f20;color:#e0f2fe;font-size:.9rem;cursor:pointer;text-align:left;transition:.2s;line-height:1.4}
+.choice-btn:hover:not(:disabled){background:#0c2a4a;border-color:#0891b2}
+.choice-btn.correct{background:#14532d;border-color:#4ade80;color:#bbf7d0}
+.choice-btn.wrong{background:#0c2a4a;border-color:#22d3ee;color:#a5f3fc}
+.choice-btn:disabled{cursor:default}
+.hint-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px}
+.hint-btn{font-size:.78rem;padding:4px 12px;border-radius:8px;border:1px solid #0891b2;background:transparent;color:#22d3ee;cursor:pointer}
+.hint-btn:hover{background:#0c2a4a}
+.hint-box{background:#020710;border:1px solid #0c2a4a;border-radius:10px;padding:10px 14px;font-size:.83rem;color:#a5f3fc;margin-bottom:12px;display:none}
+.feedback{text-align:center;font-size:.95rem;font-weight:600;min-height:24px;margin-bottom:10px}
+.feedback.ok{color:#4ade80}
+.feedback.no{color:#22d3ee}
+.next-btn{display:block;width:100%;padding:12px;border-radius:12px;border:none;background:#0891b2;color:#fff;font-size:1rem;font-weight:600;cursor:pointer;display:none;transition:.2s}
+.next-btn:hover{background:#0284c7}
+#result-section{display:none;text-align:center;padding:20px 0}
+.result-title{font-size:1.8rem;font-weight:700;color:#22d3ee;margin-bottom:8px}
+.result-score{font-size:3rem;font-weight:800;color:#22d3ee;margin-bottom:4px}
+.result-label{font-size:.9rem;color:#a5f3fc;margin-bottom:16px}
+.result-msg{font-size:1rem;color:#e0f2fe;max-width:480px;margin:0 auto 20px;line-height:1.6;font-style:italic}
+.result-breakdown{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-bottom:20px}
+.rb-item{background:#061428;border:1px solid #0c2a4a;border-radius:10px;padding:8px 16px;font-size:.82rem;color:#a5f3fc}
+.rb-item span{font-weight:700;color:#22d3ee}
+.restart-btn{padding:12px 36px;border-radius:12px;border:none;background:#0891b2;color:#fff;font-size:1rem;font-weight:600;cursor:pointer}
+.restart-btn:hover{background:#0284c7}
+#pcanvas{position:fixed;inset:0;z-index:2;pointer-events:none}
 </style>
 </head>
 <body>
-
 <canvas id="bg"></canvas>
-<canvas id="particle-canvas"></canvas>
-
+<canvas id="pcanvas"></canvas>
 <div id="app">
-
-  <!-- START SCREEN -->
-  <div id="start-screen">
-    <div id="header" style="margin-bottom:1rem">
-      <h1>Vocabulary Quest</h1>
-      <p>Wordly Wise 3000 · Book 6 · Lesson 14</p>
-    </div>
-    <h2>⚔️ The Marco Polo Challenge</h2>
-    <p>Master all 15 words through 50 questions. Each round draws 20 at random — can you score a perfect 20?</p>
-    <div class="pill-grid">
-      <span class="pill" style="color:#1fcfb0;border-color:#1fcfb0">20 Synonyms</span>
-      <span class="pill" style="color:#4ea6f0;border-color:#4ea6f0">15 Antonyms</span>
-      <span class="pill" style="color:#f0c040;border-color:#f0c040">11 Analogies</span>
-      <span class="pill" style="color:#e870a0;border-color:#e870a0">8 Similes</span>
-      <span class="pill" style="color:#a878f0;border-color:#a878f0">8 Metaphors</span>
-    </div>
-    <p style="font-size:.75rem;color:var(--muted)">20 questions per round · Hint available · Streak tracking</p>
-    <br>
-    <button id="start-btn" onclick="startQuiz()">Begin the Quest →</button>
+  <a class="home" href="../index.html">&#8592; Home</a>
+  <h1>Wordly Wise &mdash; Lesson 14</h1>
+  <p class="subtitle">The Silk Road &bull; 15 words &bull; 195 questions</p>
+  <div class="mode-bar">
+    <button class="mode-btn active" id="btn-quiz">Quiz Mode</button>
+    <button class="mode-btn" id="btn-flash">Flashcard Mode</button>
   </div>
 
-  <!-- QUIZ -->
-  <div id="quiz">
-    <div id="header">
-      <h1>Vocabulary Quest</h1>
-      <p>Wordly Wise 3000 · Book 6 · Lesson 14</p>
+  <div id="flashcard-section">
+    <div class="fc-controls">
+      <button class="fc-btn" id="fc-prev">&#8592; Prev</button>
+      <button class="fc-btn" id="fc-flip">Flip</button>
+      <button class="fc-btn" id="fc-next">Next &#8594;</button>
+      <button class="fc-btn" id="fc-shuffle">Shuffle</button>
     </div>
-
-    <div id="scorebar">
-      <div class="sb-item"><div class="sb-label">Score</div><div class="sb-val gold" id="sb-score">0</div></div>
-      <div class="sb-item"><div class="sb-label">Question</div><div class="sb-val" id="sb-q">1 / 20</div></div>
-      <div class="sb-item"><div class="sb-label">Streak</div><div class="sb-val teal" id="sb-streak">0 🔥</div></div>
-    </div>
-
-    <div id="progress-wrap">
-      <div id="progress-bar-bg"><div id="progress-bar-fill" style="width:0%"></div></div>
-      <div id="progress-label">0 of 20 complete</div>
-    </div>
-
-    <div id="type-badge">—</div>
-
-    <div id="q-card">
-      <div id="q-text">Loading...</div>
-      <div id="hint-box">💡 <span id="hint-text"></span></div>
-    </div>
-
-    <div id="choices"></div>
-
-    <div id="actions">
-      <button id="hint-btn" onclick="toggleHint()">💡 Show Hint</button>
-      <div id="feedback-text"></div>
-      <button id="next-btn" onclick="nextQuestion()">Next →</button>
+    <div class="fc-progress" id="fc-progress"></div>
+    <div class="card-wrap">
+      <div class="card-inner" id="card-inner">
+        <div class="card-face card-front" id="card-front"></div>
+        <div class="card-face card-back" id="card-back"></div>
+      </div>
     </div>
   </div>
 
-  <!-- RESULTS -->
-  <div id="results">
-    <div id="header" style="margin-bottom:.5rem">
-      <h1>Vocabulary Quest</h1>
-      <p>Wordly Wise 3000 · Book 6 · Lesson 14</p>
+  <div id="quiz-section">
+    <div class="quiz-meta">
+      <span class="q-counter" id="q-counter"></span>
+      <span class="streak-badge" id="streak-badge">&#128293; 0 streak</span>
+      <span class="q-score" id="q-score"></span>
     </div>
-    <div id="results-score" class="gold"></div>
-    <div id="results-grade"></div>
-    <div id="results-sub"></div>
-    <div id="type-breakdown"></div>
-    <div id="review-list"></div>
-    <button id="retry-btn" onclick="startQuiz()">⚔️ Play Again</button>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+    <div id="type-badge-wrap"></div>
+    <div class="q-word" id="q-word"></div>
+    <div class="q-text" id="q-text"></div>
+    <div class="hint-row">
+      <button class="hint-btn" id="hint-btn">&#128161; Hint</button>
+    </div>
+    <div class="hint-box" id="hint-box"></div>
+    <div class="choices" id="choices"></div>
+    <div class="feedback" id="feedback"></div>
+    <button class="next-btn" id="next-btn">Next Question &#8594;</button>
   </div>
 
+  <div id="result-section">
+    <div class="result-title">Round Complete!</div>
+    <div class="result-score" id="result-score"></div>
+    <div class="result-label">out of 20</div>
+    <div class="result-msg" id="result-msg"></div>
+    <div class="result-breakdown" id="result-breakdown"></div>
+    <button class="restart-btn" id="restart-btn">Play Again</button>
+  </div>
 </div>
 
 <script>
-// ─── STARFIELD BACKGROUND ─────────────────────────────────────────────────────
 (function(){
-  const c=document.getElementById('bg');
-  const ctx=c.getContext('2d');
-  let W,H,stars=[];
-  function resize(){W=c.width=window.innerWidth;H=c.height=window.innerHeight;initStars();}
-  function initStars(){
-    stars=[];
-    for(let i=0;i<180;i++){
-      stars.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.4+.2,spd:Math.random()*.3+.05,alpha:Math.random()*.8+.2,tw:Math.random()*Math.PI*2});
-    }
-  }
+  var c=document.getElementById('bg'),ctx=c.getContext('2d'),stars=[];
+  function resize(){c.width=innerWidth;c.height=innerHeight;}
+  resize();window.addEventListener('resize',resize);
+  for(var i=0;i<220;i++)stars.push({x:Math.random(),y:Math.random(),r:Math.random()*1.5+.3,s:Math.random()*.4+.1});
   function draw(){
-    ctx.clearRect(0,0,W,H);
-    ctx.fillStyle='#0d1b2a';ctx.fillRect(0,0,W,H);
-    const t=Date.now()/1000;
-    // subtle nebula
-    const g=ctx.createRadialGradient(W*.3,H*.2,0,W*.3,H*.2,W*.55);
-    g.addColorStop(0,'rgba(31,207,176,.04)');g.addColorStop(1,'transparent');
-    ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
-    const g2=ctx.createRadialGradient(W*.75,H*.7,0,W*.75,H*.7,W*.45);
-    g2.addColorStop(0,'rgba(168,120,240,.04)');g2.addColorStop(1,'transparent');
-    ctx.fillStyle=g2;ctx.fillRect(0,0,W,H);
-    // stars
-    stars.forEach(s=>{
-      const twinkle=.5+.5*Math.sin(t*1.5+s.tw);
-      ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
-      ctx.fillStyle=`rgba(240,244,255,${s.alpha*twinkle})`;ctx.fill();
-      s.y+=s.spd;if(s.y>H){s.y=0;s.x=Math.random()*W;}
+    ctx.clearRect(0,0,c.width,c.height);
+    var g=ctx.createRadialGradient(c.width/2,c.height/2,0,c.width/2,c.height/2,c.width*.7);
+    g.addColorStop(0,'#0c2a4a');g.addColorStop(.5,'#061428');g.addColorStop(1,'#020710');
+    ctx.fillStyle=g;ctx.fillRect(0,0,c.width,c.height);
+    var t=Date.now()/1000;
+    stars.forEach(function(s){
+      var op=.3+.4*Math.abs(Math.sin(t*s.s+s.x*10));
+      ctx.beginPath();ctx.arc(s.x*c.width,s.y*c.height,s.r,0,Math.PI*2);
+      ctx.fillStyle='rgba(34,211,238,'+op+')';ctx.fill();
     });
     requestAnimationFrame(draw);
   }
-  window.addEventListener('resize',resize);
-  resize();draw();
+  draw();
 })();
 
-// ─── PARTICLE SYSTEM ──────────────────────────────────────────────────────────
-const pc=document.getElementById('particle-canvas');
-const pctx=pc.getContext('2d');
-let particles=[];
-function resizePC(){pc.width=window.innerWidth;pc.height=window.innerHeight;}
-window.addEventListener('resize',resizePC);resizePC();
-
-function spawnParticles(x,y,color,count=24){
-  for(let i=0;i<count;i++){
-    const angle=Math.random()*Math.PI*2;
-    const speed=Math.random()*6+2;
-    particles.push({x,y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed-3,r:Math.random()*5+2,color,alpha:1,decay:Math.random()*.025+.015});
+var pc=document.getElementById('pcanvas'),pctx=pc.getContext('2d'),particles=[];
+pc.width=innerWidth;pc.height=innerHeight;
+window.addEventListener('resize',function(){pc.width=innerWidth;pc.height=innerHeight;});
+function spawnBurst(x,y,color,n){
+  for(var i=0;i<n;i++){
+    var ang=Math.random()*Math.PI*2,spd=Math.random()*5+2;
+    particles.push({x:x,y:y,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,life:1,color:color,r:Math.random()*4+2});
   }
 }
-function animateParticles(){
-  pctx.clearRect(0,0,pc.width,pc.height);
-  particles=particles.filter(p=>p.alpha>0);
-  particles.forEach(p=>{
-    p.x+=p.vx;p.y+=p.vy;p.vy+=.2;p.alpha-=p.decay;
-    pctx.beginPath();pctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-    pctx.fillStyle=p.color.replace('1)',`${p.alpha})`);
-    pctx.fill();
-  });
-  requestAnimationFrame(animateParticles);
+function spawnConfetti(){
+  var colors=['#22d3ee','#06b6d4','#67e8f9','#4ade80','#818cf8','#f0abfc'];
+  for(var i=0;i<60;i++){
+    particles.push({x:Math.random()*pc.width,y:-10,vx:(Math.random()-.5)*4,vy:Math.random()*4+2,
+      life:1,color:colors[Math.floor(Math.random()*colors.length)],r:Math.random()*5+3,confetti:true});
+  }
 }
-animateParticles();
+(function ploop(){
+  pctx.clearRect(0,0,pc.width,pc.height);
+  particles=particles.filter(function(p){return p.life>0;});
+  particles.forEach(function(p){
+    p.x+=p.vx;p.y+=p.vy;p.life-=p.confetti?.012:.03;
+    if(p.confetti)p.vy+=.1;
+    pctx.globalAlpha=Math.max(0,p.life);
+    pctx.fillStyle=p.color;pctx.beginPath();
+    pctx.arc(p.x,p.y,p.r,0,Math.PI*2);pctx.fill();
+  });
+  pctx.globalAlpha=1;
+  requestAnimationFrame(ploop);
+})();
 
-// ─── QUESTION DATA ────────────────────────────────────────────────────────────
-const QUESTIONS=[
-  // SYNONYMS (20)
-  {type:"synonym",word:"benevolent",q:"Which word is closest in meaning to BENEVOLENT?",a:"kind",ch:["kind","cruel","distant","confused"],hint:"A benevolent person wants to do good for others."},
-  {type:"synonym",word:"consent",q:"Which word means the same as CONSENT (verb)?",a:"agree",ch:["agree","refuse","demand","ignore"],hint:"The judges consented to hear the case."},
-  {type:"synonym",word:"discreet",q:"Which word best matches DISCREET?",a:"tactful",ch:["tactful","careless","loud","hasty"],hint:"Discreet means showing care in what you say or do."},
-  {type:"synonym",word:"engross",q:"Which word means the same as ENGROSS?",a:"absorb",ch:["absorb","bore","release","confuse"],hint:"The puzzle so engrossed me I lost track of time."},
-  {type:"synonym",word:"esteem",q:"Which word is closest in meaning to ESTEEM (verb)?",a:"respect",ch:["respect","despise","ignore","fear"],hint:"Historians esteem Eleanor Roosevelt for her work."},
-  {type:"synonym",word:"exaggerate",q:"Which word means the same as EXAGGERATE?",a:"overstate",ch:["overstate","minimize","describe","hide"],hint:"Exaggerate = describe as larger than it really is."},
-  {type:"synonym",word:"extensive",q:"Which word best matches EXTENSIVE?",a:"vast",ch:["vast","tiny","shallow","brief"],hint:"Central Park is an extensive green expanse."},
-  {type:"synonym",word:"fantastic",q:"Which word means the same as FANTASTIC?",a:"unbelievable",ch:["unbelievable","ordinary","expected","typical"],hint:"Fantastic means almost unbelievable or extraordinary."},
-  {type:"synonym",word:"intrigue",q:"Which word means the same as INTRIGUE (verb)?",a:"fascinate",ch:["fascinate","bore","repel","confuse"],hint:"The way stage magicians do tricks intrigues me."},
-  {type:"synonym",word:"marvel",q:"Which word best matches MARVEL (noun)?",a:"wonder",ch:["wonder","problem","mistake","disaster"],hint:"The Amazon River is one of the great marvels of nature."},
-  {type:"synonym",word:"mission",q:"Which word means the same as MISSION?",a:"assignment",ch:["assignment","vacation","holiday","distraction"],hint:"The ambassador's mission was to arrange a meeting."},
-  {type:"synonym",word:"opportunity",q:"Which word best matches OPPORTUNITY?",a:"chance",ch:["chance","obstacle","barrier","threat"],hint:"Isabella was waiting for the opportunity to talk."},
-  {type:"synonym",word:"relinquish",q:"Which word means the same as RELINQUISH?",a:"surrender",ch:["surrender","seize","keep","demand"],hint:"The boy didn't want to relinquish the puppy he found."},
-  {type:"synonym",word:"tyrant",q:"Which word best matches TYRANT?",a:"dictator",ch:["dictator","servant","helper","ambassador"],hint:"A tyrant uses complete power in cruel or unjust ways."},
-  {type:"synonym",word:"vanquish",q:"Which word means the same as VANQUISH?",a:"conquer",ch:["conquer","lose","retreat","yield"],hint:"Success quickly vanquishes fear."},
-  {type:"synonym",word:"esteem",q:"Which word best matches ESTEEM (noun)?",a:"regard",ch:["regard","hatred","doubt","envy"],hint:"The players credit their success to the great esteem they feel for their coach."},
-  {type:"synonym",word:"consent",q:"Which word means the same as CONSENT (noun)?",a:"permission",ch:["permission","refusal","command","threat"],hint:"Students need a parent's consent to go on the field trip."},
-  {type:"synonym",word:"tyrant",q:"Another word for TYRANT is ___",a:"oppressor",ch:["oppressor","protector","guide","helper"],hint:"A tyrant rules through cruelty and unjust power."},
-  {type:"synonym",word:"extensive",q:"Which word also means EXTENSIVE?",a:"far-reaching",ch:["far-reaching","shallow","narrow","brief"],hint:"Extensive can mean ambitious and wide-ranging."},
-  {type:"synonym",word:"relinquish",q:"Which word also means RELINQUISH?",a:"release",ch:["release","grasp","demand","acquire"],hint:"To relinquish is to let something go."},
-  // ANTONYMS (15)
-  {type:"antonym",word:"benevolent",q:"Which word is the OPPOSITE of BENEVOLENT?",a:"malicious",ch:["malicious","generous","helpful","warm"],hint:"Benevolent means wanting to do good — what's the opposite?"},
-  {type:"antonym",word:"consent",q:"Which word is the OPPOSITE of CONSENT?",a:"refuse",ch:["refuse","permit","allow","support"],hint:"Consent means to agree or give permission."},
-  {type:"antonym",word:"discreet",q:"Which word is the OPPOSITE of DISCREET?",a:"reckless",ch:["reckless","careful","wise","quiet"],hint:"A discreet person handles situations wisely and carefully."},
-  {type:"antonym",word:"engross",q:"Which word is the OPPOSITE of ENGROSS?",a:"bore",ch:["bore","captivate","fascinate","engage"],hint:"To engross is to take up one's complete attention."},
-  {type:"antonym",word:"esteem",q:"Which word is the OPPOSITE of ESTEEM?",a:"scorn",ch:["scorn","admire","honor","value"],hint:"Esteem means to think highly of someone."},
-  {type:"antonym",word:"exaggerate",q:"Which word is the OPPOSITE of EXAGGERATE?",a:"understate",ch:["understate","embellish","inflate","stretch"],hint:"To exaggerate is to make something seem bigger than it is."},
-  {type:"antonym",word:"extensive",q:"Which word is the OPPOSITE of EXTENSIVE?",a:"limited",ch:["limited","wide","broad","thorough"],hint:"Extensive means covering a large area."},
-  {type:"antonym",word:"fantastic",q:"Which word is the OPPOSITE of FANTASTIC?",a:"ordinary",ch:["ordinary","strange","unusual","odd"],hint:"Fantastic means almost unbelievable or extraordinary."},
-  {type:"antonym",word:"intrigue",q:"Which word is the OPPOSITE of INTRIGUE (verb)?",a:"bore",ch:["bore","captivate","interest","attract"],hint:"To intrigue is to fascinate someone."},
-  {type:"antonym",word:"opportunity",q:"Which word is the OPPOSITE of OPPORTUNITY?",a:"obstacle",ch:["obstacle","opening","possibility","chance"],hint:"An opportunity is the right time for doing something."},
-  {type:"antonym",word:"relinquish",q:"Which word is the OPPOSITE of RELINQUISH?",a:"retain",ch:["retain","release","yield","abandon"],hint:"To relinquish is to let go or give up."},
-  {type:"antonym",word:"vanquish",q:"Which word is the OPPOSITE of VANQUISH?",a:"surrender",ch:["surrender","conquer","defeat","overcome"],hint:"To vanquish is to defeat utterly and completely."},
-  {type:"antonym",word:"tyrant",q:"Which word is most OPPOSITE to TYRANT in spirit?",a:"servant",ch:["servant","dictator","ruler","oppressor"],hint:"A tyrant takes power — the opposite serves others."},
-  {type:"antonym",word:"marvel",q:"Which word is the OPPOSITE of MARVEL (verb)?",a:"ignore",ch:["ignore","admire","wonder","appreciate"],hint:"To marvel is to be filled with wonder and amazement."},
-  {type:"antonym",word:"discreet",q:"Which word means the OPPOSITE of DISCREET?",a:"indiscreet",ch:["indiscreet","careful","tactful","considerate"],hint:"Discreet means showing wisdom in what you say or do."},
-  // ANALOGIES (11)
-  {type:"analogy",word:"analogy",q:"BENEVOLENT is to KIND as TYRANT is to ___",a:"cruel",ch:["cruel","generous","helpful","quiet"],hint:"Think about what each word means — they're opposite in nature!"},
-  {type:"analogy",word:"analogy",q:"CONSENT is to AGREE as RELINQUISH is to ___",a:"give up",ch:["give up","hold on","take over","demand"],hint:"Each pair shares the same synonym relationship."},
-  {type:"analogy",word:"analogy",q:"ENGROSS is to ATTENTION as INTRIGUE is to ___",a:"interest",ch:["interest","boredom","confusion","fear"],hint:"What does intrigue capture, just as engross captures attention?"},
-  {type:"analogy",word:"analogy",q:"MISSION is to TASK as OPPORTUNITY is to ___",a:"chance",ch:["chance","barrier","result","problem"],hint:"Both pairs are synonyms!"},
-  {type:"analogy",word:"analogy",q:"TYRANT is to VANQUISH as FEAR is to ___",a:"overcome",ch:["overcome","spread","grow","hide"],hint:"What do you do to a tyrant — and what do you do to fear?"},
-  {type:"analogy",word:"analogy",q:"ESTEEM is to RESPECT as EXAGGERATE is to ___",a:"overstate",ch:["overstate","minimize","ignore","hide"],hint:"Both pairs are synonyms — esteem means respect, so exaggerate means...?"},
-  {type:"analogy",word:"analogy",q:"DISCREET is to RECKLESS as BENEVOLENT is to ___",a:"malicious",ch:["malicious","kind","generous","caring"],hint:"Each pair contains opposites (antonyms)."},
-  {type:"analogy",word:"analogy",q:"VANQUISH is to DEFEAT as ENGROSS is to ___",a:"absorb",ch:["absorb","release","bore","distract"],hint:"Both pairs are synonyms."},
-  {type:"analogy",word:"analogy",q:"TYRANT is to TYRANNY as DISCREET is to ___",a:"discretion",ch:["discretion","discreetly","discreetness","disorder"],hint:"Both pairs go from adjective/noun to related noun form."},
-  {type:"analogy",word:"analogy",q:"OPPORTUNITY is to OBSTACLE as ESTEEM is to ___",a:"scorn",ch:["scorn","respect","admire","value"],hint:"Each pair contains antonyms — opposites."},
-  {type:"analogy",word:"analogy",q:"MARVEL is to WONDERFUL as TYRANT is to ___",a:"cruel",ch:["cruel","powerful","famous","feared"],hint:"Both pairs link a noun to the quality it represents."},
-  // SIMILES (8)
-  {type:"simile",word:"simile",q:"Complete the simile:\n\"The explorer's drive was like a _____, always pulling him toward new lands.\"",a:"mission",ch:["mission","tyrant","exaggeration","consent"],hint:"Which word means an important task or assignment?"},
-  {type:"simile",word:"simile",q:"Complete the simile:\n\"The story was as _____ as a trip to another planet.\"",a:"fantastic",ch:["fantastic","discreet","extensive","benevolent"],hint:"Which word means almost unbelievable?"},
-  {type:"simile",word:"simile",q:"Complete the simile:\n\"The spy moved as _____ as a shadow, revealing nothing.\"",a:"discreet",ch:["discreet","extensive","fantastic","marvelous"],hint:"Which word means showing care in what you say or do?"},
-  {type:"simile",word:"simile",q:"Complete the simile:\n\"Like a spider releasing its web, she finally _____ control.\"",a:"relinquished",ch:["relinquished","vanquished","esteemed","consented"],hint:"Which word means to let go or give up?"},
-  {type:"simile",word:"simile",q:"Complete the simile:\n\"His fish story grew like a _____ — bigger every time he told it.\"",a:"exaggeration",ch:["exaggeration","mission","marvel","opportunity"],hint:"Which word means something described as bigger than it really is?"},
-  {type:"simile",word:"simile",q:"Complete the simile:\n\"The rainforest was as _____ as an ocean — it seemed to stretch forever.\"",a:"extensive",ch:["extensive","discreet","fantastic","benevolent"],hint:"Which word means covering a large area?"},
-  {type:"simile",word:"simile",q:"Complete the simile:\n\"Like a champion boxer, courage can _____ any fear.\"",a:"vanquish",ch:["vanquish","esteem","intrigue","consent"],hint:"Which word means to defeat utterly and completely?"},
-  {type:"simile",word:"simile",q:"Complete the simile:\n\"The discovery was like a true _____ of science — nobody had seen anything like it.\"",a:"marvel",ch:["marvel","tyrant","mission","consent"],hint:"Which word means a wonderful or amazing thing?"},
-  // METAPHORS (8)
-  {type:"metaphor",word:"metaphor",q:"Complete the metaphor:\n\"The new novel was a black hole — it completely _____ her.\"",a:"engrossed",ch:["engrossed","intrigued","marveled","esteemed"],hint:"Which word means to take up one's complete attention?"},
-  {type:"metaphor",word:"metaphor",q:"Complete the metaphor:\n\"Her kindness was a warm sunbeam — she was truly _____.\"",a:"benevolent",ch:["benevolent","engrossing","discreet","tyrannical"],hint:"Which word means wanting to do good and being kind?"},
-  {type:"metaphor",word:"metaphor",q:"Complete the metaphor:\n\"That once-in-a-lifetime offer was a golden _____ he could not ignore.\"",a:"opportunity",ch:["opportunity","mission","tyranny","marvel"],hint:"Which word means a chance or the right time for something?"},
-  {type:"metaphor",word:"metaphor",q:"Complete the metaphor:\n\"The boring lecture was a _____ — it robbed every student of their focus.\"",a:"tyrant",ch:["tyrant","marvel","mission","opportunity"],hint:"Which word means a cruel ruler who takes complete control?"},
-  {type:"metaphor",word:"metaphor",q:"Complete the metaphor:\n\"The detective's casebook was a _____ web of clues stretching across two countries.\"",a:"extensive",ch:["extensive","discreet","fantastic","benevolent"],hint:"Which word means covering a large or far-reaching area?"},
-  {type:"metaphor",word:"metaphor",q:"Complete the metaphor:\n\"His grudge was a trophy he refused to _____.\"",a:"relinquish",ch:["relinquish","vanquish","esteem","intrigue"],hint:"Which word means to let go or give up?"},
-  {type:"metaphor",word:"metaphor",q:"Complete the metaphor:\n\"The magician's tricks were a puzzle that never stopped _____ the crowd.\"",a:"intriguing",ch:["intriguing","vanquishing","esteemed","consenting"],hint:"Which word means to fascinate someone?"},
-  {type:"metaphor",word:"metaphor",q:"Complete the metaphor:\n\"The crocodile was a living _____ — something Marco Polo's readers could barely believe.\"",a:"marvel",ch:["marvel","tyrant","mission","consent"],hint:"Which word means a wonderful or amazing thing?"},
-];
+function clearEl(el){while(el.firstChild)el.removeChild(el.firstChild);}
+function mk(tag,cls,txt){var el=document.createElement(tag);if(cls)el.className=cls;if(txt!==undefined)el.textContent=txt;return el;}
+function shuffle(a){var b=a.slice();for(var i=b.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=b[i];b[i]=b[j];b[j]=t;}return b;}
 
-const TYPE_STYLES={
-  synonym:{label:"Synonym",color:"#1fcfb0",bg:"rgba(31,207,176,.12)"},
-  antonym:{label:"Antonym",color:"#4ea6f0",bg:"rgba(78,166,240,.12)"},
-  analogy:{label:"Analogy",color:"#f0c040",bg:"rgba(240,192,64,.12)"},
-  simile:{label:"Simile",color:"#e870a0",bg:"rgba(232,112,160,.12)"},
-  metaphor:{label:"Metaphor",color:"#a878f0",bg:"rgba(168,120,240,.12)"},
+var TYPE_STYLES={
+  synonym:{label:'SYNONYM',color:'#34d399',bg:'rgba(6,95,70,.4)'},
+  antonym:{label:'ANTONYM',color:'#f472b6',bg:'rgba(157,23,77,.35)'},
+  analogy:{label:'ANALOGY',color:'#a78bfa',bg:'rgba(109,40,217,.35)'},
+  simile:{label:'SIMILE',color:'#fbbf24',bg:'rgba(161,98,7,.35)'},
+  metaphor:{label:'METAPHOR',color:'#38bdf8',bg:'rgba(7,89,133,.35)'}
 };
 
-// ─── QUIZ STATE ───────────────────────────────────────────────────────────────
-let questions=[],current=0,score=0,streak=0,bestStreak=0,answered=false,hintShown=false,results=[];
-const TOTAL=20;
+var WORDS=[
+  {word:'benevolent',pos:'adj.',def:'Kind and generous; wanting to do good for others.',ex:'"The benevolent king provided food and shelter for all the poor in his kingdom."'},
+  {word:'consent',pos:'v./n.',def:'(v.) To give permission; to agree to something. (n.) Agreement; permission.',ex:'"You need your parents\' consent to go on the field trip."'},
+  {word:'discreet',pos:'adj.',def:'Showing care and good judgment in what you say or do, especially to keep things private.',ex:'"A discreet diplomat never reveals the details of private negotiations."'},
+  {word:'engross',pos:'v.',def:'To take up the complete attention of; to absorb fully.',ex:'"The puzzle so engrossed me that I lost all track of time."'},
+  {word:'esteem',pos:'v./n.',def:'(v.) To think highly of; to respect and admire. (n.) A high regard or respect for someone.',ex:'"Marco Polo was held in great esteem by the court of Kublai Khan."'},
+  {word:'exaggerate',pos:'v.',def:'To describe something as greater, better, worse, or more extreme than it really is.',ex:'"Marco Polo was accused of exaggerating the riches and wonders he had seen."'},
+  {word:'extensive',pos:'adj.',def:'Wide in range or scope; covering a large area.',ex:'"He made an extensive journey across Asia, covering thousands of miles."'},
+  {word:'fantastic',pos:'adj.',def:'1. Almost unbelievable; extraordinary. 2. Imaginative; fanciful.',ex:'"Marco Polo described the fantastic riches of the Chinese court."'},
+  {word:'intrigue',pos:'v./n.',def:'(v.) To arouse the curiosity or interest of; to fascinate. (n.) A secret plot.',ex:'"His tales of distant lands intrigued all who heard them."'},
+  {word:'marvel',pos:'v./n.',def:'(v.) To be filled with wonder or astonishment. (n.) Something that causes wonder; a wonderful thing.',ex:'"The Great Wall of China was one of the great marvels he described."'},
+  {word:'mission',pos:'n.',def:'A specific task or duty assigned to a person or group; a journey made for a specific purpose.',ex:'"His mission was to open trade routes between Europe and Asia."'},
+  {word:'opportunity',pos:'n.',def:'A favorable time or set of conditions for doing something; a chance.',ex:'"He saw his travels as an opportunity to learn about the world."'},
+  {word:'relinquish',pos:'v.',def:'To give up; to let go of; to surrender possession of.',ex:'"He was reluctant to relinquish his honored post at the Chinese court."'},
+  {word:'tyrant',pos:'n.',def:'A ruler who uses power cruelly and unjustly; a person who uses authority in a harsh or oppressive way.',ex:'"The citizens suffered greatly under the tyrant\'s harsh and unforgiving rule."'},
+  {word:'vanquish',pos:'v.',def:'To defeat completely; to overcome; to conquer.',ex:'"His courage helped him vanquish his fear of the vast and unknown lands ahead."'}
+];
 
-function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+var QUESTIONS=[
+// ── SYNONYMS (50) ──────────────────────────────────────────────────────────
+{type:'synonym',word:'benevolent',q:'BENEVOLENT most nearly means:',a:'kind',ch:['kind','cruel','distant','suspicious'],hint:'A benevolent person wants to do good for others — the opposite of cruel'},
+{type:'synonym',word:'benevolent',q:'Which word is a synonym for BENEVOLENT?',a:'charitable',ch:['charitable','selfish','greedy','harsh'],hint:'Charitable means giving generously to help others — like benevolent'},
+{type:'synonym',word:'benevolent',q:'BENEVOLENT is closest in meaning to:',a:'generous',ch:['generous','spiteful','cold','indifferent'],hint:'A benevolent ruler gives freely and cares for the people'},
+{type:'synonym',word:'consent',q:'CONSENT (v.) most nearly means:',a:'agree',ch:['agree','refuse','demand','resist'],hint:'To consent is to give permission — to agree to something'},
+{type:'synonym',word:'consent',q:'Which word is a synonym for CONSENT (n.)?',a:'permission',ch:['permission','refusal','command','protest'],hint:'Consent as a noun is the permission or agreement given'},
+{type:'synonym',word:'consent',q:'CONSENT is closest in meaning to:',a:'approve',ch:['approve','deny','forbid','prevent'],hint:'To approve means to accept or agree to — like consent'},
+{type:'synonym',word:'discreet',q:'DISCREET most nearly means:',a:'tactful',ch:['tactful','careless','reckless','blunt'],hint:'A discreet person is careful about what they say and do — tactful'},
+{type:'synonym',word:'discreet',q:'Which word is a synonym for DISCREET?',a:'prudent',ch:['prudent','rash','indiscreet','careless'],hint:'Prudent means showing good judgment — like discreet'},
+{type:'synonym',word:'discreet',q:'DISCREET is closest in meaning to:',a:'judicious',ch:['judicious','reckless','thoughtless','blunt'],hint:'Judicious means using good judgment — a discreet person acts judiciously'},
+{type:'synonym',word:'engross',q:'ENGROSS most nearly means:',a:'absorb',ch:['absorb','bore','release','distract'],hint:'To engross someone is to take up their full attention — to absorb them'},
+{type:'synonym',word:'engross',q:'Which word is a synonym for ENGROSS?',a:'captivate',ch:['captivate','bore','repel','distract'],hint:'Captivate means to capture complete attention — like engross'},
+{type:'synonym',word:'engross',q:'ENGROSS is closest in meaning to:',a:'fascinate',ch:['fascinate','bore','release','free'],hint:'To fascinate is to hold someone\'s complete attention — like engross'},
+{type:'synonym',word:'engross',q:'Which of the following is a synonym for ENGROSS?',a:'occupy',ch:['occupy','release','ignore','bore'],hint:'To occupy someone\'s attention is to fill it completely — like engross'},
+{type:'synonym',word:'esteem',q:'ESTEEM (v.) most nearly means:',a:'respect',ch:['respect','despise','ignore','disregard'],hint:'To esteem someone is to think highly of them — to respect them'},
+{type:'synonym',word:'esteem',q:'Which word is a synonym for ESTEEM (n.)?',a:'regard',ch:['regard','contempt','disdain','scorn'],hint:'Regard means a high opinion of someone — like esteem'},
+{type:'synonym',word:'esteem',q:'ESTEEM is closest in meaning to:',a:'admire',ch:['admire','despise','ignore','scorn'],hint:'To admire means to look up to with great respect — like esteem'},
+{type:'synonym',word:'exaggerate',q:'EXAGGERATE most nearly means:',a:'overstate',ch:['overstate','minimize','describe','conceal'],hint:'To exaggerate is to make something seem bigger than it is — to overstate'},
+{type:'synonym',word:'exaggerate',q:'Which word is a synonym for EXAGGERATE?',a:'embellish',ch:['embellish','minimize','understate','hide'],hint:'Embellish means to add details to make something seem more impressive — like exaggerate'},
+{type:'synonym',word:'exaggerate',q:'EXAGGERATE is closest in meaning to:',a:'magnify',ch:['magnify','reduce','minimize','understate'],hint:'Magnify means to make larger or more important than it really is — like exaggerate'},
+{type:'synonym',word:'exaggerate',q:'Which of the following is a synonym for EXAGGERATE?',a:'inflate',ch:['inflate','deflate','understate','minimize'],hint:'Inflate means to make greater than it really is — like exaggerate'},
+{type:'synonym',word:'extensive',q:'EXTENSIVE most nearly means:',a:'vast',ch:['vast','tiny','brief','narrow'],hint:'Extensive means covering a large area or range — vast'},
+{type:'synonym',word:'extensive',q:'Which word is a synonym for EXTENSIVE?',a:'wide',ch:['wide','limited','narrow','small'],hint:'Wide means covering a broad area — like extensive'},
+{type:'synonym',word:'extensive',q:'EXTENSIVE is closest in meaning to:',a:'broad',ch:['broad','limited','confined','narrow'],hint:'Broad means wide in range or scope — like extensive'},
+{type:'synonym',word:'extensive',q:'Which of the following is a synonym for EXTENSIVE?',a:'far-reaching',ch:['far-reaching','confined','limited','narrow'],hint:'Far-reaching means having wide scope or effect — like extensive'},
+{type:'synonym',word:'fantastic',q:'FANTASTIC most nearly means:',a:'extraordinary',ch:['extraordinary','ordinary','expected','typical'],hint:'Fantastic means almost unbelievable — extraordinary'},
+{type:'synonym',word:'fantastic',q:'Which word is a synonym for FANTASTIC?',a:'incredible',ch:['incredible','ordinary','mundane','expected'],hint:'Incredible means hard to believe — like fantastic'},
+{type:'synonym',word:'fantastic',q:'FANTASTIC is closest in meaning to:',a:'unbelievable',ch:['unbelievable','ordinary','typical','expected'],hint:'Unbelievable means beyond what one would expect — like fantastic'},
+{type:'synonym',word:'fantastic',q:'Which of the following is a synonym for FANTASTIC?',a:'remarkable',ch:['remarkable','ordinary','common','typical'],hint:'Remarkable means worthy of attention because it is unusual — like fantastic'},
+{type:'synonym',word:'intrigue',q:'INTRIGUE (v.) most nearly means:',a:'fascinate',ch:['fascinate','bore','repel','confuse'],hint:'To intrigue is to arouse curiosity — to fascinate someone'},
+{type:'synonym',word:'intrigue',q:'Which word is a synonym for INTRIGUE (v.)?',a:'captivate',ch:['captivate','bore','repel','distract'],hint:'Captivate means to attract and hold the attention — like intrigue'},
+{type:'synonym',word:'intrigue',q:'INTRIGUE is closest in meaning to:',a:'interest',ch:['interest','bore','repel','displease'],hint:'To interest someone deeply is to intrigue them'},
+{type:'synonym',word:'marvel',q:'MARVEL (n.) most nearly means:',a:'wonder',ch:['wonder','disappointment','failure','disaster'],hint:'A marvel is something that fills you with wonder — a wonder'},
+{type:'synonym',word:'marvel',q:'Which word is a synonym for MARVEL (n.)?',a:'spectacle',ch:['spectacle','commonplace','failure','disaster'],hint:'A spectacle is something extraordinary to behold — like a marvel'},
+{type:'synonym',word:'marvel',q:'MARVEL (v.) most nearly means:',a:'wonder',ch:['wonder','ignore','disregard','dismiss'],hint:'To marvel is to be filled with wonder at something amazing'},
+{type:'synonym',word:'marvel',q:'Which of the following is a synonym for MARVEL (n.)?',a:'phenomenon',ch:['phenomenon','commonplace','ordinary event','expected result'],hint:'A phenomenon is a remarkable or extraordinary occurrence — like a marvel'},
+{type:'synonym',word:'mission',q:'MISSION most nearly means:',a:'assignment',ch:['assignment','vacation','holiday','leisure'],hint:'A mission is a specific task given to someone — an assignment'},
+{type:'synonym',word:'mission',q:'Which word is a synonym for MISSION?',a:'task',ch:['task','vacation','rest','holiday'],hint:'A task is a piece of work assigned to someone — like a mission'},
+{type:'synonym',word:'mission',q:'MISSION is closest in meaning to:',a:'duty',ch:['duty','vacation','holiday','rest'],hint:'Duty means a task or responsibility you are assigned — like a mission'},
+{type:'synonym',word:'opportunity',q:'OPPORTUNITY most nearly means:',a:'chance',ch:['chance','obstacle','barrier','threat'],hint:'An opportunity is the right time to do something — a chance'},
+{type:'synonym',word:'opportunity',q:'Which word is a synonym for OPPORTUNITY?',a:'occasion',ch:['occasion','obstacle','barrier','difficulty'],hint:'An occasion is a suitable time for something — like an opportunity'},
+{type:'synonym',word:'opportunity',q:'OPPORTUNITY is closest in meaning to:',a:'opening',ch:['opening','barrier','obstacle','difficulty'],hint:'An opening means a chance or favorable situation — like an opportunity'},
+{type:'synonym',word:'relinquish',q:'RELINQUISH most nearly means:',a:'surrender',ch:['surrender','seize','grasp','demand'],hint:'To relinquish is to give up what you hold — to surrender it'},
+{type:'synonym',word:'relinquish',q:'Which word is a synonym for RELINQUISH?',a:'release',ch:['release','seize','grasp','clutch'],hint:'To release means to let go of — like relinquish'},
+{type:'synonym',word:'relinquish',q:'RELINQUISH is closest in meaning to:',a:'yield',ch:['yield','seize','grasp','demand'],hint:'Yield means to give way or give up — like relinquish'},
+{type:'synonym',word:'tyrant',q:'TYRANT most nearly means:',a:'dictator',ch:['dictator','servant','helper','liberator'],hint:'A tyrant rules through cruelty and unjust power — a dictator'},
+{type:'synonym',word:'tyrant',q:'Which word is a synonym for TYRANT?',a:'oppressor',ch:['oppressor','servant','liberator','protector'],hint:'An oppressor uses power to crush and control others — like a tyrant'},
+{type:'synonym',word:'tyrant',q:'TYRANT is closest in meaning to:',a:'despot',ch:['despot','servant','liberator','helper'],hint:'A despot rules with absolute cruel power — like a tyrant'},
+{type:'synonym',word:'tyrant',q:'Which of the following is a synonym for TYRANT?',a:'autocrat',ch:['autocrat','servant','helper','liberator'],hint:'An autocrat rules with unlimited power without restraint — like a tyrant'},
+{type:'synonym',word:'vanquish',q:'VANQUISH most nearly means:',a:'defeat',ch:['defeat','lose','surrender','yield'],hint:'To vanquish is to defeat someone completely — to defeat'},
+{type:'synonym',word:'vanquish',q:'Which word is a synonym for VANQUISH?',a:'conquer',ch:['conquer','lose','surrender','retreat'],hint:'To conquer means to overcome by force — like vanquish'},
+// ── ANTONYMS (35) ──────────────────────────────────────────────────────────
+{type:'antonym',word:'benevolent',q:'Which word is the OPPOSITE of BENEVOLENT?',a:'malicious',ch:['malicious','generous','kind','charitable'],hint:'Benevolent means wanting to do good — what is the opposite?'},
+{type:'antonym',word:'benevolent',q:'BENEVOLENT is most nearly OPPOSITE in meaning to:',a:'cruel',ch:['cruel','kind','generous','helpful'],hint:'A benevolent person is kind — the opposite is someone who is cruel'},
+{type:'antonym',word:'benevolent',q:'Which word is most nearly OPPOSITE to BENEVOLENT?',a:'malevolent',ch:['malevolent','charitable','helpful','warm'],hint:'The prefix "bene" means good; "male" means bad — malevolent is the opposite'},
+{type:'antonym',word:'consent',q:'Which word is the OPPOSITE of CONSENT?',a:'refuse',ch:['refuse','permit','allow','agree'],hint:'Consent means to agree or give permission — the opposite is to refuse'},
+{type:'antonym',word:'consent',q:'CONSENT is most nearly OPPOSITE in meaning to:',a:'withhold',ch:['withhold','permit','grant','allow'],hint:'To withhold permission is the opposite of giving consent'},
+{type:'antonym',word:'discreet',q:'Which word is the OPPOSITE of DISCREET?',a:'reckless',ch:['reckless','careful','tactful','judicious'],hint:'Discreet means showing care in speech and behavior — the opposite is reckless'},
+{type:'antonym',word:'discreet',q:'DISCREET is most nearly OPPOSITE in meaning to:',a:'indiscreet',ch:['indiscreet','careful','judicious','tactful'],hint:'Adding the prefix "in-" makes a word its opposite — indiscreet'},
+{type:'antonym',word:'discreet',q:'Which word is most nearly OPPOSITE to DISCREET?',a:'tactless',ch:['tactless','careful','prudent','judicious'],hint:'Tactless means lacking care in what you say — the opposite of discreet'},
+{type:'antonym',word:'engross',q:'Which word is the OPPOSITE of ENGROSS?',a:'bore',ch:['bore','captivate','fascinate','absorb'],hint:'To engross is to hold someone\'s complete attention — the opposite leaves them bored'},
+{type:'antonym',word:'engross',q:'ENGROSS is most nearly OPPOSITE in meaning to:',a:'distract',ch:['distract','captivate','absorb','fascinate'],hint:'To distract is to pull attention away — the opposite of engross which pulls it in'},
+{type:'antonym',word:'esteem',q:'Which word is the OPPOSITE of ESTEEM?',a:'scorn',ch:['scorn','admire','respect','value'],hint:'Esteem means to think highly of someone — scorn means to think very poorly of them'},
+{type:'antonym',word:'esteem',q:'ESTEEM is most nearly OPPOSITE in meaning to:',a:'despise',ch:['despise','admire','respect','honor'],hint:'To despise someone is to dislike them deeply — the opposite of esteem'},
+{type:'antonym',word:'exaggerate',q:'Which word is the OPPOSITE of EXAGGERATE?',a:'understate',ch:['understate','overstate','embellish','inflate'],hint:'To exaggerate is to make something bigger than it is — the opposite makes it smaller'},
+{type:'antonym',word:'exaggerate',q:'EXAGGERATE is most nearly OPPOSITE in meaning to:',a:'minimize',ch:['minimize','inflate','embellish','magnify'],hint:'Minimize means to make seem less important than it is — the opposite of exaggerate'},
+{type:'antonym',word:'extensive',q:'Which word is the OPPOSITE of EXTENSIVE?',a:'limited',ch:['limited','vast','broad','wide'],hint:'Extensive means wide in scope — the opposite is limited or narrow'},
+{type:'antonym',word:'extensive',q:'EXTENSIVE is most nearly OPPOSITE in meaning to:',a:'narrow',ch:['narrow','vast','broad','wide'],hint:'Narrow means covering only a small range — the opposite of extensive'},
+{type:'antonym',word:'extensive',q:'Which word is most nearly OPPOSITE to EXTENSIVE?',a:'confined',ch:['confined','vast','wide','far-reaching'],hint:'Confined means restricted to a small area — the opposite of extensive'},
+{type:'antonym',word:'fantastic',q:'Which word is the OPPOSITE of FANTASTIC?',a:'ordinary',ch:['ordinary','extraordinary','incredible','remarkable'],hint:'Fantastic means extraordinary — the opposite is something everyday and ordinary'},
+{type:'antonym',word:'fantastic',q:'FANTASTIC is most nearly OPPOSITE in meaning to:',a:'mundane',ch:['mundane','extraordinary','incredible','remarkable'],hint:'Mundane means ordinary and not interesting — the opposite of fantastic'},
+{type:'antonym',word:'intrigue',q:'Which word is the OPPOSITE of INTRIGUE (v.)?',a:'bore',ch:['bore','captivate','interest','attract'],hint:'To intrigue is to fascinate someone — the opposite fails to interest them at all'},
+{type:'antonym',word:'intrigue',q:'INTRIGUE (v.) is most nearly OPPOSITE in meaning to:',a:'repel',ch:['repel','attract','fascinate','captivate'],hint:'To repel means to drive away — the opposite of intriguing which draws people in'},
+{type:'antonym',word:'marvel',q:'Which word is the OPPOSITE of MARVEL (v.)?',a:'ignore',ch:['ignore','admire','wonder','appreciate'],hint:'To marvel is to be filled with wonder — the opposite pays no attention at all'},
+{type:'antonym',word:'marvel',q:'MARVEL (n.) is most nearly OPPOSITE in meaning to:',a:'disappointment',ch:['disappointment','wonder','spectacle','phenomenon'],hint:'A marvel fills you with wonder — the opposite is something that disappoints'},
+{type:'antonym',word:'mission',q:'Which word is the OPPOSITE of MISSION?',a:'aimlessness',ch:['aimlessness','purpose','assignment','duty'],hint:'A mission involves clear purpose and direction — the opposite lacks any goal'},
+{type:'antonym',word:'opportunity',q:'Which word is the OPPOSITE of OPPORTUNITY?',a:'obstacle',ch:['obstacle','chance','opening','occasion'],hint:'An opportunity is a favorable condition — an obstacle is something that prevents progress'},
+{type:'antonym',word:'opportunity',q:'OPPORTUNITY is most nearly OPPOSITE in meaning to:',a:'barrier',ch:['barrier','chance','opening','occasion'],hint:'A barrier blocks your way — the opposite of an opportunity which opens the way'},
+{type:'antonym',word:'relinquish',q:'Which word is the OPPOSITE of RELINQUISH?',a:'retain',ch:['retain','release','surrender','yield'],hint:'To relinquish is to give up — the opposite is to keep or retain'},
+{type:'antonym',word:'relinquish',q:'RELINQUISH is most nearly OPPOSITE in meaning to:',a:'grasp',ch:['grasp','release','surrender','yield'],hint:'To grasp is to hold tightly — the opposite of relinquish which means to let go'},
+{type:'antonym',word:'relinquish',q:'Which word is most nearly OPPOSITE to RELINQUISH?',a:'seize',ch:['seize','release','abandon','surrender'],hint:'To seize means to take hold firmly — the opposite of giving something up'},
+{type:'antonym',word:'tyrant',q:'Which word is the OPPOSITE of TYRANT?',a:'servant',ch:['servant','dictator','oppressor','despot'],hint:'A tyrant takes power and crushes others — a servant gives up power to help others'},
+{type:'antonym',word:'tyrant',q:'TYRANT is most nearly OPPOSITE in meaning to:',a:'liberator',ch:['liberator','oppressor','dictator','despot'],hint:'A liberator frees people — the opposite of a tyrant who enslaves them'},
+{type:'antonym',word:'vanquish',q:'Which word is the OPPOSITE of VANQUISH?',a:'surrender',ch:['surrender','conquer','defeat','overcome'],hint:'To vanquish means to defeat completely — the opposite is to give up entirely'},
+{type:'antonym',word:'vanquish',q:'VANQUISH is most nearly OPPOSITE in meaning to:',a:'yield',ch:['yield','conquer','defeat','overcome'],hint:'To yield is to give way or submit — the opposite of vanquishing which means to win'},
+{type:'antonym',word:'vanquish',q:'Which word is most nearly OPPOSITE to VANQUISH?',a:'succumb',ch:['succumb','conquer','overcome','defeat'],hint:'To succumb means to give in to a greater force — the opposite of vanquish'},
+{type:'antonym',word:'opportunity',q:'Which word is most nearly OPPOSITE to OPPORTUNITY?',a:'hindrance',ch:['hindrance','chance','opening','occasion'],hint:'A hindrance blocks your path — the opposite of an opportunity which opens it'},
+// ── ANALOGIES (40) ──────────────────────────────────────────────────────────
+{type:'analogy',word:'benevolent',q:'BENEVOLENT is to KIND as TYRANT is to ___',a:'cruel',ch:['cruel','generous','helpful','fair'],hint:'Both pairs contain synonyms — benevolent means kind, so tyrant means...'},
+{type:'analogy',word:'consent',q:'CONSENT is to AGREE as RELINQUISH is to ___',a:'give up',ch:['give up','hold on','demand','seize'],hint:'Both pairs are synonyms — consent means agree, so relinquish means...'},
+{type:'analogy',word:'engross',q:'ENGROSS is to ABSORB as VANQUISH is to ___',a:'conquer',ch:['conquer','surrender','lose','retreat'],hint:'Both pairs contain synonyms — engross means absorb, so vanquish means...'},
+{type:'analogy',word:'esteem',q:'ESTEEM is to RESPECT as EXAGGERATE is to ___',a:'overstate',ch:['overstate','minimize','describe','hide'],hint:'Both pairs are synonyms — esteem means respect, so exaggerate means...'},
+{type:'analogy',word:'fantastic',q:'FANTASTIC is to ORDINARY as BENEVOLENT is to ___',a:'cruel',ch:['cruel','kind','generous','helpful'],hint:'Both pairs contain antonyms — fantastic is the opposite of ordinary, so benevolent is the opposite of...'},
+{type:'analogy',word:'mission',q:'MISSION is to TASK as OPPORTUNITY is to ___',a:'chance',ch:['chance','barrier','obstacle','problem'],hint:'Both pairs are synonyms — mission means task, so opportunity means...'},
+{type:'analogy',word:'tyrant',q:'TYRANT is to VANQUISH as FEAR is to ___',a:'overcome',ch:['overcome','spread','grow','hide'],hint:'What do you do to a tyrant? And what do you do to fear?'},
+{type:'analogy',word:'discreet',q:'DISCREET is to RECKLESS as BENEVOLENT is to ___',a:'malicious',ch:['malicious','kind','generous','helpful'],hint:'Both pairs contain antonyms — each word is the opposite of its pair'},
+{type:'analogy',word:'intrigue',q:'INTRIGUE is to FASCINATE as ESTEEM is to ___',a:'admire',ch:['admire','despise','ignore','scorn'],hint:'Both pairs are synonyms — intrigue means fascinate, so esteem means...'},
+{type:'analogy',word:'marvel',q:'MARVEL is to WONDER as TYRANT is to ___',a:'oppressor',ch:['oppressor','liberator','servant','helper'],hint:'Both pairs are synonyms — marvel means wonder, so tyrant means...'},
+{type:'analogy',word:'relinquish',q:'RELINQUISH is to SEIZE as CONSENT is to ___',a:'refuse',ch:['refuse','permit','allow','agree'],hint:'Both pairs contain antonyms — relinquish is opposite of seize, so consent is opposite of...'},
+{type:'analogy',word:'extensive',q:'EXTENSIVE is to VAST as DISCREET is to ___',a:'tactful',ch:['tactful','reckless','careless','blunt'],hint:'Both pairs are synonyms — extensive means vast, so discreet means...'},
+{type:'analogy',word:'benevolent',q:'BENEVOLENT is to PHILANTHROPIST as TYRANT is to ___',a:'dictator',ch:['dictator','servant','helper','liberator'],hint:'A philanthropist is a benevolent person by profession — what is a tyrant by profession?'},
+{type:'analogy',word:'consent',q:'CONSENT is to AGREEMENT as MISSION is to ___',a:'assignment',ch:['assignment','vacation','refusal','holiday'],hint:'Consent as a noun means agreement; mission as a noun means...'},
+{type:'analogy',word:'vanquish',q:'VANQUISH is to ENEMY as QUENCH is to ___',a:'thirst',ch:['thirst','water','fire','hunger'],hint:'You vanquish an enemy and you quench a thirst — what is quenched?'},
+{type:'analogy',word:'engross',q:'ENGROSS is to ATTENTION as QUENCH is to ___',a:'thirst',ch:['thirst','boredom','sleep','confusion'],hint:'Engross takes up all your attention; what does quench take care of?'},
+{type:'analogy',word:'fantastic',q:'FANTASTIC is to UNBELIEVABLE as EXTENSIVE is to ___',a:'wide',ch:['wide','tiny','narrow','brief'],hint:'Both pairs are synonyms — fantastic means unbelievable, so extensive means...'},
+{type:'analogy',word:'tyrant',q:'TYRANT is to TYRANNY as DISCREET is to ___',a:'discretion',ch:['discretion','discreetly','disorder','direction'],hint:'Tyranny is what a tyrant practices — what does a discreet person practice?'},
+{type:'analogy',word:'opportunity',q:'OPPORTUNITY is to OBSTACLE as ESTEEM is to ___',a:'scorn',ch:['scorn','respect','admire','value'],hint:'Both pairs contain antonyms — opportunity is opposite of obstacle, so esteem is opposite of...'},
+{type:'analogy',word:'marvel',q:'MARVEL is to WONDERFUL as TYRANT is to ___',a:'cruel',ch:['cruel','powerful','famous','brave'],hint:'Both pairs link a noun to the quality it represents most'},
+{type:'analogy',word:'relinquish',q:'RELINQUISH is to LET GO as ENGROSS is to ___',a:'hold completely',ch:['hold completely','release','free','bore'],hint:'Relinquish means to let go; engross means the opposite — to hold completely'},
+{type:'analogy',word:'intrigue',q:'INTRIGUE is to CURIOSITY as MARVEL is to ___',a:'wonder',ch:['wonder','boredom','disappointment','disinterest'],hint:'Intrigue produces curiosity; marvel produces...'},
+{type:'analogy',word:'benevolent',q:'BENEVOLENT is to GOODWILL as TYRANT is to ___',a:'oppression',ch:['oppression','freedom','justice','liberty'],hint:'A benevolent ruler creates goodwill; a tyrant creates...'},
+{type:'analogy',word:'consent',q:'CONSENT is to PERMISSION as OPPORTUNITY is to ___',a:'chance',ch:['chance','refusal','barrier','obstacle'],hint:'Consent as a noun is permission; opportunity as a noun is...'},
+{type:'analogy',word:'discreet',q:'DISCREET is to DIPLOMAT as EXTENSIVE is to ___',a:'encyclopedia',ch:['encyclopedia','brief','narrow','short'],hint:'A diplomat must be discreet; an encyclopedia must be...'},
+{type:'analogy',word:'vanquish',q:'VANQUISH is to CONQUER as ESTEEM is to ___',a:'admire',ch:['admire','despise','ignore','scorn'],hint:'Both pairs are synonyms — vanquish means conquer, so esteem means...'},
+{type:'analogy',word:'mission',q:'MISSION is to EXPLORER as ASSIGNMENT is to ___',a:'student',ch:['student','vacation','teacher','principal'],hint:'An explorer goes on a mission; a student completes an...'},
+{type:'analogy',word:'exaggerate',q:'EXAGGERATE is to STORYTELLER as EMBELLISH is to ___',a:'tale',ch:['tale','fact','truth','reality'],hint:'A storyteller exaggerates; what gets embellished?'},
+{type:'analogy',word:'fantastic',q:'FANTASTIC is to IMAGINATION as EXTENSIVE is to ___',a:'exploration',ch:['exploration','imagination','belief','knowledge'],hint:'Fantastic things come from imagination; extensive journeys come from...'},
+{type:'analogy',word:'marvel',q:'MARVEL is to GREAT WALL as MISSION is to ___',a:'Silk Road',ch:['Silk Road','vacation','holiday','retreat'],hint:'The Great Wall is a marvel; the Silk Road was Marco Polo\'s...'},
+{type:'analogy',word:'relinquish',q:'RELINQUISH is to GRASP as VANQUISH is to ___',a:'surrender',ch:['surrender','conquer','defeat','overcome'],hint:'Both pairs contain antonyms — relinquish is opposite of grasp, so vanquish is opposite of...'},
+{type:'analogy',word:'tyrant',q:'TYRANT is to FREEDOM as OBSTACLE is to ___',a:'opportunity',ch:['opportunity','barrier','problem','difficulty'],hint:'A tyrant suppresses freedom; an obstacle suppresses...'},
+{type:'analogy',word:'engross',q:'ENGROSS is to READER as INTRIGUE is to ___',a:'explorer',ch:['explorer','author','teacher','librarian'],hint:'A book engrosses a reader; a mystery intrigues an...'},
+{type:'analogy',word:'opportunity',q:'OPPORTUNITY is to FAVORABLE as TYRANT is to ___',a:'cruel',ch:['cruel','generous','fair','helpful'],hint:'An opportunity is by definition favorable; a tyrant is by definition...'},
+{type:'analogy',word:'consent',q:'CONSENT is to PARENT as MISSION is to ___',a:'commander',ch:['commander','student','explorer','traveler'],hint:'A parent gives consent; a commander assigns a...'},
+{type:'analogy',word:'discreet',q:'DISCREET is to SECRETS as EXTENSIVE is to ___',a:'distance',ch:['distance','privacy','silence','caution'],hint:'A discreet person keeps secrets; an extensive journey covers great...'},
+{type:'analogy',word:'fantastic',q:'FANTASTIC is to MARVEL as TYRANT is to ___',a:'fear',ch:['fear','admiration','freedom','justice'],hint:'Fantastic things produce marveling; a tyrant produces...'},
+{type:'analogy',word:'benevolent',q:'BENEVOLENT is to MALEVOLENT as ESTEEM is to ___',a:'contempt',ch:['contempt','respect','admiration','regard'],hint:'Benevolent and malevolent are opposites; esteem and contempt are also...'},
+{type:'analogy',word:'vanquish',q:'VANQUISH is to VICTOR as RELINQUISH is to ___',a:'loser',ch:['loser','winner','champion','conqueror'],hint:'A victor vanquishes; who relinquishes?'},
+{type:'analogy',word:'exaggerate',q:'EXAGGERATE is to TALL TALE as MARVEL is to ___',a:'spectacle',ch:['spectacle','lie','fiction','fantasy'],hint:'A tall tale exaggerates; a spectacle is a great...'},
+// ── SIMILES (35) ──────────────────────────────────────────────────────────
+{type:'simile',word:'benevolent',q:'Complete the simile: The king\'s benevolent rule was like ___',a:'rain on a dry field — coming without being asked, giving without expecting return',ch:['rain on a dry field — coming without being asked, giving without expecting return','a drought that arrives precisely when the harvest is ready','a storm that destroys the crops it pretended to nourish','a frost that settles on the field the night before the planting'],hint:'Think: benevolence is freely given, without expectation — like rain that comes because it comes, not because anyone asked'},
+{type:'simile',word:'benevolent',q:'Complete the simile: His smile was as benevolent as ___',a:'a teacher who waits for the slowest student — not impatiently, but with the certainty that understanding will come',ch:['a teacher who waits for the slowest student — not impatiently, but with the certainty that understanding will come','a teacher who moves on when the first hand goes up and never looks back','a teacher who grades on a curve that always benefits everyone but teaches nothing','a teacher who decides the class is ready before the class has decided it is'],hint:'Think: benevolent patience = waiting with genuine goodwill, not performing it — like a teacher whose wait is an act of faith'},
+{type:'simile',word:'consent',q:'Complete the simile: Her consent was given like ___',a:'a key placed freely in your hand — offered, not surrendered',ch:['a key placed freely in your hand — offered, not surrendered','a key hidden in a locked room that you must find before you can use it','a door that will only open if you knock in exactly the right way','a lock changed without warning so that no key you have will fit'],hint:'Think: consent freely given = offering the key, not giving up the lock — it is still yours to take back'},
+{type:'simile',word:'consent',q:'Complete the simile: Without his consent, the plan felt as unstable as ___',a:'a bridge built over a river that hasn\'t yet agreed to be crossed',ch:['a bridge built over a river that hasn\'t yet agreed to be crossed','a bridge with pylons sunk deep and checked twice before the first plank was laid','a river road traveled by thousands who have agreed on every condition','a path that has been mapped, measured, and confirmed by everyone who will use it'],hint:'Think: acting without consent = building over conditions that haven\'t agreed to hold you'},
+{type:'simile',word:'discreet',q:'Complete the simile: The ambassador was as discreet as ___',a:'a shadow that follows without touching anything',ch:['a shadow that follows without touching anything','a spotlight that seeks out the most private corners of a room','a drumbeat that announces itself before entering every conversation','a signal fire built on the highest hill so that everyone for miles can see it'],hint:'Think: discreet = present but leaving no trace — like a shadow, always there but never disturbing anything'},
+{type:'simile',word:'discreet',q:'Complete the simile: She kept the secret as discreetly as ___',a:'a river holds the stone it has smoothed for a thousand years — without mentioning it to the banks',ch:['a river holds the stone it has smoothed for a thousand years — without mentioning it to the banks','a river that floods its banks in spring and tells every field what it has carried','a stream that deposits its silt visibly at the mouth and leaves nothing to the imagination','a current that announces its direction to every obstacle it passes'],hint:'Think: discreet = carrying something privately, never making it the subject — like a river that smoothed the stone and never once mentioned the stone'},
+{type:'simile',word:'engross',q:'Complete the simile: The story engrossed her like ___',a:'a tide pulling her out from shore — not violent, but insistent, and the shore kept getting farther',ch:['a tide pulling her out from shore — not violent, but insistent, and the shore kept getting farther','a gentle wave that washes over your feet and immediately retreats','a tide that recedes before you\'ve finished noticing it has arrived','a calm lake that holds your reflection but requires nothing of you'],hint:'Think: complete engrossment = being drawn out past the point of return — like a tide that is not asking permission'},
+{type:'simile',word:'engross',q:'Complete the simile: The puzzle engrossed him like ___',a:'a locked room he had agreed to stay in — not trapped, but unwilling to leave until he understood the door',ch:['a locked room he had agreed to stay in — not trapped, but unwilling to leave until he understood the door','a room so large and empty that he quickly grew bored and looked for the exit','a corridor that had no doors at all — easy to enter and easier to leave','a room with a wide-open window and a view that required nothing of him'],hint:'Think: being engrossed = choosing to stay inside a problem until you solve it — like a locked room you agreed to be in'},
+{type:'simile',word:'esteem',q:'Complete the simile: The esteem the court held for Marco Polo was like ___',a:'a lantern carried ahead of someone on a dark road — lighting the path before they arrive',ch:['a lantern carried ahead of someone on a dark road — lighting the path before they arrive','a torch left at the crossroads so that anyone who needs it can take it and go','a lamp turned low because the person holding it doesn\'t want to be noticed','a candle put out the moment the traveler comes close to seeing its light'],hint:'Think: esteem leads reputation — it lights the path before the person walks it, the way a lantern clears the dark'},
+{type:'simile',word:'esteem',q:'Complete the simile: He was held in as much esteem as ___',a:'the first light of dawn — not the brightest, but the one everything depends on to begin',ch:['the first light of dawn — not the brightest, but the one everything depends on to begin','a streetlamp in a city full of streetlamps — present, useful, indistinguishable from the rest','the last light before dark — welcomed, but only because nothing else is left','a lamp turned on by accident that nobody bothered to turn off'],hint:'Think: esteem is foundational — like dawn, the first light that makes all the other lights possible'},
+{type:'simile',word:'exaggerate',q:'Complete the simile: His story grew like ___',a:'a fish tale told to a larger audience each time — the fish gaining a foot with every telling',ch:['a fish tale told to a larger audience each time — the fish gaining a foot with every telling','a story faithfully retold to match what actually happened, no matter how many times it was told','a memory that stays precisely the same shape regardless of how long it has been stored','a record that documents events exactly as they occurred'],hint:'Think: to exaggerate = to let the story grow in size with each retelling — like a fish that gains a foot every time someone asks how big it was'},
+{type:'simile',word:'exaggerate',q:'Complete the simile: The traveler\'s account was as exaggerated as ___',a:'a map drawn by someone who had only heard the geography described and never walked it',ch:['a map drawn by someone who had only heard the geography described and never walked it','a survey completed by a careful cartographer who checked every measurement twice','a chart drawn from satellite images and confirmed by the people who walked the ground','a map revised after every new expedition to correct whatever the last version got wrong'],hint:'Think: exaggeration = imagining without verifying, drawing from hearsay — like a map made entirely from secondhand description'},
+{type:'simile',word:'extensive',q:'Complete the simile: His travels were as extensive as ___',a:'the silence after a long sentence — not brief, not passing, but filling every available space',ch:['the silence after a long sentence — not brief, not passing, but filling every available space','the pause between two words in a conversation that will pick up immediately','the gap between footsteps that closes before it is fully noticed','the space between heartbeats — short, regular, never quite long enough to measure'],hint:'Think: extensive = filling every space — like a silence that doesn\'t end, but occupies the whole of everything that follows'},
+{type:'simile',word:'extensive',q:'Complete the simile: The Silk Road was as extensive as ___',a:'a sentence whose subject is in one country and whose period is in another',ch:['a sentence whose subject is in one country and whose period is in another','a word that begins and ends in the same place it started, going nowhere outside itself','a paragraph contained entirely within one chapter of a book written in a single room','a single syllable spoken and finished before the listener can move'],hint:'Think: extensive = crossing so much distance that beginning and end are in different worlds — like a sentence whose grammar spans continents'},
+{type:'simile',word:'fantastic',q:'Complete the simile: The riches of Kublai Khan\'s palace were as fantastic as ___',a:'a dream recounted so vividly that the listener doubts whether the teller ever woke up',ch:['a dream recounted so vividly that the listener doubts whether the teller ever woke up','a perfectly ordinary day described plainly to someone who experienced the same one','a familiar story told the same way it has always been told, with nothing added','a report read from notes taken at the time, with no elaboration and no color'],hint:'Think: fantastic = so extraordinary that describing it makes you sound like you\'re still asleep — like a dream told so fully that waking seems in question'},
+{type:'simile',word:'fantastic',q:'Complete the simile: The city described in his journal was as fantastic as ___',a:'a building no architect had been asked to design — it had grown out of a desire that nobody planned',ch:['a building no architect had been asked to design — it had grown out of a desire that nobody planned','a building drawn to specification and constructed to code, with no feature unaccounted for','a structure reviewed by the city before the first stone was laid, exactly as imagined','a design produced from a standard template and replicated in a dozen other cities'],hint:'Think: fantastic = emerging from imagination without being planned — like a building nobody commissioned that grew from sheer wanting'},
+{type:'simile',word:'intrigue',q:'Complete the simile: The East intrigued Marco Polo like ___',a:'a door heard through a wall — not yet open, not yet seen, but unmistakably there',ch:['a door heard through a wall — not yet open, not yet seen, but unmistakably there','a door so clearly labeled that he knew exactly what was behind it before he arrived','a door that he had already opened many times and found no surprises on the other side','a door wide open with a sign listing everything that could be seen through it'],hint:'Think: intrigue = the irresistible pull of what is sensed but not yet known — like a door heard but not yet seen'},
+{type:'simile',word:'intrigue',q:'Complete the simile: The locked chest intrigued her like ___',a:'a question asked in a language you almost understand — meaning close enough to touch but not yet held',ch:['a question asked in a language you almost understand — meaning close enough to touch but not yet held','a question asked clearly in your own language with an obvious answer','a statement made so plainly that it required no interpretation at all','a message already translated and read, with nothing left to puzzle over'],hint:'Think: intrigue = the frustration and fascination of almost-understanding — like language that is just beyond your grasp'},
+{type:'simile',word:'marvel',q:'Complete the simile: The Great Wall rose out of the landscape like ___',a:'an argument the mountain had been making for a thousand years — and suddenly you could read it',ch:['an argument the mountain had been making for a thousand years — and suddenly you could read it','a feature the geographers had accurately placed on every map for centuries','a road that went exactly where any traveler would have predicted','a path worn by ordinary use into a shape that surprised no one'],hint:'Think: a marvel like the Great Wall = the landscape making an argument that suddenly becomes legible — ancient, deliberate, suddenly comprehensible'},
+{type:'simile',word:'marvel',q:'Complete the simile: The city of Xanadu was a marvel like ___',a:'a story told so well it creates the country it describes',ch:['a story told so well it creates the country it describes','a history book that documents facts without embellishment or imagination','a report that matches the reality so closely that no description adds anything','a record that is useful precisely because it is as plain as the event itself'],hint:'Think: a marvel = something that brings into existence what it seems to only describe — like a story that doesn\'t report a world but makes it'},
+{type:'simile',word:'mission',q:'Complete the simile: His mission carried him across Asia like ___',a:'a current that had no interest in his preferences — it was going where it was going',ch:['a current that had no interest in his preferences — it was going where it was going','a gentle breeze that changed direction every time he asked it to','a tide he could stop by raising his hand when he found a pleasant bay','a river he had the option of swimming against at any point he chose'],hint:'Think: being on a mission = being carried forward by something that doesn\'t negotiate with you — like a current that is not asking where you\'d prefer to end up'},
+{type:'simile',word:'mission',q:'Complete the simile: She pursued her mission like ___',a:'a navigator who has burned the return map — not reckless, but committed past the point of reconsidering',ch:['a navigator who has burned the return map — not reckless, but committed past the point of reconsidering','a traveler who keeps one eye on the horizon and the other on the road home','a sailor who plans every voyage with a clear route back built into the departure','a hiker who memorizes the trail in reverse before taking the first step forward'],hint:'Think: total mission commitment = choosing not to keep the return option — like burning the map home'},
+{type:'simile',word:'opportunity',q:'Complete the simile: The open trade routes were an opportunity like ___',a:'a door in a wall no one had ever looked for — once seen, impossible to explain how you\'d missed it',ch:['a door in a wall no one had ever looked for — once seen, impossible to explain how you\'d missed it','a wall so solid and well-maintained that no opening had ever existed or been imagined','a door everyone knew about but agreed not to use because the room behind it seemed ordinary','a gate that required a fee and a waiting period and a set of credentials already in use'],hint:'Think: a great opportunity = something that was always there and becomes obvious the moment someone sees it — like a door in a wall'},
+{type:'simile',word:'opportunity',q:'Complete the simile: He recognized the opportunity like ___',a:'a hunter who sees the gap before the animal does — still, already decided, before the moment has fully arrived',ch:['a hunter who sees the gap before the animal does — still, already decided, before the moment has fully arrived','a hunter who waits for the moment to announce itself before deciding whether to act','a tracker who moves only when conditions are perfect and otherwise holds back indefinitely','a watcher who identifies every opportunity as interesting and acts on none of them'],hint:'Think: recognizing opportunity = seeing the gap before it fully opens — like a hunter who is already committed before the animal completes its move'},
+{type:'simile',word:'relinquish',q:'Complete the simile: He relinquished his post at the Chinese court like ___',a:'a sailor leaving a harbor that has been home long enough to feel like the sea — not without grief, but without hesitation',ch:['a sailor leaving a harbor that has been home long enough to feel like the sea — not without grief, but without hesitation','a sailor who refuses to leave the dock because the harbor is all he knows','a traveler who unpacks all his bags and declares the first port the final destination','a navigator who has forgotten that the purpose of the harbor was never to stay'],hint:'Think: relinquishing something truly valued = leaving with both grief and certainty — like a sailor who loved the harbor but knew the sea was still the point'},
+{type:'simile',word:'relinquish',q:'Complete the simile: She relinquished control like ___',a:'a rope handed off mid-climb — carefully, to someone capable, before the weight became too much',ch:['a rope handed off mid-climb — carefully, to someone capable, before the weight became too much','a rope dropped carelessly because she decided the climb was not worth finishing','a grip released without checking whether anyone was there to take the weight','a rope abandoned mid-cliff with no consideration for what it was holding up'],hint:'Think: relinquishing something with care = passing it deliberately to capable hands — like a rope transfer on a difficult climb'},
+{type:'simile',word:'tyrant',q:'Complete the simile: His rule was as oppressive as ___',a:'a ceiling built lower every year until standing upright became a memory',ch:['a ceiling built lower every year until standing upright became a memory','a ceiling raised high enough that everyone could stand with room to spare','a room with no walls and a sky for a ceiling and a horizon for a floor','a building with no roof, open to every weather, but never closed'],hint:'Think: tyranny = the gradual lowering of possibility — like a ceiling that makes you smaller every year without moving itself'},
+{type:'simile',word:'tyrant',q:'Complete the simile: The tyrant\'s commands rang out like ___',a:'a bell rung in an empty room — loud, certain of itself, hearing nothing back',ch:['a bell rung in an empty room — loud, certain of itself, hearing nothing back','a bell rung and answered by every other bell in the city in glad recognition','a chime that invites a response and waits with genuine interest for one to arrive','a note played at the start of a conversation, offering a tone for the other person to match'],hint:'Think: a tyrant speaks but doesn\'t listen — like a bell rung in an empty room, certain of its own sound, needing no answer'},
+{type:'simile',word:'vanquish',q:'Complete the simile: He vanquished his fear like ___',a:'a traveler who crosses a mountain pass — not by making the mountain smaller, but by walking until the other side is real',ch:['a traveler who crosses a mountain pass — not by making the mountain smaller, but by walking until the other side is real','a traveler who studies the mountain so carefully that he convinces himself it isn\'t there','an explorer who waits at the base until someone else confirms the pass is safe','a hiker who turns back every time the grade steepens and calls the mountain vanquished'],hint:'Think: vanquishing fear = not denying the obstacle, but crossing through it — like a pass that doesn\'t shrink, you just walk until it\'s behind you'},
+{type:'simile',word:'vanquish',q:'Complete the simile: The travelers vanquished the desert\'s challenges like ___',a:'water wearing through stone — not once, not forcefully, but with the patience that knows it will get through',ch:['water wearing through stone — not once, not forcefully, but with the patience that knows it will get through','a hammer swung hard at the stone once, then put away when the stone didn\'t break','a crowd that pushes against the stone together and then disperses when it doesn\'t move','a current that hits the rock once and redirects around it permanently'],hint:'Think: vanquishing through persistence = like water and stone — not a single blow, but sustained presence that wins over time'},
+{type:'simile',word:'esteem',q:'Complete the simile: The explorer\'s esteem among his peers was like ___',a:'a current the other boats navigated around — not chosen, just there, shaping everything',ch:['a current the other boats navigated around — not chosen, just there, shaping everything','a current invisible to all the boats except the one that created it','a ripple that fades before reaching the far shore','a wave that builds and breaks and is forgotten before the next tide'],hint:'Think: great esteem = a force that changes the behavior of everything around it without being asked — like a current'},
+{type:'simile',word:'exaggerate',q:'Complete the simile: His account exaggerated the distances like ___',a:'a memory that keeps walking after the journey stops — adding miles to what was already a long road',ch:['a memory that keeps walking after the journey stops — adding miles to what was already a long road','a logbook updated daily with accurate mileage and nothing added in retrospect','a record that shrinks the journey slightly with each retelling to account for fatigue','a map that corrects its own exaggerations every time it is printed anew'],hint:'Think: exaggerating distances = a memory that extends the journey after it\'s over — the road grows when you stop walking it'},
+{type:'simile',word:'mission',q:'Complete the simile: Her mission guided her the way ___',a:'a fixed star guides a sailor — it doesn\'t lead from the front, it only shows you which way is forward',ch:['a fixed star guides a sailor — it doesn\'t lead from the front, it only shows you which way is forward','a lighthouse guides a ship that has already decided to stay close to shore','a road sign tells a driver which exit to take before pointing toward the next sign','a guide who walks ahead and stops every few miles to check that you are still following'],hint:'Think: mission as guide = it doesn\'t walk with you, it orients you — like a star that shows direction without closing distance'},
+{type:'simile',word:'opportunity',q:'Complete the simile: The Silk Road was an opportunity as rare as ___',a:'a clear mountain pass in winter — real, available, and absolutely not guaranteed to stay that way',ch:['a clear mountain pass in winter — real, available, and absolutely not guaranteed to stay that way','a mountain path that has been open every winter for a century and will be open again next year','a road that widens every decade and becomes easier to travel with every passing season','a route so well-established that missing it today simply means taking it tomorrow'],hint:'Think: a rare opportunity = present now, but not promised for later — like a winter pass that is open today and may be closed tomorrow'},
+{type:'simile',word:'vanquish',q:'Complete the simile: To vanquish your doubt is like ___',a:'lighting a room that has been dark so long the darkness had stopped seeming like a problem — suddenly you see everything that was there all along',ch:['lighting a room that has been dark so long the darkness had stopped seeming like a problem — suddenly you see everything that was there all along','turning on a light in a room you never doubted was empty — confirming what you already knew','letting your eyes adjust to the dark until the darkness itself becomes familiar','deciding the darkness is comfortable and choosing to stay in it rather than looking for the switch'],hint:'Think: vanquishing doubt = illuminating what was always there — like light that doesn\'t create the room, it just makes it visible'},
+// ── METAPHORS (35) ──────────────────────────────────────────────────────────
+{type:'metaphor',word:'benevolent',q:'Which sentence is a metaphor using BENEVOLENT?',a:'Kublai Khan\'s benevolent reign was a harvest — it fed not just the body but the sense that life was supposed to be worth living.',ch:['Kublai Khan\'s benevolent reign was a harvest — it fed not just the body but the sense that life was supposed to be worth living.','Kublai Khan\'s reign was as benevolent as a harvest — it provided for everyone under it.','Like a harvest that feeds everyone, his benevolent reign was generous in ways that sustained the whole kingdom.','His reign was benevolent in the way a harvest is — it came at the right time and gave what was needed.'],hint:'Think: calling the benevolent reign directly a harvest — it IS the nourishment, not just something that provides it'},
+{type:'metaphor',word:'benevolent',q:'Which sentence is a metaphor using BENEVOLENT?',a:'Benevolence is not a gift — it is a structure, and the people who live inside it rarely see the beams.',ch:['Benevolence is not a gift — it is a structure, and the people who live inside it rarely see the beams.','Benevolence is like a structure — it holds people up even when they don\'t notice it.','Like a structure whose beams go unseen, benevolence supports those within it invisibly.','Benevolence functions like a structure — essential, invisible once you\'re inside it.'],hint:'Think: calling benevolence directly a structure — it IS the architecture, and those inside live by it without seeing it'},
+{type:'metaphor',word:'consent',q:'Which sentence is a metaphor using CONSENT?',a:'Consent is not a door you pass through once — it is a road you travel together, and either traveler can stop.',ch:['Consent is not a door you pass through once — it is a road you travel together, and either traveler can stop.','Consent is like a door — once you pass through, both parties are in the same room.','Like a road you agree to travel together, consent is an ongoing commitment that either person can step off.','Consent works the way a shared road does — both travelers move along it together.'],hint:'Think: calling consent directly a road — it IS the ongoing journey, not a one-time threshold'},
+{type:'metaphor',word:'consent',q:'Which sentence is a metaphor using CONSENT?',a:'Without consent, the plan was a building with no foundation — impressive in design, certain to fall.',ch:['Without consent, the plan was a building with no foundation — impressive in design, certain to fall.','Without consent, the plan was like a building without a foundation — it looked good but wouldn\'t stand.','Like a building with no foundation, the plan without consent was guaranteed to collapse.','The plan without consent resembled a building with no foundation — the design was good but the base was missing.'],hint:'Think: calling the plan directly a building without foundation — it IS the unstable structure, consent IS what makes it stand'},
+{type:'metaphor',word:'discreet',q:'Which sentence is a metaphor using DISCREET?',a:'A discreet person is the librarian of other people\'s secrets — catalogued, protected, and never read aloud.',ch:['A discreet person is the librarian of other people\'s secrets — catalogued, protected, and never read aloud.','A discreet person is like a librarian — they keep information organized and don\'t share it.','Like a librarian who keeps the catalog private, a discreet person stores what they know without sharing it.','A discreet person functions the way a librarian does — holding information without broadcasting it.'],hint:'Think: calling the discreet person directly a librarian — they ARE the keeper, and secrets ARE the collection never shared'},
+{type:'metaphor',word:'discreet',q:'Which sentence is a metaphor using DISCREET?',a:'Discretion is not silence — it is the knowledge of which words, in whose ears, and never the rest.',ch:['Discretion is not silence — it is the knowledge of which words, in whose ears, and never the rest.','Discretion is like silence — it means holding back what doesn\'t need to be said.','Like silence that knows when to end, discretion is the judgment of when words are safe.','Discretion works the way silence does — it keeps what shouldn\'t be heard from being heard.'],hint:'Think: calling discretion directly a form of knowledge — it IS the understanding of audience and timing, not just the absence of speech'},
+{type:'metaphor',word:'engross',q:'Which sentence is a metaphor using ENGROSS?',a:'The manuscript was a gravity well — it engrossed every scholar who came close enough and held them until they finished or forgot the world.',ch:['The manuscript was a gravity well — it engrossed every scholar who came close enough and held them until they finished or forgot the world.','The manuscript was as engrossing as a gravity well — scholars who studied it found it hard to put down.','Like a gravity well that holds everything close, the manuscript engrossed every scholar who came near it.','The manuscript engrossed scholars the way a gravity well holds objects — pulling them in and not releasing them.'],hint:'Think: calling the manuscript directly a gravity well — it IS the force, and engrossment IS what happens to anyone who enters its range'},
+{type:'metaphor',word:'engross',q:'Which sentence is a metaphor using ENGROSS?',a:'To be engrossed is to be translated — you are no longer in the room you entered but in the country the story describes.',ch:['To be engrossed is to be translated — you are no longer in the room you entered but in the country the story describes.','To be engrossed is like being translated — you\'ve been moved from your actual location to another.','Like a translation that moves meaning from one language to another, being engrossed moves you from your room into the story.','Being engrossed works the way translation does — you end up somewhere else without leaving the page.'],hint:'Think: calling engrossment directly translation — it IS the transport, and the reader IS the text that gets moved across the border'},
+{type:'metaphor',word:'esteem',q:'Which sentence is a metaphor using ESTEEM?',a:'The esteem of the court was a currency Marco Polo spent carefully — once it ran out, the road home would cost more than he had.',ch:['The esteem of the court was a currency Marco Polo spent carefully — once it ran out, the road home would cost more than he had.','The esteem of the court was like a currency — spending it too quickly would leave him with nothing.','Like a currency that runs out if not carefully managed, the court\'s esteem required Marco Polo\'s careful spending.','The court\'s esteem functioned as a currency for Marco Polo — it could be earned, spent, and exhausted.'],hint:'Think: calling esteem directly a currency — it IS the capital, and losing it IS bankruptcy in a world where you cannot mint more'},
+{type:'metaphor',word:'esteem',q:'Which sentence is a metaphor using ESTEEM?',a:'Self-esteem is not what you think of yourself — it is the bedrock you stand on when other people\'s opinions are water.',ch:['Self-esteem is not what you think of yourself — it is the bedrock you stand on when other people\'s opinions are water.','Self-esteem is like bedrock — it gives you a solid place to stand when opinions try to wash you away.','Like bedrock that holds firm when water rises, self-esteem keeps you grounded when criticism floods in.','Self-esteem functions the way bedrock does — it provides a foundation that survives the water of other people\'s views.'],hint:'Think: calling self-esteem directly bedrock — it IS the foundation, and opinions ARE the water that cannot erode what you stand on'},
+{type:'metaphor',word:'exaggerate',q:'Which sentence is a metaphor using EXAGGERATE?',a:'His account of China was a cathedral — everything was correct in proportion, but the proportions had all been doubled.',ch:['His account of China was a cathedral — everything was correct in proportion, but the proportions had all been doubled.','His account of China was like a cathedral — grand and impressive, but scaled beyond what actually exists.','Like a cathedral that has expanded every real element to twice its size, his account preserved the truth while exaggerating its dimensions.','His account functioned like a cathedral — architecturally true, but built at a scale the original couldn\'t match.'],hint:'Think: calling his account directly a cathedral — it IS the monument, exact in structure but exaggerated in scale, true and untrue simultaneously'},
+{type:'metaphor',word:'exaggerate',q:'Which sentence is a metaphor using EXAGGERATE?',a:'Every exaggeration is a confession — it tells you what the teller most wanted to be true.',ch:['Every exaggeration is a confession — it tells you what the teller most wanted to be true.','Every exaggeration is like a confession — it reveals the wishes behind the words.','Like a confession that reveals what someone hopes for, every exaggeration shows what the speaker most wished were real.','Every exaggeration functions as a confession — you can read desire in the gap between the story and the truth.'],hint:'Think: calling every exaggeration directly a confession — it IS the revelation, and desire IS what every inflated detail confesses to'},
+{type:'metaphor',word:'extensive',q:'Which sentence is a metaphor using EXTENSIVE?',a:'His knowledge of the East was not a summary — it was an atlas, page after page, and each page had its own country.',ch:['His knowledge of the East was not a summary — it was an atlas, page after page, and each page had its own country.','His knowledge of the East was as extensive as an atlas — covering many regions in considerable depth.','Like an atlas with a page for each country, his extensive knowledge of the East covered territory after territory.','His extensive knowledge of the East was comparable to an atlas — comprehensive, covering every major area.'],hint:'Think: calling his knowledge directly an atlas — it IS the comprehensive record, and every page IS a country mapped inside his memory'},
+{type:'metaphor',word:'extensive',q:'Which sentence is a metaphor using EXTENSIVE?',a:'The Silk Road was not a path — it was an argument the world was making with itself about what it could become.',ch:['The Silk Road was not a path — it was an argument the world was making with itself about what it could become.','The Silk Road was like an argument — it was a contested route, with many different interests along the way.','Like an argument the world was having, the Silk Road was the contested ground where different civilizations met.','The Silk Road functioned like an argument — it created disagreement and negotiation at every point along its length.'],hint:'Think: calling the Silk Road directly an argument — it IS the ongoing negotiation, and its extensiveness IS the scope of what the world was debating with itself'},
+{type:'metaphor',word:'fantastic',q:'Which sentence is a metaphor using FANTASTIC?',a:'Marco Polo\'s Italy was a room he had outgrown — the fantastic world he brought home was too large for the walls to contain.',ch:['Marco Polo\'s Italy was a room he had outgrown — the fantastic world he brought home was too large for the walls to contain.','Marco Polo\'s Italy felt too small for the fantastic world he had seen, like a room he had outgrown.','Like a room too small for the fantastic world inside him, Italy seemed confined after everything Marco Polo had witnessed.','The fantastic world Marco Polo brought home made Italy feel like a room he had outgrown.'],hint:'Think: calling Italy directly a room he had outgrown — it IS the container, and the fantastic world he carried IS too large for its walls'},
+{type:'metaphor',word:'fantastic',q:'Which sentence is a metaphor using FANTASTIC?',a:'The fantastic is not the impossible — it is the as-yet-unverified, and history keeps verifying it one discovery at a time.',ch:['The fantastic is not the impossible — it is the as-yet-unverified, and history keeps verifying it one discovery at a time.','The fantastic is like the impossible — it describes things that haven\'t been confirmed and may not be real.','Like the impossible that turns out to be real, the fantastic is what history has not yet checked.','The fantastic functions like the impossible — it describes the unverified things that might eventually turn out to be true.'],hint:'Think: calling the fantastic directly the as-yet-unverified — it IS provisional impossibility, and history IS the engine that converts it'},
+{type:'metaphor',word:'intrigue',q:'Which sentence is a metaphor using INTRIGUE?',a:'The East was an intrigue Marco Polo had agreed to solve before he understood the question.',ch:['The East was an intrigue Marco Polo had agreed to solve before he understood the question.','The East intrigued Marco Polo before he could articulate what about it fascinated him.','Like an intrigue that must be solved before its terms are fully understood, the East captured Marco Polo\'s curiosity before he could name it.','The East held an intrigue for Marco Polo — it fascinated him at a level he couldn\'t yet explain.'],hint:'Think: calling the East directly an intrigue — it IS the mystery, and Marco Polo\'s entire journey IS the attempt to solve what he agreed to before knowing its terms'},
+{type:'metaphor',word:'intrigue',q:'Which sentence is a metaphor using INTRIGUE?',a:'Curiosity is intrigue\'s engine — without it, even the most elaborate plot goes nowhere.',ch:['Curiosity is intrigue\'s engine — without it, even the most elaborate plot goes nowhere.','Curiosity is like intrigue\'s engine — it powers the interest that keeps a mystery moving.','Like an engine that drives intrigue forward, curiosity is what keeps a mystery alive.','Curiosity functions like intrigue\'s engine — the more curious you are, the more the intrigue moves.'],hint:'Think: calling curiosity directly intrigue\'s engine — it IS the motor, and without it even the most elaborate intrigue stalls'},
+{type:'metaphor',word:'marvel',q:'Which sentence is a metaphor using MARVEL?',a:'The Forbidden City was not a place — it was a question architecture had asked and answered in one move.',ch:['The Forbidden City was not a place — it was a question architecture had asked and answered in one move.','The Forbidden City was as marvelous as a question answered in one move — complete and awe-inspiring.','Like a question that answers itself by being posed, the Forbidden City was a marvel that explained its own existence.','The Forbidden City was a marvel — architecture had asked and answered the question of what grandeur could look like.'],hint:'Think: calling the city directly a question answered — it IS the architectural argument, and the answer IS the thing itself: both sides of the equation in one structure'},
+{type:'metaphor',word:'marvel',q:'Which sentence is a metaphor using MARVEL?',a:'To marvel is to be briefly returned to the age before you knew how things worked — when everything was first and nothing was explained.',ch:['To marvel is to be briefly returned to the age before you knew how things worked — when everything was first and nothing was explained.','To marvel is like being returned to childhood — you experience things as if seeing them for the first time.','Like being briefly returned to the age before explanation, to marvel is to see things as if they were new and unknown.','To marvel functions like a return to childhood — the experience of newness comes back before understanding intervenes.'],hint:'Think: calling marveling directly a return — it IS the temporal transport, and the age before explanation IS the destination'},
+{type:'metaphor',word:'mission',q:'Which sentence is a metaphor using MISSION?',a:'His mission was a compass — it didn\'t tell him the roads but made every crossroads answerable.',ch:['His mission was a compass — it didn\'t tell him the roads but made every crossroads answerable.','His mission was like a compass — it gave him direction even when the roads were unclear.','Like a compass that points north without naming the path, his mission gave him direction at every junction.','His mission functioned the way a compass does — not describing the road, but ensuring he always knew which way to face.'],hint:'Think: calling the mission directly a compass — it IS the orientation device, and crossroads ARE the moments it answers without showing the way'},
+{type:'metaphor',word:'mission',q:'Which sentence is a metaphor using MISSION?',a:'Every mission is a debt — you take something from the world by going, and you owe the return of what you find.',ch:['Every mission is a debt — you take something from the world by going, and you owe the return of what you find.','Every mission is like a debt — you are obligated to bring back what you found.','Like a debt that requires repayment, every mission obliges the traveler to bring back what they discovered.','A mission functions like a debt — you go, and the world expects you to return with what you took.'],hint:'Think: calling every mission directly a debt — it IS the obligation, and the knowledge returned IS the repayment owed'},
+{type:'metaphor',word:'opportunity',q:'Which sentence is a metaphor using OPPORTUNITY?',a:'The Silk Road was an opportunity — and like all opportunities, it belonged entirely to whoever was willing to walk it.',ch:['The Silk Road was an opportunity — and like all opportunities, it belonged entirely to whoever was willing to walk it.','The Silk Road was like an opportunity — it offered itself to everyone but rewarded only those who committed to it.','Like an opportunity that belongs to whoever accepts it, the Silk Road was open to all but given only to those who walked it.','The Silk Road functioned the way an opportunity does — present for everyone, claimed only by the ones who moved.'],hint:'Think: calling the Silk Road directly an opportunity — it IS the favorable condition, and ownership IS determined entirely by willingness to walk'},
+{type:'metaphor',word:'opportunity',q:'Which sentence is a metaphor using OPPORTUNITY?',a:'An opportunity is not a door — it is a current, and the moment you decide to wait it has already moved on.',ch:['An opportunity is not a door — it is a current, and the moment you decide to wait it has already moved on.','An opportunity is like a current — it keeps moving, and you have to step in while it\'s passing.','Like a current that moves whether or not you step into it, an opportunity doesn\'t wait for hesitation.','An opportunity functions like a current — it is in motion, and missing your moment means the water has gone.'],hint:'Think: calling opportunity directly a current — it IS the moving thing, and hesitation IS what lets it pass you before you\'ve decided'},
+{type:'metaphor',word:'relinquish',q:'Which sentence is a metaphor using RELINQUISH?',a:'To relinquish is to open a hand that has held so long it has forgotten what open feels like.',ch:['To relinquish is to open a hand that has held so long it has forgotten what open feels like.','To relinquish is like opening a hand that has held for too long — it requires effort and relearning.','Like opening a hand that has gripped until it forgot the sensation of release, to relinquish is to undo something practiced.','Relinquishing something long-held is like opening a hand that has forgotten the feeling of open.'],hint:'Think: calling relinquishing directly the act of opening a forgotten hand — it IS the unlearning, and the grip IS what has been mistaken for the natural state'},
+{type:'metaphor',word:'relinquish',q:'Which sentence is a metaphor using RELINQUISH?',a:'What we relinquish is never lost — it becomes the current that carries the next person who needed it more.',ch:['What we relinquish is never lost — it becomes the current that carries the next person who needed it more.','What we relinquish doesn\'t disappear — it moves like a current to wherever it is most needed.','Like a current that carries what is released to where it is needed, what we relinquish flows to someone else.','What we relinquish is passed on like a current — moving from our hands to wherever it finds use.'],hint:'Think: calling relinquishment directly a current — the released thing IS the water, and the next person IS where it was always supposed to go'},
+{type:'metaphor',word:'tyrant',q:'Which sentence is a metaphor using TYRANT?',a:'A tyrant is not a ruler — a tyrant is a mirror smashed so that everyone must see themselves only in his reflection.',ch:['A tyrant is not a ruler — a tyrant is a mirror smashed so that everyone must see themselves only in his reflection.','A tyrant is like a broken mirror — everyone sees themselves distorted through his power.','Like a mirror smashed so that all reflection is controlled, a tyrant removes the ability to see yourself independently.','A tyrant functions the way a broken mirror does — forcing a distorted view that serves only the one holding the pieces.'],hint:'Think: calling a tyrant directly a smashed mirror — it IS the destruction of independent self-perception, and everyone seeing only the tyrant\'s reflection IS the effect'},
+{type:'metaphor',word:'tyrant',q:'Which sentence is a metaphor using TYRANT?',a:'Fear is the tyrant\'s only infrastructure — everything else is borrowed from the people he has forgotten are holding it up.',ch:['Fear is the tyrant\'s only infrastructure — everything else is borrowed from the people he has forgotten are holding it up.','"A tyrant\'s fear-based rule is like an infrastructure — it holds everything together but belongs entirely to others."','Like an infrastructure built entirely of fear, a tyrant\'s power rests on what others hold up for him.','A tyrant\'s rule functions like an infrastructure of fear — it supports the structure while the people underneath it do the actual work.'],hint:'Think: calling fear directly the tyrant\'s only infrastructure — it IS the system, and the people\'s compliance IS the load-bearing element he has forgotten about'},
+{type:'metaphor',word:'vanquish',q:'Which sentence is a metaphor using VANQUISH?',a:'To vanquish your fear is not to destroy it — it is to discover that you are larger than it was.',ch:['To vanquish your fear is not to destroy it — it is to discover that you are larger than it was.','To vanquish fear is like discovering you are larger than it — the fear doesn\'t disappear, you just outgrow it.','Like discovering that you have grown larger than something that once seemed immense, vanquishing fear is a matter of comparison.','To vanquish fear works the way outgrowing something does — the fear stays the same size but you become bigger.'],hint:'Think: calling vanquishing directly a discovery — it IS the revelation that the fearful thing was always smaller than you were, and the vanquishing IS the recognition'},
+{type:'metaphor',word:'vanquish',q:'Which sentence is a metaphor using VANQUISH?',a:'Every vanquished obstacle is a stair — you stand on what defeated you, and from there the next step is higher than the last.',ch:['Every vanquished obstacle is a stair — you stand on what defeated you, and from there the next step is higher than the last.','Every vanquished obstacle is like a stair — it raises you up by being overcome.','Like a stair built from what tried to stop you, every vanquished obstacle gives you higher ground than before.','A vanquished obstacle functions like a stair — you stand on it, and the elevation you gain is real.'],hint:'Think: calling every vanquished obstacle directly a stair — it IS the step, and standing on what defeated you IS how you reach the next level'},
+{type:'metaphor',word:'mission',q:'Which sentence is a metaphor using MISSION?',a:'A mission is not a destination — it is the lens that decides which details of the journey are worth remembering.',ch:['A mission is not a destination — it is the lens that decides which details of the journey are worth remembering.','A mission is like a lens — it focuses your attention on the things that matter for the task.','Like a lens that filters what you see, a mission decides which parts of the journey are relevant.','A mission functions like a lens — it shapes what you notice and what falls out of focus.'],hint:'Think: calling a mission directly a lens — it IS the instrument of selective perception, and relevance IS what the lens determines'},
+{type:'metaphor',word:'opportunity',q:'Which sentence is a metaphor using OPPORTUNITY?',a:'Marco Polo\'s first journey was not a trip — it was an opening in the world that only appeared once.',ch:['Marco Polo\'s first journey was not a trip — it was an opening in the world that only appeared once.','Marco Polo\'s first journey was like an opening in the world — a rare chance that came once and was taken.','Like an opening in the world that appears only once, Marco Polo\'s journey was an opportunity of a specific moment.','Marco Polo\'s journey was as rare as an opening in the world — present for a moment, and then gone.'],hint:'Think: calling the journey directly an opening — it IS the aperture in time, not just something that passed through one'},
+{type:'metaphor',word:'intrigue',q:'Which sentence is a metaphor using INTRIGUE?',a:'The blank page of an unmapped continent is its own intrigue — it asks a question that only a traveler can answer.',ch:['The blank page of an unmapped continent is its own intrigue — it asks a question that only a traveler can answer.','An unmapped continent is intriguing like a blank page — it offers possibilities that the traveler gets to define.','Like an intrigue expressed in cartographic blank space, an unmapped continent asks the traveler what it contains.','An unmapped continent works like an intrigue — it presents the unknown as an invitation rather than a threat.'],hint:'Think: calling the blank map directly an intrigue — it IS the unanswered question, and the traveler IS the only one who can supply the answer'},
+{type:'metaphor',word:'discreet',q:'Which sentence is a metaphor using DISCREET?',a:'A discreet messenger is not invisible — they are architecture: the thing everything else passes through without noticing the walls.',ch:['A discreet messenger is not invisible — they are architecture: the thing everything else passes through without noticing the walls.','A discreet messenger is like architecture — present and functional but rarely consciously noticed.','Like architecture that does its work without being seen, a discreet messenger carries what matters while remaining unnoticed.','A discreet messenger functions like architecture — providing structure that others pass through without stopping to examine.'],hint:'Think: calling the discreet messenger directly architecture — they ARE the structure, not the content, and discretion IS what makes the walls invisible'},
+{type:'metaphor',word:'vanquish',q:'Which sentence is a metaphor using VANQUISH?',a:'The moment of vanquishing is always quieter than expected — it is less a battle won than a weight set down.',ch:['The moment of vanquishing is always quieter than expected — it is less a battle won than a weight set down.','The moment of vanquishing is like setting down a weight — less dramatic than the struggle suggested.','Like setting down a weight you have carried until you forgot its heaviness, vanquishing often arrives quietly.','Vanquishing something feels the way setting down a heavy burden does — not victorious, just suddenly lighter.'],hint:'Think: calling vanquishing directly a weight set down — the defeat IS the release, and victory IS the quiet that follows when you stop carrying the fight'}
+];
+
+var queue=[],qIdx=0,score=0,streak=0,typeTally={},answered=false;
+var fcIdx=0,fcOrder=[],fcFlipped=false;
+
+function renderCard(){
+  fcFlipped=false;
+  document.getElementById('card-inner').classList.remove('flipped');
+  var w=WORDS[fcOrder[fcIdx]];
+  document.getElementById('fc-progress').textContent=(fcIdx+1)+' / '+WORDS.length;
+  var front=document.getElementById('card-front');
+  clearEl(front);
+  front.appendChild(mk('div','card-word',w.word));
+  front.appendChild(mk('div','card-pos',w.pos));
+  front.appendChild(mk('div','card-tap','Tap to reveal'));
+  var back=document.getElementById('card-back');
+  clearEl(back);
+  back.appendChild(mk('div','card-def',w.def));
+  back.appendChild(mk('div','card-ex',w.ex));
+}
+function initFlashcards(){
+  fcOrder=[];for(var i=0;i<WORDS.length;i++)fcOrder.push(i);
+  fcIdx=0;renderCard();
+}
+document.getElementById('card-inner').addEventListener('click',function(){
+  fcFlipped=!fcFlipped;this.classList.toggle('flipped',fcFlipped);
+});
+document.getElementById('fc-flip').addEventListener('click',function(){
+  fcFlipped=!fcFlipped;document.getElementById('card-inner').classList.toggle('flipped',fcFlipped);
+});
+document.getElementById('fc-prev').addEventListener('click',function(){fcIdx=(fcIdx-1+WORDS.length)%WORDS.length;renderCard();});
+document.getElementById('fc-next').addEventListener('click',function(){fcIdx=(fcIdx+1)%WORDS.length;renderCard();});
+document.getElementById('fc-shuffle').addEventListener('click',function(){fcOrder=shuffle(fcOrder);fcIdx=0;renderCard();});
 
 function startQuiz(){
-  questions=shuffle(QUESTIONS).slice(0,TOTAL).map(q=>({...q,ch:shuffle(q.ch)}));
-  current=0;score=0;streak=0;bestStreak=0;answered=false;hintShown=false;results=[];
-  document.getElementById('start-screen').style.display='none';
-  document.getElementById('results').classList.remove('show');
-  document.getElementById('quiz').classList.add('show');
-  renderQuestion();
+  queue=shuffle(QUESTIONS).slice(0,20);
+  qIdx=0;score=0;streak=0;typeTally={};answered=false;
+  document.getElementById('result-section').style.display='none';
+  document.getElementById('quiz-section').style.display='';
+  showQuestion();
 }
-
-function renderQuestion(){
-  const q=questions[current];
-  const ts=TYPE_STYLES[q.type];
-  answered=false;hintShown=false;
-
-  // Update scorebar
-  document.getElementById('sb-score').textContent=score;
-  document.getElementById('sb-q').textContent=(current+1)+' / '+TOTAL;
-  document.getElementById('sb-streak').textContent=streak+(streak>=3?' 🔥':'');
-
-  // Progress
-  const pct=(current/TOTAL)*100;
-  document.getElementById('progress-bar-fill').style.width=pct+'%';
-  document.getElementById('progress-label').textContent=current+' of '+TOTAL+' complete';
-
-  // Type badge
-  const badge=document.getElementById('type-badge');
-  badge.textContent=ts.label.toUpperCase();
-  badge.style.color=ts.color;
-  badge.style.background=ts.bg;
-  badge.style.borderColor=ts.color;
-
-  // Question
+function showQuestion(){
+  answered=false;
+  var q=queue[qIdx];
+  var ts=TYPE_STYLES[q.type]||{label:q.type.toUpperCase(),color:'#94a3b8',bg:'rgba(51,65,85,.4)'};
+  document.getElementById('q-counter').textContent='Question '+(qIdx+1)+' of '+queue.length;
+  document.getElementById('q-score').textContent='Score: '+score;
+  document.getElementById('streak-badge').textContent='🔥 '+streak+' streak';
+  document.getElementById('progress-fill').style.width=((qIdx/queue.length)*100)+'%';
+  var bw=document.getElementById('type-badge-wrap');
+  clearEl(bw);
+  var badge=mk('span','type-badge',ts.label);
+  badge.style.color=ts.color;badge.style.background=ts.bg;
+  bw.appendChild(badge);
+  document.getElementById('q-word').textContent=q.word.toUpperCase();
   document.getElementById('q-text').textContent=q.q;
-  document.getElementById('hint-box').classList.remove('show');
-  document.getElementById('hint-text').textContent=q.hint;
-
-  // Choices
-  const choicesEl=document.getElementById('choices');
-  choicesEl.innerHTML='';
-  q.ch.forEach(c=>{
-    const btn=document.createElement('button');
-    btn.className='choice';btn.textContent=c;
-    btn.innerHTML=`<span>${c}</span><span class="choice-icon"></span>`;
-    btn.onclick=()=>selectAnswer(c,btn,q);
-    choicesEl.appendChild(btn);
+  var hb=document.getElementById('hint-box');
+  hb.style.display='none';hb.textContent=q.hint;
+  var cc=document.getElementById('choices');
+  clearEl(cc);
+  shuffle(q.ch).forEach(function(opt){
+    var btn=mk('button','choice-btn',opt);
+    btn.addEventListener('click',function(){selectAnswer(this,opt,q);});
+    cc.appendChild(btn);
   });
-
-  // Actions reset
-  document.getElementById('hint-btn').style.display='block';
-  document.getElementById('hint-btn').textContent='💡 Show Hint';
-  document.getElementById('feedback-text').textContent='';
-  document.getElementById('feedback-text').style.color='';
+  document.getElementById('feedback').textContent='';
+  document.getElementById('feedback').className='feedback';
   document.getElementById('next-btn').style.display='none';
-
-  // Card animation
-  const card=document.getElementById('q-card');
-  card.style.animation='none';void card.offsetWidth;
-  card.style.animation='fadeIn .3s ease';
 }
-
-function selectAnswer(choice,btn,q){
+document.getElementById('hint-btn').addEventListener('click',function(){
+  var hb=document.getElementById('hint-box');
+  hb.style.display=hb.style.display==='none'?'block':'none';
+});
+function selectAnswer(btn,opt,q){
   if(answered)return;
   answered=true;
-  const correct=choice===q.a;
-
-  // Disable all buttons
-  document.querySelectorAll('.choice').forEach(b=>{
-    b.disabled=true;
-    const span=b.querySelector('span:first-child');
-    if(span&&span.textContent===q.a){
-      b.classList.add('correct');b.querySelector('.choice-icon').textContent='✓';
-    } else if(b===btn&&!correct){
-      b.classList.add('wrong');b.querySelector('.choice-icon').textContent='✗';
-    } else {
-      b.classList.add('dim');
-    }
-  });
-
-  const card=document.getElementById('q-card');
-
+  var correct=opt===q.a;
+  var rect=btn.getBoundingClientRect();
+  var cx=rect.left+rect.width/2,cy=rect.top+rect.height/2;
+  var fb=document.getElementById('feedback');
   if(correct){
-    score++;streak++;if(streak>bestStreak)bestStreak=streak;
-    document.getElementById('sb-score').textContent=score;
-    document.getElementById('sb-streak').textContent=streak+(streak>=3?' 🔥':'');
-    document.getElementById('feedback-text').textContent=streak>=3?'🔥 On fire! +1':'✓ Correct!';
-    document.getElementById('feedback-text').style.color='#22c97a';
-    card.classList.add('pop');setTimeout(()=>card.classList.remove('pop'),300);
-    // Particles
-    const rect=btn.getBoundingClientRect();
-    spawnParticles(rect.left+rect.width/2,rect.top+rect.height/2,'rgba(34,201,122,',28);
-    if(streak>=5){
-      confetti({particleCount:60,spread:70,origin:{y:.6},colors:['#f0c040','#1fcfb0','#a878f0']});
-    }
+    btn.classList.add('correct');score++;streak++;
+    fb.textContent='Correct! ✓';fb.className='feedback ok';
+    spawnBurst(cx,cy,'#4ade80',18);
+    if(streak>=3)spawnConfetti();
   } else {
-    streak=0;document.getElementById('sb-streak').textContent='0';
-    document.getElementById('feedback-text').textContent='✗ Answer: '+q.a;
-    document.getElementById('feedback-text').style.color='#e84040';
-    card.classList.add('shake');setTimeout(()=>card.classList.remove('shake'),400);
-    const rect=btn.getBoundingClientRect();
-    spawnParticles(rect.left+rect.width/2,rect.top+rect.height/2,'rgba(232,64,64,',16);
+    btn.classList.add('wrong');streak=0;
+    fb.textContent='Incorrect. The answer is: '+q.a;fb.className='feedback no';
+    spawnBurst(cx,cy,'#22d3ee',12);
+    document.getElementById('choices').querySelectorAll('.choice-btn').forEach(function(b){if(b.textContent===q.a)b.classList.add('correct');});
   }
-
-  results.push({q:q.q,type:q.type,word:q.word,correct,chosen:choice,answer:q.a});
-  document.getElementById('hint-btn').style.display='none';
+  typeTally[q.type]=typeTally[q.type]||{c:0,t:0};
+  typeTally[q.type].t++;if(correct)typeTally[q.type].c++;
+  document.querySelectorAll('.choice-btn').forEach(function(b){b.disabled=true;});
   document.getElementById('next-btn').style.display='block';
-  document.getElementById('next-btn').textContent=(current+1>=TOTAL)?'See Results →':'Next →';
 }
-
-function nextQuestion(){
-  current++;
-  if(current>=TOTAL){showResults();return;}
-  renderQuestion();
-}
-
-function toggleHint(){
-  hintShown=!hintShown;
-  const hb=document.getElementById('hint-box');
-  if(hintShown){hb.classList.add('show');document.getElementById('hint-btn').textContent='💡 Hide Hint';}
-  else{hb.classList.remove('show');document.getElementById('hint-btn').textContent='💡 Show Hint';}
-}
-
-function showResults(){
-  // Big confetti
-  confetti({particleCount:120,spread:100,origin:{y:.5},colors:['#f0c040','#1fcfb0','#a878f0','#e870a0']});
-  setTimeout(()=>confetti({particleCount:80,spread:80,angle:60,origin:{x:0,y:.6},colors:['#f0c040','#22c97a']}),400);
-  setTimeout(()=>confetti({particleCount:80,spread:80,angle:120,origin:{x:1,y:.6},colors:['#4ea6f0','#a878f0']}),700);
-
-  document.getElementById('quiz').classList.remove('show');
-  const res=document.getElementById('results');
-  res.classList.add('show');
-
-  const pct=Math.round((score/TOTAL)*100);
-  const grade=pct>=95?'🏆 Perfect Explorer!':pct>=80?'⚔️ Champion Adventurer':pct>=65?'🧭 Skilled Navigator':'📚 Keep Practicing!';
-  const gc=pct>=80?'#f0c040':pct>=65?'#1fcfb0':'#4ea6f0';
-
-  document.getElementById('results-score').textContent=score+'/'+TOTAL;
-  document.getElementById('results-score').style.color=gc;
-  document.getElementById('results-grade').textContent=grade;
-  document.getElementById('results-grade').style.color=gc;
-  document.getElementById('results-sub').textContent=pct+'% correct · Best streak: '+bestStreak;
-
-  // Type breakdown
-  const tb=document.getElementById('type-breakdown');tb.innerHTML='';
-  Object.entries(TYPE_STYLES).forEach(([type,ts])=>{
-    const typeR=results.filter(r=>r.type===type);
-    if(!typeR.length)return;
-    const c=typeR.filter(r=>r.correct).length;
-    const cell=document.createElement('div');cell.className='tb-cell';
-    cell.innerHTML=`<div class="tb-type" style="color:${ts.color}">${ts.label}</div><div class="tb-score">${c}/${typeR.length}</div>`;
-    tb.appendChild(cell);
+document.getElementById('next-btn').addEventListener('click',function(){
+  qIdx++;if(qIdx>=queue.length){showResult();}else{showQuestion();}
+});
+function showResult(){
+  document.getElementById('quiz-section').style.display='none';
+  document.getElementById('result-section').style.display='block';
+  document.getElementById('result-score').textContent=score;
+  var pct=score/queue.length;
+  var msgs=[
+    'Like Marco Polo returning from Cathay — you brought back every word and lost nothing on the road.',
+    'Outstanding! Even Kublai Khan would esteem such a performance.',
+    'Strong work — you vanquished most of the challenge. Keep going and the Silk Road will be yours.',
+    'Good effort — every journey has its rigors. Study, consent to the difficulty, and return stronger.',
+    'The road is long and the vocabulary is vast. Relinquish nothing — try again and claim the words.'
+  ];
+  document.getElementById('result-msg').textContent=pct===1?msgs[0]:pct>=.85?msgs[1]:pct>=.7?msgs[2]:pct>=.5?msgs[3]:msgs[4];
+  var bd=document.getElementById('result-breakdown');
+  clearEl(bd);
+  Object.keys(typeTally).forEach(function(k){
+    var d=typeTally[k];
+    var item=mk('div','rb-item');
+    var lbl=mk('span',null,(TYPE_STYLES[k]||{label:k}).label+': ');
+    var val=mk('span',null,d.c+'/'+d.t);
+    item.appendChild(lbl);item.appendChild(val);
+    bd.appendChild(item);
   });
-
-  // Review list
-  const rl=document.getElementById('review-list');rl.innerHTML='';
-  results.forEach(r=>{
-    const div=document.createElement('div');div.className='review-item';
-    div.innerHTML=`
-      <span class="ri-icon">${r.correct?'✅':'❌'}</span>
-      <div>
-        <div class="ri-meta">${TYPE_STYLES[r.type].label} — <strong style="color:#f0f4ff">${r.word}</strong></div>
-        <div>${r.q.replace(/\n/g,' ')}</div>
-        ${!r.correct?`<div class="ri-wrong-ans">You chose: ${r.chosen} · Correct: ${r.answer}</div>`:''}
-      </div>`;
-    rl.appendChild(div);
-  });
+  document.getElementById('progress-fill').style.width='100%';
 }
+document.getElementById('restart-btn').addEventListener('click',startQuiz);
+
+document.getElementById('btn-quiz').addEventListener('click',function(){
+  this.classList.add('active');document.getElementById('btn-flash').classList.remove('active');
+  document.getElementById('flashcard-section').style.display='none';
+  document.getElementById('quiz-section').style.display='';
+  document.getElementById('result-section').style.display='none';
+});
+document.getElementById('btn-flash').addEventListener('click',function(){
+  this.classList.add('active');document.getElementById('btn-quiz').classList.remove('active');
+  document.getElementById('quiz-section').style.display='none';
+  document.getElementById('result-section').style.display='none';
+  document.getElementById('flashcard-section').style.display='';
+  initFlashcards();
+});
+
+startQuiz();
 </script>
 </body>
 </html>

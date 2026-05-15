@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wordly Wise – Lesson 13</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#1a0800;color:#f1f5f9;font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;overflow-x:hidden}
+canvas#bg{position:fixed;inset:0;z-index:0;pointer-events:none}
+#app{position:relative;z-index:1;max-width:780px;margin:0 auto;padding:16px}
+a.home{display:inline-flex;align-items:center;gap:6px;color:#fb923c;text-decoration:none;font-size:.85rem;margin-bottom:12px;opacity:.8}
+a.home:hover{opacity:1}
+h1{font-size:1.6rem;font-weight:700;color:#fb923c;text-align:center;margin-bottom:4px}
+.subtitle{text-align:center;color:#fed7aa;font-size:.85rem;margin-bottom:18px;opacity:.75}
+.mode-bar{display:flex;justify-content:center;gap:10px;margin-bottom:18px}
+.mode-btn{padding:7px 22px;border-radius:20px;border:2px solid #c2410c;background:transparent;color:#fb923c;font-size:.88rem;cursor:pointer;transition:.2s}
+.mode-btn.active,.mode-btn:hover{background:#c2410c;color:#fff}
+#flashcard-section{display:none}
+.fc-controls{display:flex;justify-content:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.fc-btn{padding:7px 18px;border-radius:10px;border:none;background:#431407;color:#fed7aa;font-size:.85rem;cursor:pointer;transition:.2s}
+.fc-btn:hover{background:#7c2d12}
+.fc-progress{text-align:center;color:#fed7aa;font-size:.82rem;margin-bottom:10px}
+.card-wrap{perspective:900px;width:100%;max-width:560px;height:240px;margin:0 auto 16px}
+.card-inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.4,0,.2,1);cursor:pointer}
+.card-inner.flipped{transform:rotateY(180deg)}
+.card-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px;text-align:center}
+.card-front{background:linear-gradient(135deg,#7c2d12,#431407);border:1px solid #c2410c}
+.card-back{background:linear-gradient(135deg,#431407,#1a0800);border:1px solid #fb923c;transform:rotateY(180deg)}
+.card-word{font-size:2rem;font-weight:700;color:#fb923c}
+.card-pos{font-size:.8rem;color:#fed7aa;margin-top:4px;font-style:italic}
+.card-tap{font-size:.75rem;color:#fb923c55;margin-top:12px}
+.card-def{font-size:.95rem;color:#fff7ed;line-height:1.5}
+.card-ex{font-size:.8rem;color:#fed7aa;margin-top:10px;font-style:italic}
+.quiz-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px}
+.q-counter{font-size:.85rem;color:#fed7aa}
+.q-score{font-size:.85rem;color:#86efac}
+.streak-badge{font-size:.8rem;padding:3px 10px;border-radius:12px;background:#431407;color:#fed7aa}
+.progress-bar{width:100%;height:6px;background:#2d1200;border-radius:3px;margin-bottom:16px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,#c2410c,#fb923c);border-radius:3px;transition:width .4s}
+.type-badge{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.06em;padding:3px 10px;border-radius:12px;margin-bottom:10px}
+.q-word{font-size:1.05rem;color:#fff7ed;font-weight:600;margin-bottom:6px}
+.q-text{font-size:1rem;color:#f1f5f9;line-height:1.5;margin-bottom:16px}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+@media(max-width:500px){.choices{grid-template-columns:1fr}}
+.choice-btn{padding:11px 14px;border-radius:10px;border:1px solid #7c2d12;background:#2d1200;color:#fff7ed;font-size:.9rem;cursor:pointer;text-align:left;transition:.2s;line-height:1.4}
+.choice-btn:hover:not(:disabled){background:#7c2d12;border-color:#c2410c}
+.choice-btn.correct{background:#14532d;border-color:#4ade80;color:#bbf7d0}
+.choice-btn.wrong{background:#7c2d12;border-color:#fb923c;color:#fed7aa}
+.choice-btn:disabled{cursor:default}
+.hint-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px}
+.hint-btn{font-size:.78rem;padding:4px 12px;border-radius:8px;border:1px solid #c2410c;background:transparent;color:#fb923c;cursor:pointer}
+.hint-btn:hover{background:#7c2d12}
+.hint-box{background:#200e00;border:1px solid #7c2d12;border-radius:10px;padding:10px 14px;font-size:.83rem;color:#fed7aa;margin-bottom:12px;display:none}
+.feedback{text-align:center;font-size:.95rem;font-weight:600;min-height:24px;margin-bottom:10px}
+.feedback.ok{color:#4ade80}
+.feedback.no{color:#fb923c}
+.next-btn{display:block;width:100%;padding:12px;border-radius:12px;border:none;background:#c2410c;color:#fff;font-size:1rem;font-weight:600;cursor:pointer;display:none;transition:.2s}
+.next-btn:hover{background:#9a3412}
+#result-section{display:none;text-align:center;padding:20px 0}
+.result-title{font-size:1.8rem;font-weight:700;color:#fb923c;margin-bottom:8px}
+.result-score{font-size:3rem;font-weight:800;color:#fb923c;margin-bottom:4px}
+.result-label{font-size:.9rem;color:#fed7aa;margin-bottom:16px}
+.result-msg{font-size:1rem;color:#fff7ed;max-width:480px;margin:0 auto 20px;line-height:1.6;font-style:italic}
+.result-breakdown{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-bottom:20px}
+.rb-item{background:#2d1200;border:1px solid #7c2d12;border-radius:10px;padding:8px 16px;font-size:.82rem;color:#fed7aa}
+.rb-item span{font-weight:700;color:#fb923c}
+.restart-btn{padding:12px 36px;border-radius:12px;border:none;background:#c2410c;color:#fff;font-size:1rem;font-weight:600;cursor:pointer}
+.restart-btn:hover{background:#9a3412}
+#pcanvas{position:fixed;inset:0;z-index:2;pointer-events:none}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<canvas id="pcanvas"></canvas>
+<div id="app">
+  <a class="home" href="../index.html">&#8592; Home</a>
+  <h1>Wordly Wise &mdash; Lesson 13</h1>
+  <p class="subtitle">The Ship of the Desert &bull; 15 words &bull; 195 questions</p>
+  <div class="mode-bar">
+    <button class="mode-btn active" id="btn-quiz">Quiz Mode</button>
+    <button class="mode-btn" id="btn-flash">Flashcard Mode</button>
+  </div>
+
+  <div id="flashcard-section">
+    <div class="fc-controls">
+      <button class="fc-btn" id="fc-prev">&#8592; Prev</button>
+      <button class="fc-btn" id="fc-flip">Flip</button>
+      <button class="fc-btn" id="fc-next">Next &#8594;</button>
+      <button class="fc-btn" id="fc-shuffle">Shuffle</button>
+    </div>
+    <div class="fc-progress" id="fc-progress"></div>
+    <div class="card-wrap">
+      <div class="card-inner" id="card-inner">
+        <div class="card-face card-front" id="card-front"></div>
+        <div class="card-face card-back" id="card-back"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="quiz-section">
+    <div class="quiz-meta">
+      <span class="q-counter" id="q-counter"></span>
+      <span class="streak-badge" id="streak-badge">&#128293; 0 streak</span>
+      <span class="q-score" id="q-score"></span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+    <div id="type-badge-wrap"></div>
+    <div class="q-word" id="q-word"></div>
+    <div class="q-text" id="q-text"></div>
+    <div class="hint-row">
+      <button class="hint-btn" id="hint-btn">&#128161; Hint</button>
+    </div>
+    <div class="hint-box" id="hint-box"></div>
+    <div class="choices" id="choices"></div>
+    <div class="feedback" id="feedback"></div>
+    <button class="next-btn" id="next-btn">Next Question &#8594;</button>
+  </div>
+
+  <div id="result-section">
+    <div class="result-title">Round Complete!</div>
+    <div class="result-score" id="result-score"></div>
+    <div class="result-label">out of 20</div>
+    <div class="result-msg" id="result-msg"></div>
+    <div class="result-breakdown" id="result-breakdown"></div>
+    <button class="restart-btn" id="restart-btn">Play Again</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  var c=document.getElementById('bg'),ctx=c.getContext('2d'),stars=[];
+  function resize(){c.width=innerWidth;c.height=innerHeight;}
+  resize();window.addEventListener('resize',resize);
+  for(var i=0;i<220;i++)stars.push({x:Math.random(),y:Math.random(),r:Math.random()*1.5+.3,s:Math.random()*.4+.1});
+  function draw(){
+    ctx.clearRect(0,0,c.width,c.height);
+    var g=ctx.createRadialGradient(c.width/2,c.height/2,0,c.width/2,c.height/2,c.width*.7);
+    g.addColorStop(0,'#2d1200');g.addColorStop(.5,'#1a0800');g.addColorStop(1,'#070300');
+    ctx.fillStyle=g;ctx.fillRect(0,0,c.width,c.height);
+    var t=Date.now()/1000;
+    stars.forEach(function(s){
+      var op=.3+.4*Math.abs(Math.sin(t*s.s+s.x*10));
+      ctx.beginPath();ctx.arc(s.x*c.width,s.y*c.height,s.r,0,Math.PI*2);
+      ctx.fillStyle='rgba(251,146,60,'+op+')';ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+var pc=document.getElementById('pcanvas'),pctx=pc.getContext('2d'),particles=[];
+pc.width=innerWidth;pc.height=innerHeight;
+window.addEventListener('resize',function(){pc.width=innerWidth;pc.height=innerHeight;});
+function spawnBurst(x,y,color,n){
+  for(var i=0;i<n;i++){
+    var ang=Math.random()*Math.PI*2,spd=Math.random()*5+2;
+    particles.push({x:x,y:y,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,life:1,color:color,r:Math.random()*4+2});
+  }
+}
+function spawnConfetti(){
+  var colors=['#fb923c','#f59e0b','#fbbf24','#4ade80','#60a5fa','#c084fc'];
+  for(var i=0;i<60;i++){
+    particles.push({x:Math.random()*pc.width,y:-10,vx:(Math.random()-.5)*4,vy:Math.random()*4+2,
+      life:1,color:colors[Math.floor(Math.random()*colors.length)],r:Math.random()*5+3,confetti:true});
+  }
+}
+(function ploop(){
+  pctx.clearRect(0,0,pc.width,pc.height);
+  particles=particles.filter(function(p){return p.life>0;});
+  particles.forEach(function(p){
+    p.x+=p.vx;p.y+=p.vy;p.life-=p.confetti?.012:.03;
+    if(p.confetti)p.vy+=.1;
+    pctx.globalAlpha=Math.max(0,p.life);
+    pctx.fillStyle=p.color;pctx.beginPath();
+    pctx.arc(p.x,p.y,p.r,0,Math.PI*2);pctx.fill();
+  });
+  pctx.globalAlpha=1;
+  requestAnimationFrame(ploop);
+})();
+
+function clearEl(el){while(el.firstChild)el.removeChild(el.firstChild);}
+function mk(tag,cls,txt){var el=document.createElement(tag);if(cls)el.className=cls;if(txt!==undefined)el.textContent=txt;return el;}
+function shuffle(a){var b=a.slice();for(var i=b.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=b[i];b[i]=b[j];b[j]=t;}return b;}
+
+var TYPE_STYLES={
+  synonym:{label:'SYNONYM',color:'#34d399',bg:'rgba(6,95,70,.4)'},
+  antonym:{label:'ANTONYM',color:'#f472b6',bg:'rgba(157,23,77,.35)'},
+  analogy:{label:'ANALOGY',color:'#a78bfa',bg:'rgba(109,40,217,.35)'},
+  simile:{label:'SIMILE',color:'#fbbf24',bg:'rgba(161,98,7,.35)'},
+  metaphor:{label:'METAPHOR',color:'#38bdf8',bg:'rgba(7,89,133,.35)'}
+};
+
+var WORDS=[
+  {word:'adapt',pos:'v.',def:'1. To change to fit new conditions. 2. To make changes in something to make it useful. Adaptation (n.): 1. A changing to fit new conditions. 2. Something changed from something else.',ex:'"Whales were once land animals but adapted well to life in the ocean."'},
+  {word:'deplete',pos:'v.',def:'To use up.',ex:'"Unless we are frugal, we will deplete our savings by the end of March."'},
+  {word:'efficient',pos:'adj.',def:'Producing results without waste.',ex:'"Tube lights are more efficient than light bulbs."'},
+  {word:'fatigue',pos:'n./v.',def:'(n.) A feeling of tiredness from work or exercise. (v.) To make or become tired.',ex:'"Although overcome with fatigue, the runner persevered to the finish line."'},
+  {word:'gait',pos:'n.',def:'The way a person or animal moves on foot.',ex:'"A horse\'s gait changes as it goes from a walk to a trot."'},
+  {word:'glare',pos:'v./n.',def:'(v.) 1. To shine with a strong, harsh light. 2. To stare angrily at. (n.) 1. A strong, blinding light. 2. An angry stare. Glaring (adj.): 1. Shining with harsh light. 2. Very obvious.',ex:'"The glare from oncoming cars is diminished if drivers dim their headlights."'},
+  {word:'habitat',pos:'n.',def:'The place or type of place where a plant or animal is normally found.',ex:'"The habitat of the saguaro cactus is the desert of southwest Arizona."'},
+  {word:'oblivious',pos:'adj.',def:'Not aware of. Oblivion (n.): a state of forgetting or being forgotten.',ex:'"The audience was oblivious to everything except the actor\'s inspired performance."'},
+  {word:'outmoded',pos:'adj.',def:'No longer needed or fashionable.',ex:'"The coming of the railroad made the stagecoach an outmoded way to travel."'},
+  {word:'prominent',pos:'adj.',def:'1. Projecting; standing out. 2. Very easy to see; easily noticed. 3. Famous; well known.',ex:'"Mount Rushmore is a prominent feature of the Black Hills in South Dakota."'},
+  {word:'quench',pos:'v.',def:'1. To put out; to extinguish. 2. To satisfy with a liquid.',ex:'"Water quenches a thirst better than a sweetened soda drink."'},
+  {word:'rigor',pos:'n.',def:'(often pl.) 1. A condition that makes life difficult. 2. Strictness or severity. Rigorous (adj.): 1. Severe; extreme. 2. Thorough; complete.',ex:'"The orange tree couldn\'t survive the rigors of a Canadian winter."'},
+  {word:'sear',pos:'v.',def:'1. To wither; to dry up. 2. To burn the surface of with sudden heat.',ex:'"Cooks sear steak to help retain the juices."'},
+  {word:'transport',pos:'v./n.',def:'(v.) To carry or move from one place to another. (n.) The act of carrying from one place to another.',ex:'"A large truck transports sets and costumes for the acting company."'},
+  {word:'wend',pos:'v.',def:'To travel; to go on one\'s way.',ex:'"It took two weeks to wend our way over the mountain pass."'}
+];
+
+var QUESTIONS=[
+// ── SYNONYMS (50) ──────────────────────────────────────────────────────────
+{type:'synonym',word:'adapt',q:'ADAPT most nearly means:',a:'adjust',ch:['adjust','resist','avoid','remain'],hint:'To adapt is to change to fit new conditions — to adjust'},
+{type:'synonym',word:'adapt',q:'Which word is a synonym for ADAPT?',a:'modify',ch:['modify','resist','ignore','refuse'],hint:'To modify is to make changes — like adapting something for a new purpose'},
+{type:'synonym',word:'adapt',q:'ADAPT is closest in meaning to:',a:'change to fit',ch:['change to fit','stay the same','resist change','remain rigid'],hint:'Adapting means changing to suit new conditions — to change to fit'},
+{type:'synonym',word:'deplete',q:'DEPLETE most nearly means:',a:'exhaust',ch:['exhaust','replenish','restore','fill'],hint:'To deplete is to use something up completely — to exhaust it'},
+{type:'synonym',word:'deplete',q:'Which word is a synonym for DEPLETE?',a:'drain',ch:['drain','replenish','restore','fill up'],hint:'To drain something is to empty it out — like deplete'},
+{type:'synonym',word:'deplete',q:'DEPLETE is closest in meaning to:',a:'use up',ch:['use up','fill up','restore','replenish'],hint:'Deplete means to completely use up a resource'},
+{type:'synonym',word:'efficient',q:'EFFICIENT most nearly means:',a:'productive',ch:['productive','wasteful','careless','slow'],hint:'Efficient means producing results without waste — productive'},
+{type:'synonym',word:'efficient',q:'Which word is a synonym for EFFICIENT?',a:'effective',ch:['effective','wasteful','careless','unproductive'],hint:'Effective means producing the desired result — like efficient'},
+{type:'synonym',word:'efficient',q:'EFFICIENT is closest in meaning to:',a:'economical',ch:['economical','wasteful','extravagant','careless'],hint:'Economical means using resources wisely without waste — like efficient'},
+{type:'synonym',word:'efficient',q:'Which of the following is a synonym for EFFICIENT?',a:'streamlined',ch:['streamlined','wasteful','clumsy','slow'],hint:'Streamlined means made to operate with maximum efficiency — like efficient'},
+{type:'synonym',word:'fatigue',q:'FATIGUE (n.) most nearly means:',a:'weariness',ch:['weariness','energy','alertness','vigor'],hint:'Fatigue is a feeling of tiredness — weariness'},
+{type:'synonym',word:'fatigue',q:'Which word is a synonym for FATIGUE?',a:'exhaustion',ch:['exhaustion','energy','alertness','vigor'],hint:'Exhaustion means extreme tiredness — like fatigue'},
+{type:'synonym',word:'fatigue',q:'FATIGUE is closest in meaning to:',a:'tiredness',ch:['tiredness','energy','vigor','alertness'],hint:'Tiredness is the simplest synonym for fatigue'},
+{type:'synonym',word:'gait',q:'GAIT most nearly means:',a:'stride',ch:['stride','halt','stillness','pause'],hint:'A gait is the way you move on foot — your stride or step'},
+{type:'synonym',word:'gait',q:'Which word is a synonym for GAIT?',a:'walk',ch:['walk','halt','stop','freeze'],hint:'A walk is one kind of gait — the word for the pattern of movement'},
+{type:'synonym',word:'gait',q:'GAIT is closest in meaning to:',a:'pace',ch:['pace','halt','stillness','stop'],hint:'Pace describes the manner and speed of movement — like gait'},
+{type:'synonym',word:'glare',q:'GLARE (v., to shine intensely) most nearly means:',a:'blaze',ch:['blaze','dim','fade','darken'],hint:'To glare is to shine with a strong harsh light — to blaze'},
+{type:'synonym',word:'glare',q:'Which word is a synonym for GLARE (v., to stare angrily)?',a:'scowl',ch:['scowl','smile','wink','nod'],hint:'To scowl is to look with anger or disapproval — like glare'},
+{type:'synonym',word:'glare',q:'GLARE (n.) is closest in meaning to:',a:'dazzle',ch:['dazzle','dimness','shadow','darkness'],hint:'A dazzle is a blinding brightness — like the glare of the desert sun'},
+{type:'synonym',word:'glare',q:'Which of the following is a synonym for GLARE (v.)?',a:'stare',ch:['stare','glance','smile','nod'],hint:'To stare is to look fixedly — a glare is an angry, fixed stare'},
+{type:'synonym',word:'habitat',q:'HABITAT most nearly means:',a:'home',ch:['home','foreign land','unfamiliar place','exile'],hint:'A habitat is where an animal naturally lives — its home'},
+{type:'synonym',word:'habitat',q:'Which word is a synonym for HABITAT?',a:'environment',ch:['environment','foreign land','exile','displacement'],hint:'Environment means the natural surroundings of a living thing — like habitat'},
+{type:'synonym',word:'habitat',q:'HABITAT is closest in meaning to:',a:'natural setting',ch:['natural setting','foreign land','artificial zone','displaced area'],hint:'A natural setting is where a creature naturally belongs — its habitat'},
+{type:'synonym',word:'oblivious',q:'OBLIVIOUS most nearly means:',a:'unaware',ch:['unaware','alert','attentive','watchful'],hint:'Oblivious means not aware of what is around you'},
+{type:'synonym',word:'oblivious',q:'Which word is a synonym for OBLIVIOUS?',a:'heedless',ch:['heedless','alert','careful','attentive'],hint:'Heedless means paying no attention — like oblivious'},
+{type:'synonym',word:'oblivious',q:'OBLIVIOUS is closest in meaning to:',a:'ignorant of',ch:['ignorant of','alert to','aware of','attentive to'],hint:'Ignorant of means having no knowledge of — like oblivious'},
+{type:'synonym',word:'outmoded',q:'OUTMODED most nearly means:',a:'outdated',ch:['outdated','current','modern','up-to-date'],hint:'Outmoded means no longer in style or use — outdated'},
+{type:'synonym',word:'outmoded',q:'Which word is a synonym for OUTMODED?',a:'obsolete',ch:['obsolete','current','modern','new'],hint:'Obsolete means no longer in use — the same as outmoded'},
+{type:'synonym',word:'outmoded',q:'OUTMODED is closest in meaning to:',a:'old-fashioned',ch:['old-fashioned','current','modern','up-to-date'],hint:'Old-fashioned means behind the times — like outmoded'},
+{type:'synonym',word:'prominent',q:'PROMINENT most nearly means:',a:'notable',ch:['notable','obscure','unknown','hidden'],hint:'Prominent means standing out or well-known — notable'},
+{type:'synonym',word:'prominent',q:'Which word is a synonym for PROMINENT?',a:'conspicuous',ch:['conspicuous','obscure','hidden','overlooked'],hint:'Conspicuous means easy to notice — like prominent'},
+{type:'synonym',word:'prominent',q:'PROMINENT is closest in meaning to:',a:'well-known',ch:['well-known','obscure','unknown','forgotten'],hint:'Well-known means famous or easily recognized — like prominent'},
+{type:'synonym',word:'prominent',q:'Which of the following is a synonym for PROMINENT?',a:'distinguished',ch:['distinguished','obscure','unknown','overlooked'],hint:'Distinguished means standing out as special or famous — like prominent'},
+{type:'synonym',word:'quench',q:'QUENCH most nearly means:',a:'satisfy',ch:['satisfy','ignite','inflame','worsen'],hint:'To quench is to satisfy a thirst or put out a fire — to satisfy'},
+{type:'synonym',word:'quench',q:'Which word is a synonym for QUENCH (to put out)?',a:'extinguish',ch:['extinguish','ignite','start','kindle'],hint:'To extinguish is to put out — like quench'},
+{type:'synonym',word:'quench',q:'QUENCH is closest in meaning to:',a:'slake',ch:['slake','ignite','dry out','worsen'],hint:'To slake means to satisfy thirst — a direct synonym for quench'},
+{type:'synonym',word:'rigor',q:'RIGOR most nearly means:',a:'hardship',ch:['hardship','ease','comfort','luxury'],hint:'Rigor means harsh conditions or strictness — hardship'},
+{type:'synonym',word:'rigor',q:'Which word is a synonym for RIGOR?',a:'severity',ch:['severity','ease','comfort','leniency'],hint:'Severity means extreme harshness — like rigor'},
+{type:'synonym',word:'rigor',q:'RIGOR is closest in meaning to:',a:'strictness',ch:['strictness','ease','laxity','leniency'],hint:'Strictness means enforcing rules without exception — like rigor'},
+{type:'synonym',word:'sear',q:'SEAR most nearly means:',a:'scorch',ch:['scorch','cool','soothe','moisten'],hint:'To sear is to burn or wither with intense heat — to scorch'},
+{type:'synonym',word:'sear',q:'Which word is a synonym for SEAR?',a:'wither',ch:['wither','cool','soothe','moisten'],hint:'To wither is to dry up and shrink — one meaning of sear'},
+{type:'synonym',word:'sear',q:'SEAR is closest in meaning to:',a:'char',ch:['char','cool','moisten','soothe'],hint:'To char is to burn the surface of something — like sear'},
+{type:'synonym',word:'sear',q:'Which of the following is a synonym for SEAR?',a:'burn',ch:['burn','cool','soothe','refresh'],hint:'To burn is to apply intense heat — like sear'},
+{type:'synonym',word:'transport',q:'TRANSPORT most nearly means:',a:'carry',ch:['carry','leave behind','abandon','drop'],hint:'To transport is to carry or move from one place to another'},
+{type:'synonym',word:'transport',q:'Which word is a synonym for TRANSPORT?',a:'convey',ch:['convey','leave behind','abandon','drop'],hint:'To convey means to carry or take from one place to another — like transport'},
+{type:'synonym',word:'transport',q:'TRANSPORT is closest in meaning to:',a:'ship',ch:['ship','leave behind','abandon','release'],hint:'To ship means to send or carry goods — like transport'},
+{type:'synonym',word:'wend',q:'WEND most nearly means:',a:'travel',ch:['travel','halt','stop','stay'],hint:'To wend is to travel or make your way — to go on your journey'},
+{type:'synonym',word:'wend',q:'Which word is a synonym for WEND?',a:'journey',ch:['journey','halt','stop','remain'],hint:'To journey is to travel from place to place — like wend'},
+{type:'synonym',word:'wend',q:'WEND is closest in meaning to:',a:'make one\'s way',ch:['make one\'s way','halt in place','stay put','remain still'],hint:'To make one\'s way means to travel onward — the meaning of wend'},
+// ── ANTONYMS (35) ──────────────────────────────────────────────────────────
+{type:'antonym',word:'adapt',q:'Which word is most nearly OPPOSITE in meaning to ADAPT?',a:'resist',ch:['resist','adjust','modify','change'],hint:'Adapt means to change to fit — the opposite is to resist change'},
+{type:'antonym',word:'adapt',q:'ADAPT is most nearly opposite in meaning to:',a:'remain unchanged',ch:['remain unchanged','adjust','modify','evolve'],hint:'To adapt is to change — the opposite is to remain unchanged or rigid'},
+{type:'antonym',word:'deplete',q:'Which word is most nearly OPPOSITE in meaning to DEPLETE?',a:'replenish',ch:['replenish','drain','exhaust','use up'],hint:'Deplete means to use up — the opposite is to replenish or restore'},
+{type:'antonym',word:'deplete',q:'DEPLETE is most nearly opposite in meaning to:',a:'restore',ch:['restore','drain','empty','exhaust'],hint:'To restore means to fill back up — the opposite of deplete'},
+{type:'antonym',word:'efficient',q:'Which word is most nearly OPPOSITE in meaning to EFFICIENT?',a:'wasteful',ch:['wasteful','productive','effective','economical'],hint:'Efficient means producing results without waste — the opposite is wasteful'},
+{type:'antonym',word:'efficient',q:'EFFICIENT is most nearly opposite in meaning to:',a:'inefficient',ch:['inefficient','productive','effective','streamlined'],hint:'Inefficient means failing to produce results without waste — direct opposite of efficient'},
+{type:'antonym',word:'efficient',q:'Which word is the ANTONYM of EFFICIENT?',a:'unproductive',ch:['unproductive','effective','economical','streamlined'],hint:'Unproductive means not producing useful results — the opposite of efficient'},
+{type:'antonym',word:'fatigue',q:'Which word is most nearly OPPOSITE in meaning to FATIGUE?',a:'energy',ch:['energy','tiredness','weariness','exhaustion'],hint:'Fatigue means tiredness — the opposite is energy or vigor'},
+{type:'antonym',word:'fatigue',q:'FATIGUE is most nearly opposite in meaning to:',a:'vigor',ch:['vigor','exhaustion','tiredness','weariness'],hint:'Vigor means active physical strength — the opposite of fatigue'},
+{type:'antonym',word:'gait',q:'Which word is most nearly OPPOSITE in meaning to GAIT?',a:'stillness',ch:['stillness','stride','pace','walk'],hint:'Gait is a pattern of movement — the opposite is stillness or being motionless'},
+{type:'antonym',word:'gait',q:'GAIT is most nearly opposite in meaning to:',a:'halt',ch:['halt','stride','pace','trot'],hint:'A halt is a complete stop — the opposite of a gait (a pattern of ongoing movement)'},
+{type:'antonym',word:'glare',q:'Which word is most nearly OPPOSITE in meaning to GLARE (harsh light)?',a:'dimness',ch:['dimness','dazzle','blaze','brilliance'],hint:'Glare is strong harsh light — the opposite is dimness or shadow'},
+{type:'antonym',word:'glare',q:'GLARE (to stare angrily) is most nearly opposite in meaning to:',a:'smile',ch:['smile','scowl','stare','frown'],hint:'To glare is to look with anger — the opposite is a warm smile'},
+{type:'antonym',word:'habitat',q:'Which word is most nearly OPPOSITE in meaning to HABITAT?',a:'foreign territory',ch:['foreign territory','natural home','environment','native range'],hint:'A habitat is a creature\'s natural home — the opposite is an unfamiliar or foreign environment'},
+{type:'antonym',word:'habitat',q:'HABITAT is most nearly opposite in meaning to:',a:'displacement',ch:['displacement','natural setting','home range','environment'],hint:'Displacement means being removed from your natural home — the opposite of being in your habitat'},
+{type:'antonym',word:'oblivious',q:'Which word is most nearly OPPOSITE in meaning to OBLIVIOUS?',a:'aware',ch:['aware','unaware','heedless','ignorant'],hint:'Oblivious means not aware — the opposite is aware or alert'},
+{type:'antonym',word:'oblivious',q:'OBLIVIOUS is most nearly opposite in meaning to:',a:'alert',ch:['alert','unaware','heedless','oblivious'],hint:'Alert means fully aware and attentive — the opposite of oblivious'},
+{type:'antonym',word:'oblivious',q:'Which word is the ANTONYM of OBLIVIOUS?',a:'attentive',ch:['attentive','heedless','ignorant','unaware'],hint:'Attentive means paying close attention — the direct opposite of oblivious'},
+{type:'antonym',word:'outmoded',q:'Which word is most nearly OPPOSITE in meaning to OUTMODED?',a:'current',ch:['current','obsolete','outdated','old-fashioned'],hint:'Outmoded means no longer in style — the opposite is current or modern'},
+{type:'antonym',word:'outmoded',q:'OUTMODED is most nearly opposite in meaning to:',a:'modern',ch:['modern','obsolete','antiquated','outdated'],hint:'Modern means up to date — the opposite of outmoded'},
+{type:'antonym',word:'outmoded',q:'Which word is the ANTONYM of OUTMODED?',a:'up-to-date',ch:['up-to-date','obsolete','outdated','old-fashioned'],hint:'Up-to-date means current and relevant — the direct opposite of outmoded'},
+{type:'antonym',word:'prominent',q:'Which word is most nearly OPPOSITE in meaning to PROMINENT?',a:'obscure',ch:['obscure','notable','conspicuous','well-known'],hint:'Prominent means easily noticed — the opposite is obscure or unnoticed'},
+{type:'antonym',word:'prominent',q:'PROMINENT is most nearly opposite in meaning to:',a:'inconspicuous',ch:['inconspicuous','notable','conspicuous','distinguished'],hint:'Inconspicuous means not easily noticed — the direct opposite of prominent'},
+{type:'antonym',word:'prominent',q:'Which word is the ANTONYM of PROMINENT?',a:'unknown',ch:['unknown','famous','notable','distinguished'],hint:'Unknown means not famous or recognized — the opposite of prominent (well-known)'},
+{type:'antonym',word:'quench',q:'Which word is most nearly OPPOSITE in meaning to QUENCH (to put out)?',a:'ignite',ch:['ignite','extinguish','smother','douse'],hint:'Quench means to put out — the opposite is to ignite or start'},
+{type:'antonym',word:'quench',q:'QUENCH (to satisfy thirst) is most nearly opposite in meaning to:',a:'parch',ch:['parch','satisfy','slake','cool'],hint:'Parch means to make extremely dry or thirsty — the opposite of quench'},
+{type:'antonym',word:'rigor',q:'Which word is most nearly OPPOSITE in meaning to RIGOR?',a:'ease',ch:['ease','hardship','severity','strictness'],hint:'Rigor means harsh difficulty — the opposite is ease or comfort'},
+{type:'antonym',word:'rigor',q:'RIGOR is most nearly opposite in meaning to:',a:'laxity',ch:['laxity','severity','harshness','strictness'],hint:'Laxity means lack of strictness — the opposite of rigor'},
+{type:'antonym',word:'sear',q:'Which word is most nearly OPPOSITE in meaning to SEAR?',a:'cool',ch:['cool','scorch','char','burn'],hint:'Sear means to burn or wither with heat — the opposite is to cool'},
+{type:'antonym',word:'sear',q:'SEAR is most nearly opposite in meaning to:',a:'soothe',ch:['soothe','scorch','wither','char'],hint:'To soothe means to comfort or calm — the opposite of sear\'s burning or withering'},
+{type:'antonym',word:'transport',q:'Which word is most nearly OPPOSITE in meaning to TRANSPORT?',a:'leave in place',ch:['leave in place','carry','convey','ship'],hint:'Transport means to carry from one place to another — the opposite is to leave something where it is'},
+{type:'antonym',word:'transport',q:'TRANSPORT is most nearly opposite in meaning to:',a:'hold still',ch:['hold still','carry','convey','ship'],hint:'To hold still means not to move — the opposite of transport'},
+{type:'antonym',word:'wend',q:'Which word is most nearly OPPOSITE in meaning to WEND?',a:'halt',ch:['halt','travel','journey','wander'],hint:'Wend means to travel or make one\'s way — the opposite is to halt or stop'},
+{type:'antonym',word:'wend',q:'WEND is most nearly opposite in meaning to:',a:'stay put',ch:['stay put','travel','wander','journey'],hint:'To stay put means to remain in one place — the opposite of wend'},
+{type:'antonym',word:'wend',q:'Which word is the ANTONYM of WEND?',a:'remain',ch:['remain','journey','roam','travel'],hint:'To remain means to stay where you are — the opposite of wend (to go on your way)'},
+// ── ANALOGIES (40) ─────────────────────────────────────────────────────────
+{type:'analogy',word:'adapt',q:'ADAPT is to CHANGE as RESIST is to ___',a:'stay the same',ch:['stay the same','adjust','modify','evolve'],hint:'Think: adapt = change to fit; resist = stay the same — antonym pair'},
+{type:'analogy',word:'adapt',q:'WHALE is to OCEAN as CAMEL is to ___',a:'desert',ch:['desert','forest','tundra','ocean'],hint:'Think: whales adapted to the ocean; camels adapted to the desert — each creature matches its habitat'},
+{type:'analogy',word:'adapt',q:'ADAPTATION is to SURVIVAL as INFLEXIBILITY is to ___',a:'extinction',ch:['extinction','survival','thriving','flourishing'],hint:'Think: adaptation leads to survival; inflexibility leads to extinction — cause and outcome'},
+{type:'analogy',word:'deplete',q:'DEPLETE is to USE UP as REPLENISH is to ___',a:'fill up',ch:['fill up','drain','exhaust','empty'],hint:'Think: deplete = use up (take away); replenish = fill up (put back) — antonym pair'},
+{type:'analogy',word:'deplete',q:'DROUGHT is to DEPLETE WATER as SPENDING is to ___',a:'deplete savings',ch:['deplete savings','replenish savings','fill savings','restore funds'],hint:'Think: drought depletes water; spending depletes savings — each force empties its respective resource'},
+{type:'analogy',word:'efficient',q:'EFFICIENT is to PRODUCTIVE as WASTEFUL is to ___',a:'unproductive',ch:['unproductive','effective','economical','streamlined'],hint:'Think: efficient = productive; wasteful = unproductive — antonym pairs'},
+{type:'analogy',word:'efficient',q:'EFFICIENT ENGINE is to LESS FUEL as INEFFICIENT ENGINE is to ___',a:'more fuel',ch:['more fuel','less fuel','no fuel','same fuel'],hint:'Think: an efficient engine uses less fuel; an inefficient one uses more — contrasting outcomes'},
+{type:'analogy',word:'efficient',q:'EFFICIENT is to STREAMLINED as CLUMSY is to ___',a:'awkward',ch:['awkward','graceful','smooth','nimble'],hint:'Think: efficient = streamlined (both mean well-designed); clumsy = awkward — synonym pairs'},
+{type:'analogy',word:'fatigue',q:'FATIGUE is to WEARINESS as ENERGY is to ___',a:'vigor',ch:['vigor','tiredness','exhaustion','weariness'],hint:'Think: fatigue = weariness (synonyms); energy = vigor (synonyms) — parallel pairs'},
+{type:'analogy',word:'fatigue',q:'MARATHON is to FATIGUE as NAP is to ___',a:'refreshment',ch:['refreshment','exhaustion','weariness','depletion'],hint:'Think: a marathon causes fatigue; a nap provides refreshment — cause and effect'},
+{type:'analogy',word:'fatigue',q:'FATIGUE is to TIRED as ALERTNESS is to ___',a:'awake',ch:['awake','exhausted','weary','drained'],hint:'Think: fatigue means tired; alertness means awake — direct opposite states'},
+{type:'analogy',word:'gait',q:'GAIT is to WALK as RHYTHM is to ___',a:'music',ch:['music','silence','stillness','pause'],hint:'Think: gait describes the pattern of walking; rhythm describes the pattern of music — each is the pattern of its activity'},
+{type:'analogy',word:'gait',q:'HORSE is to GAIT as BIRD is to ___',a:'flight pattern',ch:['flight pattern','habitat','diet','color'],hint:'Think: a horse has a gait (its way of moving); a bird has a flight pattern — each animal\'s characteristic movement'},
+{type:'analogy',word:'glare',q:'GLARE is to BLINDING LIGHT as MURMUR is to ___',a:'quiet sound',ch:['quiet sound','loud noise','blinding light','heavy weight'],hint:'Think: a glare is extreme light; a murmur is minimal sound — each is an extreme of its sensory type'},
+{type:'analogy',word:'glare',q:'GLARE is to ANGER as SMILE is to ___',a:'warmth',ch:['warmth','anger','contempt','hostility'],hint:'Think: a glare expresses anger; a smile expresses warmth — facial expression and emotion'},
+{type:'analogy',word:'glare',q:'SUN is to GLARE as WHISPER is to ___',a:'hush',ch:['hush','shout','roar','blaze'],hint:'Think: the sun produces a glare (intense version of its output); a whisper produces a hush — source and its softened effect'},
+{type:'analogy',word:'habitat',q:'HABITAT is to ANIMAL as HOME is to ___',a:'person',ch:['person','desert','forest','ocean'],hint:'Think: a habitat is where an animal lives; a home is where a person lives — parallel concepts'},
+{type:'analogy',word:'habitat',q:'DESERT is to CAMEL as OCEAN is to ___',a:'dolphin',ch:['dolphin','eagle','bear','squirrel'],hint:'Think: the desert is the camel\'s habitat; the ocean is the dolphin\'s habitat — creature and its natural environment'},
+{type:'analogy',word:'habitat',q:'HABITAT is to ENVIRONMENT as DIET is to ___',a:'nutrition',ch:['nutrition','habitat','shelter','migration'],hint:'Think: habitat = environment (where you live); diet = nutrition (what you eat) — parallel life systems'},
+{type:'analogy',word:'oblivious',q:'OBLIVIOUS is to UNAWARE as ALERT is to ___',a:'attentive',ch:['attentive','unaware','heedless','ignorant'],hint:'Think: oblivious = unaware (synonyms); alert = attentive (synonyms) — parallel pairs'},
+{type:'analogy',word:'oblivious',q:'OBLIVIOUS is to NOTICE as DEAF is to ___',a:'hear',ch:['hear','see','smell','touch'],hint:'Think: someone oblivious cannot notice; someone deaf cannot hear — each word names what is blocked'},
+{type:'analogy',word:'outmoded',q:'OUTMODED is to OBSOLETE as CURRENT is to ___',a:'modern',ch:['modern','obsolete','antiquated','outdated'],hint:'Think: outmoded = obsolete (synonyms); current = modern (synonyms) — parallel pairs'},
+{type:'analogy',word:'outmoded',q:'STAGECOACH is to OUTMODED as SMARTPHONE is to ___',a:'current',ch:['current','obsolete','antiquated','outmoded'],hint:'Think: the stagecoach is outmoded (replaced by better technology); the smartphone is current (today\'s technology)'},
+{type:'analogy',word:'outmoded',q:'OUTMODED is to PAST as CUTTING-EDGE is to ___',a:'future',ch:['future','past','history','yesterday'],hint:'Think: outmoded belongs to the past; cutting-edge belongs to the future — timeline relationship'},
+{type:'analogy',word:'prominent',q:'PROMINENT is to NOTABLE as OBSCURE is to ___',a:'unknown',ch:['unknown','notable','famous','conspicuous'],hint:'Think: prominent = notable (synonyms); obscure = unknown (synonyms) — parallel pairs'},
+{type:'analogy',word:'prominent',q:'MOUNT RUSHMORE is to PROMINENT as HIDDEN VALLEY is to ___',a:'obscure',ch:['obscure','prominent','notable','famous'],hint:'Think: Mount Rushmore is prominent (everyone knows it); a hidden valley is obscure (unknown)'},
+{type:'analogy',word:'prominent',q:'PROMINENT is to STAND OUT as BLEND IN is to ___',a:'invisible',ch:['invisible','conspicuous','notable','famous'],hint:'Think: prominent means to stand out; the opposite — blending in — leads to being invisible or unnoticed'},
+{type:'analogy',word:'quench',q:'QUENCH is to THIRST as EXTINGUISH is to ___',a:'fire',ch:['fire','hunger','desire','longing'],hint:'Think: quench satisfies thirst; extinguish puts out fire — each verb matches its target'},
+{type:'analogy',word:'quench',q:'WATER is to QUENCH THIRST as RAIN is to ___',a:'quench dry ground',ch:['quench dry ground','deplete the river','sear the sand','transport the clouds'],hint:'Think: water quenches thirst; rain quenches dry ground — same substance, same function at different scales'},
+{type:'analogy',word:'rigor',q:'RIGOR is to HARDSHIP as EASE is to ___',a:'comfort',ch:['comfort','hardship','difficulty','severity'],hint:'Think: rigor = hardship (antonym pairs); ease = comfort — antonym pairs'},
+{type:'analogy',word:'rigor',q:'RIGOROUS TRAINING is to ATHLETE as RIGOROUS STUDY is to ___',a:'scholar',ch:['scholar','couch','laziness','entertainment'],hint:'Think: rigorous training makes an athlete; rigorous study makes a scholar — the rigor produces the expert'},
+{type:'analogy',word:'rigor',q:'RIGOR is to STRICTNESS as LAXITY is to ___',a:'looseness',ch:['looseness','strictness','severity','harshness'],hint:'Think: rigor = strictness; laxity = looseness — antonym pairs'},
+{type:'analogy',word:'sear',q:'SEAR is to HEAT as FREEZE is to ___',a:'cold',ch:['cold','heat','warmth','fire'],hint:'Think: to sear is to apply extreme heat; to freeze is to apply extreme cold — each verb names its extreme temperature'},
+{type:'analogy',word:'sear',q:'SEAR is to SURFACE as BURN is to ___',a:'depth',ch:['depth','surface','outside','top'],hint:'Think: to sear is to burn the surface; to burn deeply is to affect the depth — degree of penetration'},
+{type:'analogy',word:'transport',q:'TRANSPORT is to CARRY as STATIONARY is to ___',a:'still',ch:['still','moving','traveling','carried'],hint:'Think: transport = carry (implies movement); stationary = still (implies no movement) — antonym pair'},
+{type:'analogy',word:'transport',q:'CAMEL is to TRANSPORT GOODS as TRUCK is to ___',a:'haul freight',ch:['haul freight','swim across','fly above','plant seeds'],hint:'Think: a camel transports goods across the desert; a truck hauls freight on roads — same function, different vehicle'},
+{type:'analogy',word:'transport',q:'TRANSPORT is to MOVEMENT as STORAGE is to ___',a:'stillness',ch:['stillness','movement','travel','transport'],hint:'Think: transport implies movement (things going somewhere); storage implies stillness (things staying put)'},
+{type:'analogy',word:'wend',q:'WEND is to TRAVEL as HALT is to ___',a:'stop',ch:['stop','journey','wander','roam'],hint:'Think: wend = travel (keep moving); halt = stop (cease moving) — antonym pair'},
+{type:'analogy',word:'wend',q:'CAMEL is to WEND ACROSS DESERT as SHIP is to ___',a:'sail across ocean',ch:['sail across ocean','fly above desert','burrow under ground','freeze in place'],hint:'Think: a camel wends across the desert; a ship sails across the ocean — each vehicle\'s way of crossing its terrain'},
+{type:'analogy',word:'wend',q:'WEND is to JOURNEY as LINGER is to ___',a:'stay',ch:['stay','travel','wander','move'],hint:'Think: wend = journey (keep going); linger = stay (remain in place) — antonym pair'},
+// ── SIMILES (35) ───────────────────────────────────────────────────────────
+{type:'simile',word:'adapt',q:'Complete the simile: The camel adapted to the desert like ___',a:'a master craftsman reshaping a tool to fit exactly what the job demands — nothing wasted, everything perfect',ch:['a master craftsman reshaping a tool to fit exactly what the job demands — nothing wasted, everything perfect','a craftsman who picks up the wrong tool and puts it back down again','someone who tries every tool without changing anything and wonders why nothing fits','a worker who refuses to change methods no matter what the task requires'],hint:'Think: to adapt is to reshape yourself precisely for the conditions — like a craftsman refitting a tool'},
+{type:'simile',word:'adapt',q:'Complete the simile: She adapted to her new school like ___',a:'water finding its level — gradually, quietly, until she fit every space',ch:['water finding its level — gradually, quietly, until she fit every space','a stone dropped into water — sudden, splashing, impossible to ignore','a fire that spreads quickly and consumes everything it touches','a storm that announces itself loudly and leaves damage behind'],hint:'Think: adapting is gradual, quiet, and eventual — like water that finds its level without force'},
+{type:'simile',word:'adapt',q:'Complete the simile: He adapted to the harsh conditions like ___',a:'a tree that grows sideways when the prevailing wind refuses to let it grow straight',ch:['a tree that grows sideways when the prevailing wind refuses to let it grow straight','a tree that snaps in the first strong wind because it never bent','a sapling that simply refuses to grow until conditions improve','a plant that waits underground for the season to change before emerging'],hint:'Think: real adaptation means changing your shape to suit conditions — like a tree that bends to survive'},
+{type:'simile',word:'deplete',q:'Complete the simile: The sun depleted the water supply like ___',a:'a thief working slowly — nothing gone all at once, but one day you reach for it and find nothing left',ch:['a thief working slowly — nothing gone all at once, but one day you reach for it and find nothing left','a sudden flood that takes everything at once and leaves in minutes','a storm that arrives with warning and lets you prepare','a drought that ends before the water supply runs out'],hint:'Think: slow depletion is invisible until it\'s complete — like a careful thief who takes a little at a time'},
+{type:'simile',word:'deplete',q:'Complete the simile: Their energy was depleted like ___',a:'a phone battery running in the cold — fine a moment ago, suddenly empty when you need it most',ch:['a phone battery running in the cold — fine a moment ago, suddenly empty when you need it most','a solar panel in full sun — constantly restoring itself throughout the day','a battery on its charger — replenishing steadily throughout the night','a power bank that refills faster than you can draw it down'],hint:'Think: sudden depletion at the worst moment — like a battery that seemed fine but failed when most needed'},
+{type:'simile',word:'efficient',q:'Complete the simile: The camel\'s body was as efficient as ___',a:'a machine engineered for exactly one purpose — nothing extra, nothing missing',ch:['a machine engineered for exactly one purpose — nothing extra, nothing missing','a machine with a hundred attachments that does none of them well','a tool that requires three people to operate and breaks under normal use','a device designed by committee with every feature anyone could think of'],hint:'Think: efficient = precisely built for a single purpose with no waste — like the perfect specialized machine'},
+{type:'simile',word:'efficient',q:'Complete the simile: She worked as efficiently as ___',a:'a spider building its web — methodical, unhurried, and perfect in the end',ch:['a spider building its web — methodical, unhurried, and perfect in the end','a squirrel storing nuts at random, hoping to find them later','a cook who measures nothing and adds ingredients without a plan','someone who starts three tasks at once and finishes none of them'],hint:'Think: efficient work is methodical and produces perfect results — like a spider that builds exactly what it needs, no more'},
+{type:'simile',word:'fatigue',q:'Complete the simile: The runner\'s fatigue hit her like ___',a:'a wall she hadn\'t seen — one stride she was fine, the next she was pushing through solid air',ch:['a wall she hadn\'t seen — one stride she was fine, the next she was pushing through solid air','a slow incline she\'d been climbing for miles and finally crested','a light breeze that barely slowed her pace as she ran into it','a curve in the road she navigated without breaking stride'],hint:'Think: sudden fatigue is like an invisible wall — it arrives without warning and stops you in your tracks'},
+{type:'simile',word:'fatigue',q:'Complete the simile: The desert traveler\'s fatigue settled in like ___',a:'sand filling a bucket — slowly, grain by grain, until you couldn\'t lift it',ch:['sand filling a bucket — slowly, grain by grain, until you couldn\'t lift it','water draining from a bucket — the more you travel, the lighter you feel','a weight placed on your back all at once at the start of the journey','a burden that someone else carries for you throughout the trip'],hint:'Think: gradual fatigue accumulates — like sand, each grain is nothing, but together they make something immovable'},
+{type:'simile',word:'fatigue',q:'Complete the simile: His fatigue weighed on him like ___',a:'a second coat he hadn\'t chosen to put on but couldn\'t take off',ch:['a second coat he hadn\'t chosen to put on but couldn\'t take off','a feather resting lightly on his shoulder — barely noticeable','a cloak he could remove the moment he chose to rest','a garment that fit perfectly and never seemed to add any weight'],hint:'Think: fatigue is unwanted weight you can\'t shed — like a coat that appeared without your choosing and won\'t come off'},
+{type:'simile',word:'gait',q:'Complete the simile: The camel\'s gait across the dunes was as steady as ___',a:'a metronome set to the slowest possible tempo — unhurried, unchanging, inevitable',ch:['a metronome set to the slowest possible tempo — unhurried, unchanging, inevitable','a drummer who speeds up whenever the audience gets excited','a clock that runs differently depending on the weather','a pace that varies with every step depending on the terrain'],hint:'Think: steady gait = never varying — like a metronome that keeps perfect time regardless of everything else'},
+{type:'simile',word:'gait',q:'Complete the simile: She walked with a gait as confident as ___',a:'a captain crossing her own deck — not fast, but certain of every step',ch:['a captain crossing her own deck — not fast, but certain of every step','a passenger taking their first step onto an unfamiliar ship','a sailor who loses their footing with every roll of the wave','a visitor walking carefully to avoid disturbing anything'],hint:'Think: a confident gait = the movement of someone who owns the space — like a captain on their own ship'},
+{type:'simile',word:'glare',q:'Complete the simile: The desert sun glared down like ___',a:'a spotlight operated by someone with no interest in your comfort',ch:['a spotlight operated by someone with no interest in your comfort','a lamp with a warm shade that softens the light pleasantly','a candle lit in a room to provide just enough light to read by','a lantern carried by a guide who adjusts its brightness as you walk'],hint:'Think: a glaring sun is harsh and indifferent — like a spotlight aimed with no concern for the one standing under it'},
+{type:'simile',word:'glare',q:'Complete the simile: The manager glared at him like ___',a:'a cat that has decided it owns the room and is not pleased with the intruder',ch:['a cat that has decided it owns the room and is not pleased with the intruder','a friendly dog recognizing someone it\'s met before','a bird singing in a tree without noticing anyone passing below','a fish swimming past something it doesn\'t bother to examine'],hint:'Think: a glare = claiming territory with eye contact — like a cat asserting ownership through sheer intensity of stare'},
+{type:'simile',word:'glare',q:'Complete the simile: The glare off the white sand was as blinding as ___',a:'stepping out of a dark theater into noon sun with no sunglasses',ch:['stepping out of a dark theater into noon sun with no sunglasses','walking from a bright room into a dim hallway and waiting for your eyes to adjust','looking at a candle from across a comfortable room','opening the curtains on a cloudy morning to let in a little more light'],hint:'Think: intense glare = sudden overwhelming brightness — like going from darkness to full midday sun in one step'},
+{type:'simile',word:'habitat',q:'Complete the simile: The dromedary moved through its desert habitat like ___',a:'a key moving through the lock it was made for — perfectly matched to every obstacle',ch:['a key moving through the lock it was made for — perfectly matched to every obstacle','a key someone is forcing into the wrong lock — it almost fits but never quite','a door that opens only with great effort no matter how many times you try','a mechanism designed for a different machine, pressed into service because nothing better is at hand'],hint:'Think: adapted creature in its habitat = perfect fit — like a key and its lock, made for each other'},
+{type:'simile',word:'habitat',q:'Complete the simile: Removed from its habitat, the polar bear looked as lost as ___',a:'a fish placed on dry land — alive, but in entirely the wrong world',ch:['a fish placed on dry land — alive, but in entirely the wrong world','a fish returned to the ocean after a brief moment on the dock','an otter sliding back into the river it swam in all its life','a bird released from a cage into the forest where it was born'],hint:'Think: removed from habitat = technically surviving but completely out of place — like a fish on land'},
+{type:'simile',word:'oblivious',q:'Complete the simile: The camel was as oblivious to the heat as ___',a:'a seasoned sailor is to the motion of a ship — it has become simply the background of existence',ch:['a seasoned sailor is to the motion of a ship — it has become simply the background of existence','a new sailor on their first voyage, constantly adjusting their stance','a passenger clutching the rail during a rough crossing','a visitor who notices every creak and roll throughout the entire trip'],hint:'Think: oblivious through adaptation = the discomfort has become invisible — like a sailor who no longer feels the ship move'},
+{type:'simile',word:'oblivious',q:'Complete the simile: She sat oblivious to the noise around her like ___',a:'someone reading at the center of a storm — the chaos is real; she had simply decided not to live inside it',ch:['someone reading at the center of a storm — the chaos is real; she had simply decided not to live inside it','a person who keeps checking over their shoulder to see what new sound has arrived','someone who stops reading every time a new noise enters the room','a reader who closes the book at the first distraction and doesn\'t return to it'],hint:'Think: chosen obliviousness = the stimulus exists but you\'ve made it irrelevant — like reading through a storm'},
+{type:'simile',word:'outmoded',q:'Complete the simile: The stagecoach felt as outmoded as ___',a:'a candle in a room full of electric lights — still technically functional, but no longer really the point',ch:['a candle in a room full of electric lights — still technically functional, but no longer really the point','a candle lit in a room where the power has gone out — suddenly the most essential thing in the building','a lamp that\'s been carefully maintained and still gives as much light as the day it was made','a light source chosen over electricity because it has a warmth that modern lights can\'t match'],hint:'Think: outmoded = replaced by something better but still technically works — like a candle in a room full of electric lights'},
+{type:'simile',word:'outmoded',q:'Complete the simile: His ideas were as outmoded as ___',a:'a map drawn before the last mountain range was discovered — accurate for its time, now dangerously incomplete',ch:['a map drawn before the last mountain range was discovered — accurate for its time, now dangerously incomplete','a map updated every year to reflect every new road and boundary change','a guide that was redrawn after the last survey and matches the terrain exactly','a chart so current that it includes features discovered only last month'],hint:'Think: outmoded = once right but no longer complete — like a map that was accurate when drawn but the world has changed'},
+{type:'simile',word:'prominent',q:'Complete the simile: The camel\'s prominent hump stood above the desert landscape like ___',a:'a sail above a flat sea — the one thing rising above everything else',ch:['a sail above a flat sea — the one thing rising above everything else','a stone rolled to rest at the lowest point of the valley','a shadow falling flat against the ground at midday','a ripple that spreads outward and disappears into the surrounding water'],hint:'Think: prominent = the thing that rises above everything else — like a sail above a flat sea, unmistakable'},
+{type:'simile',word:'prominent',q:'Complete the simile: Her prominent role in the company was as visible as ___',a:'a lighthouse on a flat coast — impossible to look toward the horizon without seeing it first',ch:['a lighthouse on a flat coast — impossible to look toward the horizon without seeing it first','a small buoy floating just below the surface, noticed only if you know where to look','a signal light set too low to be seen from any ship at sea','a marker placed on the chart but never built in the physical harbor'],hint:'Think: prominent = the first thing you see — like a lighthouse, it defines the landscape before you even look for it'},
+{type:'simile',word:'prominent',q:'Complete the simile: The glaring error was as prominent as ___',a:'a misplaced trumpet blast in the middle of a string quartet — impossible to miss, impossible to explain away',ch:['a misplaced trumpet blast in the middle of a string quartet — impossible to miss, impossible to explain away','a note played so softly that only the nearest musician could hear it','a rest in the music — an intentional silence that everyone recognized as planned','a chord played at exactly the right moment in exactly the right way'],hint:'Think: a prominent error stands out completely — like a trumpet blast where no trumpet should be'},
+{type:'simile',word:'quench',q:'Complete the simile: The water quenched the camel\'s thirst like ___',a:'rain on cracked desert ground — absorbed instantly, as if the need had been waiting for exactly this',ch:['rain on cracked desert ground — absorbed instantly, as if the need had been waiting for exactly this','rain on saturated soil that can\'t absorb any more and simply runs off','water poured onto a surface that\'s already wet — it beads up and rolls away','a light drizzle that barely touches the surface before evaporating in the heat'],hint:'Think: real quenching = total satisfaction of deep need — like rain on cracked ground that drinks it instantly'},
+{type:'simile',word:'quench',q:'Complete the simile: She quenched her curiosity like ___',a:'someone finally allowed into the library after being kept outside for years — thoroughly, without leaving a shelf unread',ch:['someone finally allowed into the library after being kept outside for years — thoroughly, without leaving a shelf unread','someone who picks up one book, glances at the cover, and puts it back','a visitor who stands in the library doorway but doesn\'t come inside','a reader who checks out a single book and returns it before finishing'],hint:'Think: quenching deep curiosity is total and complete — like a reader finally given free access to everything they\'d been kept from'},
+{type:'simile',word:'rigor',q:'Complete the simile: The rigor of the training program was as relentless as ___',a:'a desert at midsummer — no relief, no shade, no shortcut through',ch:['a desert at midsummer — no relief, no shade, no shortcut through','a shaded garden path on a cool morning — pleasant, well-maintained, easy','a trail with regular rest stops and fresh water at every turn','a course designed to be gentle enough that no one ever has to stop'],hint:'Think: rigor = relentless, no escape — like a desert in full summer that offers no shade and no relief'},
+{type:'simile',word:'rigor',q:'Complete the simile: They endured the rigors of the expedition like ___',a:'soldiers who had decided beforehand that the cold was just weather — it existed, but they had decided not to be stopped by it',ch:['soldiers who had decided beforehand that the cold was just weather — it existed, but they had decided not to be stopped by it','travelers who turned back at the first sign of difficult conditions','a team that called off the expedition as soon as the weather report looked uncertain','explorers who waited for ideal conditions before taking a single step'],hint:'Think: enduring rigor = deciding in advance that the hardship is just a condition, not an obstacle'},
+{type:'simile',word:'sear',q:'Complete the simile: The midday sun seared the sand like ___',a:'a brand pressed into leather — leaving its mark instantly, with no negotiation',ch:['a brand pressed into leather — leaving its mark instantly, with no negotiation','a gentle iron smoothing a wrinkle without leaving any trace of heat','a warm hand resting briefly on a surface and then lifting away','morning light touching the dew and letting it evaporate slowly'],hint:'Think: searing heat = immediate, permanent marking — like a brand, it leaves its impression the instant it makes contact'},
+{type:'simile',word:'sear',q:'Complete the simile: The searing heat hit them like ___',a:'a door opened onto a furnace — one step forward and the air itself became a thing to push through',ch:['a door opened onto a furnace — one step forward and the air itself became a thing to push through','a window opened to let in a cool morning breeze','a gentle warmth spreading through the room as the heater turns on','sunlight through a window — warm but not uncomfortable, welcome on a cold day'],hint:'Think: searing heat = something you physically encounter — like walking into a furnace, the air itself has a new density'},
+{type:'simile',word:'transport',q:'Complete the simile: The camel transported goods across the desert like ___',a:'a living freight service — slow, sure, and never once asking for a paved road',ch:['a living freight service — slow, sure, and never once asking for a paved road','a high-speed train that needs perfectly flat track and regular maintenance stops','a delivery drone that needs a clear signal and returns to base every few hours','a courier who requires a smooth road, shelter from weather, and guaranteed cell service'],hint:'Think: transport by camel = reliable, self-sufficient, adapted to the conditions — like a freight service that needs nothing the desert can\'t provide'},
+{type:'simile',word:'transport',q:'Complete the simile: They transported the fragile cargo like ___',a:'surgeons carrying a patient — hands steady, pace careful, eyes never leaving what mattered',ch:['surgeons carrying a patient — hands steady, pace careful, eyes never leaving what mattered','workers moving heavy equipment as fast as possible before the end of the shift','movers who stack everything quickly and sort out the damage at the destination','couriers who hand off the package without checking whether it arrived intact'],hint:'Think: careful transport = full attention and steadiness — like surgeons, who carry what they\'re responsible for with total focus'},
+{type:'simile',word:'wend',q:'Complete the simile: The line of camels wended across the dune like ___',a:'a sentence being written slowly across a blank page — each animal a letter, the whole a meaning',ch:['a sentence being written slowly across a blank page — each animal a letter, the whole a meaning','a line of text erased letter by letter until nothing remained','a paragraph crossed out and rewritten without any of the original words','a blank page waiting to be written on before the journey can begin'],hint:'Think: wending across the desert = creating meaning through movement — like letters forming a sentence, each step part of a larger message'},
+{type:'simile',word:'wend',q:'Complete the simile: She wended her way through the crowded market like ___',a:'water finding its path through stone — patient, unhurried, eventually through',ch:['water finding its path through stone — patient, unhurried, eventually through','a bulldozer pushing through the crowd by force','a person who stops and waits for the crowd to clear before taking another step','someone who turns back each time a new person blocks the path'],hint:'Think: wending through obstacles = patient, natural path-finding — like water that doesn\'t force its way through stone but finds the passage'},
+{type:'simile',word:'wend',q:'Complete the simile: They wended through the mountain pass like ___',a:'climbers who have agreed that the summit is not the point — the going is',ch:['climbers who have agreed that the summit is not the point — the going is','climbers racing to reach the top before anyone else and immediately turning around','a team that calls off the climb the moment conditions become less than ideal','hikers who stop at the base and wait for a cable car to take them to the top'],hint:'Think: to wend is to be fully in the journey — like climbers who find meaning in the traversal, not the destination'},
+// ── METAPHORS (35) ─────────────────────────────────────────────────────────
+{type:'metaphor',word:'adapt',q:'Which sentence is a metaphor using ADAPT?',a:'The camel is adaptation itself — an animal that desert-tested every part of its body until only what worked remained.',ch:['The camel is adaptation itself — an animal that desert-tested every part of its body until only what worked remained.','The camel has adapted so thoroughly to the desert that it seems to be adaptation personified.','Like adaptation made physical, the camel has been shaped by the desert into exactly what the desert required.','The camel has adapted to the desert in every way, as if adaptation were its defining characteristic.'],hint:'Think: calling the camel directly adaptation itself — it IS the concept embodied, the physical proof of what full adaptation looks like'},
+{type:'metaphor',word:'adapt',q:'Which sentence is a metaphor using ADAPT?',a:'To adapt is to be water — it takes the shape of any container without losing what it is.',ch:['To adapt is to be water — it takes the shape of any container without losing what it is.','To adapt is to change the way water changes — taking new forms while staying essentially the same.','Like water in a new container, adapting means changing your shape to fit new conditions.','Adapting feels like being water — you adjust to the new shape without losing your fundamental nature.'],hint:'Think: calling adaptation directly being water — you ARE the fluid, and the container IS the new condition you must fit'},
+{type:'metaphor',word:'deplete',q:'Which sentence is a metaphor using DEPLETE?',a:'The drought was a slow depleting — the river grew thinner week by week, like a word being slowly erased.',ch:['The drought was a slow depleting — the river grew thinner week by week, like a word being slowly erased.','The drought depleted the river slowly, as if the water were being gradually erased.','Like a word being slowly erased, the drought depleted the river letter by letter, week by week.','The drought depleted the river over time, in the way that a word is erased letter by letter.'],hint:'Think: calling the drought directly a slow depleting — it IS the process of erasure, the river IS the word disappearing'},
+{type:'metaphor',word:'deplete',q:'Which sentence is a metaphor using DEPLETE?',a:'Worry is a depleting — it draws on the same reserves as action, but produces nothing.',ch:['Worry is a depleting — it draws on the same reserves as action, but produces nothing.','Worry depletes your energy the way action does, but without the productive result.','Like a depleting that drains without producing, worry uses up reserves that action could have spent usefully.','Worrying feels like depletion — it costs energy the way action does but gives nothing back.'],hint:'Think: calling worry directly a depleting — it IS the draining process, drawing from reserves while creating nothing'},
+{type:'metaphor',word:'deplete',q:'Which sentence is a metaphor using DEPLETE?',a:'His enthusiasm was a resource they depleted carelessly — borrowed without thought, spent without gratitude, gone before anyone noticed.',ch:['His enthusiasm was a resource they depleted carelessly — borrowed without thought, spent without gratitude, gone before anyone noticed.','His enthusiasm was depleted by their carelessness, the way a resource is drained by wasteful use.','Like a resource depleted through careless use, his enthusiasm was drawn on without thought until nothing remained.','They depleted his enthusiasm carelessly, treating it as a resource without limits until it ran out.'],hint:'Think: calling enthusiasm directly a resource — it IS the supply, and depletion IS what careless use does to finite things'},
+{type:'metaphor',word:'efficient',q:'Which sentence is a metaphor using EFFICIENT?',a:'The camel\'s body is a masterwork of efficiency — a thousand-year design process that wasted nothing and solved everything.',ch:['The camel\'s body is a masterwork of efficiency — a thousand-year design process that wasted nothing and solved everything.','The camel\'s body is as efficient as a masterwork of engineering — designed over thousands of years to waste nothing.','Like a masterwork of engineering, the camel\'s body has been made efficient over thousands of years.','The efficiency of the camel\'s body is like that of a masterwork — nothing wasted, everything purposeful.'],hint:'Think: calling the camel\'s body directly a masterwork — it IS the finished design, and efficiency IS what makes it a masterwork'},
+{type:'metaphor',word:'efficient',q:'Which sentence is a metaphor using EFFICIENT?',a:'Her mind was an efficient machine — it took in the problem, ran it through every process, and delivered an answer before you finished the question.',ch:['Her mind was an efficient machine — it took in the problem, ran it through every process, and delivered an answer before you finished the question.','Her mind worked as efficiently as a machine — processing every problem quickly and producing answers instantly.','Like an efficient machine, her mind could process a problem and return an answer in seconds.','Her mind processed problems as efficiently as a well-designed machine — no wasted steps, immediate output.'],hint:'Think: calling her mind directly a machine — it IS the processing device, and efficient IS its defining characteristic'},
+{type:'metaphor',word:'fatigue',q:'Which sentence is a metaphor using FATIGUE?',a:'Fatigue was his companion by the third day — a quiet presence that sat behind every thought and made the simplest task feel like a negotiation.',ch:['Fatigue was his companion by the third day — a quiet presence that sat behind every thought and made the simplest task feel like a negotiation.','By the third day, fatigue was like a companion — always present, slowing every thought.','Like a companion that never left his side, fatigue had made itself at home in every action by the third day.','By the third day, fatigue followed him the way a companion does — constantly present, impossible to shake.'],hint:'Think: calling fatigue directly a companion — it IS the presence, always at his side, affecting everything'},
+{type:'metaphor',word:'fatigue',q:'Which sentence is a metaphor using FATIGUE?',a:'The runner\'s fatigue was the finish line she had to reach before she could reach the finish line.',ch:['The runner\'s fatigue was the finish line she had to reach before she could reach the finish line.','The runner\'s fatigue felt like a finish line she had to cross before crossing the actual finish line.','Like a second finish line placed before the real one, her fatigue was the obstacle between her and her goal.','Her fatigue was as real as a finish line — she had to push through it to get to the one that mattered.'],hint:'Think: calling fatigue directly a finish line — the exhaustion IS the barrier, and crossing it IS the achievement before the real one'},
+{type:'metaphor',word:'fatigue',q:'Which sentence is a metaphor using FATIGUE?',a:'By nightfall, fatigue had become the landscape — not something she was walking through, but the ground itself.',ch:['By nightfall, fatigue had become the landscape — not something she was walking through, but the ground itself.','By nightfall, fatigue had spread across her world the way a landscape spreads in every direction.','Like a landscape she was moving through, fatigue surrounded her by nightfall and shaped everything she experienced.','Her fatigue by nightfall was like the landscape — it defined the whole environment she was traveling through.'],hint:'Think: calling fatigue directly the landscape — it IS the terrain, not something encountered within it but the ground under every step'},
+{type:'metaphor',word:'gait',q:'Which sentence is a metaphor using GAIT?',a:'The camel\'s gait was a clock — patient, regular, measuring the desert in seconds of footfall.',ch:['The camel\'s gait was a clock — patient, regular, measuring the desert in seconds of footfall.','The camel\'s gait was as regular as a clock — each step marking time as it moved across the desert.','Like a clock measuring time, the camel\'s gait measured distance across the desert step by step.','The regularity of the camel\'s gait was as precise as a clock — each footfall a second, each mile an hour.'],hint:'Think: calling the gait directly a clock — it IS the timepiece, measuring the desert in its own steady rhythm'},
+{type:'metaphor',word:'gait',q:'Which sentence is a metaphor using GAIT?',a:'Her confident gait was an announcement — she owned this room, and everyone knew it the moment she crossed the threshold.',ch:['Her confident gait was an announcement — she owned this room, and everyone knew it the moment she crossed the threshold.','Her confident gait was like an announcement — it told everyone she owned the room before she spoke.','Like an announcement made before she entered, her gait declared her ownership of the space.','Her gait was as much an announcement as a spoken statement — it communicated everything about her before she said a word.'],hint:'Think: calling her gait directly an announcement — it IS the declaration, communicated entirely through movement'},
+{type:'metaphor',word:'glare',q:'Which sentence is a metaphor using GLARE?',a:'The desert sun\'s glare is its signature — its refusal to let you forget where you are, even for a moment.',ch:['The desert sun\'s glare is its signature — its refusal to let you forget where you are, even for a moment.','The desert sun\'s glare acts like a signature — it marks the landscape in a way that tells you exactly where you are.','Like a signature that identifies the sun, the glare is the desert\'s way of announcing its presence constantly.','The glare is the desert sun\'s signature in the way that a distinctive mark identifies its maker.'],hint:'Think: calling the glare directly a signature — it IS the identifying mark, the sun\'s insistence on being known'},
+{type:'metaphor',word:'glare',q:'Which sentence is a metaphor using GLARE?',a:'The manager\'s glare was a wall — it stopped conversation, pinned you in place, and made you wish you had chosen a different aisle.',ch:['The manager\'s glare was a wall — it stopped conversation, pinned you in place, and made you wish you had chosen a different aisle.','The manager\'s glare was like a wall — it stopped you and made you reconsider your direction.','Like a wall placed in your path, the manager\'s glare halted everything and made movement seem impossible.','Her glare had the effect of a wall — stopping everyone who encountered it before they could continue.'],hint:'Think: calling the glare directly a wall — it IS the physical barrier, and to be glared at IS to be stopped in your tracks'},
+{type:'metaphor',word:'habitat',q:'Which sentence is a metaphor using HABITAT?',a:'A creature\'s habitat is not just where it lives — it is everything the creature has made a contract with, every condition it has agreed to accept.',ch:['A creature\'s habitat is not just where it lives — it is everything the creature has made a contract with, every condition it has agreed to accept.','A creature\'s habitat is more than just its home — it\'s like a contract between the animal and its environment.','Like a contract agreed to over thousands of years, a creature\'s habitat is the deal it has made with its conditions.','The relationship between a creature and its habitat is like a contract — each has accepted what the other requires.'],hint:'Think: calling habitat directly a contract — it IS the agreement, and every adaptation IS a clause accepted over generations'},
+{type:'metaphor',word:'habitat',q:'Which sentence is a metaphor using HABITAT?',a:'The desert is the dromedary\'s habitat and its curriculum — everything the camel knows about survival, the desert has taught it.',ch:['The desert is the dromedary\'s habitat and its curriculum — everything the camel knows about survival, the desert has taught it.','The desert acts as both habitat and curriculum for the dromedary — providing the conditions and teaching the lessons.','Like a curriculum designed for the dromedary, the desert habitat has taught it everything it knows about survival.','The dromedary\'s habitat has served as its curriculum — the desert teaching the animal everything survival requires.'],hint:'Think: calling the desert both habitat and curriculum — it IS the school, and every adaptation IS a lesson learned'},
+{type:'metaphor',word:'habitat',q:'Which sentence is a metaphor using HABITAT?',a:'Without its habitat, an animal is a sentence without a subject — the words are there, but the meaning is gone.',ch:['Without its habitat, an animal is a sentence without a subject — the words are there, but the meaning is gone.','Without its habitat, an animal is like a sentence missing its subject — the rest is there but makes no sense.','Like a sentence from which the subject has been removed, an animal without its habitat loses its organizing meaning.','An animal removed from its habitat is as incomplete as a sentence with no subject — technically present, fundamentally broken.'],hint:'Think: calling the animal without habitat directly a sentence without a subject — it IS the fragment, grammatically present but semantically empty'},
+{type:'metaphor',word:'oblivious',q:'Which sentence is a metaphor using OBLIVIOUS?',a:'The camel is oblivion in motion — it wends across the desert utterly indifferent to everything that isn\'t the next step.',ch:['The camel is oblivion in motion — it wends across the desert utterly indifferent to everything that isn\'t the next step.','The camel moves as if oblivious to everything except the step in front of it.','Like oblivion made physical, the camel is entirely indifferent to the discomforts of the desert it crosses.','The camel\'s obliviousness to hardship is like oblivion in motion — a total absence of the distraction that would stop others.'],hint:'Think: calling the camel directly oblivion in motion — it IS the absence of distraction, embodied in a moving form'},
+{type:'metaphor',word:'oblivious',q:'Which sentence is a metaphor using OBLIVIOUS?',a:'Obliviousness is sometimes armor — a shell the camel and the focused traveler both wear, impervious to distractions that would stop a less adapted creature.',ch:['Obliviousness is sometimes armor — a shell the camel and the focused traveler both wear, impervious to distractions that would stop a less adapted creature.','Obliviousness sometimes works like armor — protecting the camel and the focused person from distractions that would stop others.','Like armor worn against distraction, obliviousness protects the camel from the things that would exhaust a creature paying attention.','Obliviousness can be as protective as armor — shielding the wearer from every distraction that would otherwise slow them down.'],hint:'Think: calling obliviousness directly armor — it IS the protective layer, and wearing it IS what allows sustained movement through hardship'},
+{type:'metaphor',word:'outmoded',q:'Which sentence is a metaphor using OUTMODED?',a:'The stagecoach is a cautionary tale in wood and iron — the outmoded version of every idea that thought it was permanent.',ch:['The stagecoach is a cautionary tale in wood and iron — the outmoded version of every idea that thought it was permanent.','The stagecoach is like a cautionary tale — an outmoded technology that once seemed permanent and indispensable.','Like a cautionary tale told in wood and iron, the stagecoach is the outmoded predecessor of every transportation idea that believed it would last forever.','The story of the stagecoach is a cautionary tale about outmoded thinking — it dominated and then vanished when something better arrived.'],hint:'Think: calling the stagecoach directly a cautionary tale — it IS the story, the permanent-seeming thing that proved temporary'},
+{type:'metaphor',word:'outmoded',q:'Which sentence is a metaphor using OUTMODED?',a:'An outmoded idea is not wrong; it is a fossil — once perfectly adapted, now preserved only as evidence of what used to work.',ch:['An outmoded idea is not wrong; it is a fossil — once perfectly adapted, now preserved only as evidence of what used to work.','An outmoded idea is like a fossil — once useful, now preserved as a record of a way of thinking that no longer applies.','Like a fossil that was once a living creature, an outmoded idea was once a working solution now preserved in the record of history.','An outmoded idea has become a fossil — the idea itself still intact, but the conditions that made it useful long gone.'],hint:'Think: calling the outmoded idea directly a fossil — it IS the preserved remnant, once alive and functioning, now a specimen'},
+{type:'metaphor',word:'outmoded',q:'Which sentence is a metaphor using OUTMODED?',a:'Every technology is an outmoded technology in waiting — the only question is how long before something else makes it a relic.',ch:['Every technology is an outmoded technology in waiting — the only question is how long before something else makes it a relic.','Every technology will eventually become outmoded — it\'s only a matter of how long before something better arrives.','Like an outmoded technology waiting to happen, every current tool will eventually be replaced by something more efficient.','No technology stays current forever — every one of them is outmoded at some future date, just not yet.'],hint:'Think: calling current technology directly outmoded in waiting — it IS already the relic, just not yet arrived at that moment'},
+{type:'metaphor',word:'prominent',q:'Which sentence is a metaphor using PROMINENT?',a:'The camel\'s hump is its most prominent feature — a landmark on the landscape of the animal itself.',ch:['The camel\'s hump is its most prominent feature — a landmark on the landscape of the animal itself.','The camel\'s hump is so prominent it acts like a landmark — the most visible feature on the animal.','Like a landmark on a landscape, the camel\'s hump is the most prominent feature of the animal\'s silhouette.','The camel\'s hump is as prominent as a landmark — it defines the animal\'s outline from any direction.'],hint:'Think: calling the hump directly a landmark — it IS the navigational feature, the thing that defines the animal\'s landscape'},
+{type:'metaphor',word:'prominent',q:'Which sentence is a metaphor using PROMINENT?',a:'Her reputation was a prominent building on the horizon — visible from any direction, impossible to ignore when approaching.',ch:['Her reputation was a prominent building on the horizon — visible from any direction, impossible to ignore when approaching.','Her reputation was as prominent as a tall building — visible from far away, impossible to overlook.','Like a prominent building visible from every direction, her reputation preceded her wherever she went.','Her reputation had the prominence of a landmark — you could see it coming long before you arrived.'],hint:'Think: calling her reputation directly a building — it IS the structure, prominent, defining the horizon before you\'ve even arrived'},
+{type:'metaphor',word:'quench',q:'Which sentence is a metaphor using QUENCH?',a:'The oasis is not just water — it is the quenching of every thirst at once: physical, psychological, and the thirst to believe the journey was worth it.',ch:['The oasis is not just water — it is the quenching of every thirst at once: physical, psychological, and the thirst to believe the journey was worth it.','The oasis quenches not just physical thirst but psychological thirst as well — it is more than just water.','Like a quenching that reaches every layer of need, the oasis satisfies not just the body but the spirit of the journey.','An oasis quenches every kind of thirst — not just the physical one, but the deeper thirst for meaning in the hardship.'],hint:'Think: calling the oasis directly the quenching — it IS the act of satisfaction, not just the source of water'},
+{type:'metaphor',word:'quench',q:'Which sentence is a metaphor using QUENCH?',a:'Reading was the only thing that quenched his real thirst — the hunger for a world larger than the one he could see from his window.',ch:['Reading was the only thing that quenched his real thirst — the hunger for a world larger than the one he could see from his window.','Reading quenched his real thirst for knowledge the way water quenches physical thirst.','Like the only source of water in a desert, reading quenched a thirst that nothing else could reach.','Reading was as good as water to him — it quenched his hunger for a bigger world every time he opened a book.'],hint:'Think: calling reading the only quenching — it IS the sole satisfier, and the thirst for a larger world IS what it extinguishes'},
+{type:'metaphor',word:'quench',q:'Which sentence is a metaphor using QUENCH?',a:'The rain was a quenching — it arrived with the single purpose of relieving what the sun had taken.',ch:['The rain was a quenching — it arrived with the single purpose of relieving what the sun had taken.','The rain quenched the earth\'s thirst the way only rain can — arriving with the single purpose of relief.','Like a quenching delivered from above, the rain arrived to relieve exactly what the sun had taken.','The rain\'s purpose was to quench — to relieve the drought the sun had imposed on everything below it.'],hint:'Think: calling the rain directly a quenching — it IS the act of relief, arriving as a single purposeful event'},
+{type:'metaphor',word:'rigor',q:'Which sentence is a metaphor using RIGOR?',a:'The desert\'s rigor is its curriculum — every creature that survives has passed the hardest exam ever designed.',ch:['The desert\'s rigor is its curriculum — every creature that survives has passed the hardest exam ever designed.','The desert\'s rigorous conditions work like a curriculum — every survivor has been tested and passed.','Like a curriculum of extraordinary rigor, the desert tests every creature that enters and keeps only those who pass.','The desert\'s rigor is its teaching method — every creature that survives has completed the course.'],hint:'Think: calling the desert\'s rigor directly a curriculum — it IS the educational system, and every adaptation IS a lesson passed'},
+{type:'metaphor',word:'rigor',q:'Which sentence is a metaphor using RIGOR?',a:'The rigor of her training was an investment — she paid daily in sweat so that when it mattered, she could pay in confidence.',ch:['The rigor of her training was an investment — she paid daily in sweat so that when it mattered, she could pay in confidence.','The rigor of her training worked like an investment — the daily cost paid off when the real test arrived.','Like an investment that returns more than it cost, the rigor of her training paid off in confidence when she needed it.','Her rigorous training was an investment in future performance — every hard session a deposit toward the day she\'d need the return.'],hint:'Think: calling the rigor directly an investment — it IS the financial instrument, and daily sweat IS the capital deposited'},
+{type:'metaphor',word:'sear',q:'Which sentence is a metaphor using SEAR?',a:'The memory was seared into him — not painful anymore, but permanent, like a brand that has cooled but left its mark.',ch:['The memory was seared into him — not painful anymore, but permanent, like a brand that has cooled but left its mark.','The memory had been seared into him the way heat sears a surface — permanent, impossible to remove.','Like something seared into place by intense heat, the memory had become part of him and could not be undone.','The memory seared into him the way a brand sears into leather — instantly, permanently, and without negotiation.'],hint:'Think: calling the searing directly the action done to the memory — it IS the branding, and the memory IS what got marked permanently'},
+{type:'metaphor',word:'sear',q:'Which sentence is a metaphor using SEAR?',a:'The midday desert is a forge — it sears everything that passes through it and tests what is strong enough to remain.',ch:['The midday desert is a forge — it sears everything that passes through it and tests what is strong enough to remain.','The midday desert works like a forge — searing everything in it and testing what can withstand the heat.','Like a forge that sears and tests, the midday desert burns everything passing through it and keeps only what endures.','The desert at midday has the effect of a forge — searing, testing, burning away everything that cannot survive.'],hint:'Think: calling the midday desert directly a forge — it IS the furnace, and to pass through it IS to be seared and tested'},
+{type:'metaphor',word:'transport',q:'Which sentence is a metaphor using TRANSPORT?',a:'The camel is not just transport — it is a civilization\'s entire infrastructure, the whole shipping network for a world without roads.',ch:['The camel is not just transport — it is a civilization\'s entire infrastructure, the whole shipping network for a world without roads.','The camel was more than transport — it functioned as the entire infrastructure of a civilization with no roads.','Like an entire shipping network compressed into one animal, the camel was more than transport for desert civilizations.','The camel was a whole civilization\'s transport system — roads, trucks, and freight all in one animal.'],hint:'Think: calling the camel directly an infrastructure — it IS the entire system, not just one part of it'},
+{type:'metaphor',word:'transport',q:'Which sentence is a metaphor using TRANSPORT?',a:'Language is the most efficient form of transport — it carries ideas across centuries, unloads them in new minds, and travels back empty for another load.',ch:['Language is the most efficient form of transport — it carries ideas across centuries, unloads them in new minds, and travels back empty for another load.','Language works like the most efficient transport — carrying ideas across time and delivering them to new generations.','Like a transport that moves ideas instead of goods, language carries meaning across centuries to new minds.','The most efficient transport for ideas is language — it crosses time and delivers its cargo without being depleted.'],hint:'Think: calling language directly transport — it IS the vehicle, ideas ARE the cargo, and centuries ARE the distance traveled'},
+{type:'metaphor',word:'wend',q:'Which sentence is a metaphor using WEND?',a:'The caravan was time itself wending across the desert — patient, purposeful, tracing the same route it had traced a thousand years before.',ch:['The caravan was time itself wending across the desert — patient, purposeful, tracing the same route it had traced a thousand years before.','The caravan wended across the desert like time — slow, patient, following the same route it always had.','Like time wending across centuries, the caravan moved through the desert with the same patience and purpose it always had.','The caravan\'s wending across the desert was like time itself — following the same path it had always followed.'],hint:'Think: calling the caravan directly time wending — it IS the movement of time, patient, purposeful, ancient'},
+{type:'metaphor',word:'wend',q:'Which sentence is a metaphor using WEND?',a:'To wend is to trust the way — to let the path unfold rather than forcing it, accepting the detour as part of the journey.',ch:['To wend is to trust the way — to let the path unfold rather than forcing it, accepting the detour as part of the journey.','To wend is to travel with trust — like following a path without insisting it go where you planned.','Like trusting a path that winds rather than forcing it straight, to wend is to accept the journey as it comes.','Wending means trusting the way forward — following where the path leads rather than demanding it comply with your plan.'],hint:'Think: calling wending directly trusting the way — it IS the act of acceptance, letting the journey determine the path'}
+];
+
+var queue=[],qIdx=0,score=0,streak=0,typeTally={},answered=false;
+var fcIdx=0,fcOrder=[],fcFlipped=false;
+
+function renderCard(){
+  fcFlipped=false;
+  document.getElementById('card-inner').classList.remove('flipped');
+  var w=WORDS[fcOrder[fcIdx]];
+  document.getElementById('fc-progress').textContent=(fcIdx+1)+' / '+WORDS.length;
+  var front=document.getElementById('card-front');
+  clearEl(front);
+  front.appendChild(mk('div','card-word',w.word));
+  front.appendChild(mk('div','card-pos',w.pos));
+  front.appendChild(mk('div','card-tap','Tap to reveal'));
+  var back=document.getElementById('card-back');
+  clearEl(back);
+  back.appendChild(mk('div','card-def',w.def));
+  back.appendChild(mk('div','card-ex',w.ex));
+}
+function initFlashcards(){
+  fcOrder=[];for(var i=0;i<WORDS.length;i++)fcOrder.push(i);
+  fcIdx=0;renderCard();
+}
+document.getElementById('card-inner').addEventListener('click',function(){
+  fcFlipped=!fcFlipped;this.classList.toggle('flipped',fcFlipped);
+});
+document.getElementById('fc-flip').addEventListener('click',function(){
+  fcFlipped=!fcFlipped;document.getElementById('card-inner').classList.toggle('flipped',fcFlipped);
+});
+document.getElementById('fc-prev').addEventListener('click',function(){fcIdx=(fcIdx-1+WORDS.length)%WORDS.length;renderCard();});
+document.getElementById('fc-next').addEventListener('click',function(){fcIdx=(fcIdx+1)%WORDS.length;renderCard();});
+document.getElementById('fc-shuffle').addEventListener('click',function(){fcOrder=shuffle(fcOrder);fcIdx=0;renderCard();});
+
+function startQuiz(){
+  queue=shuffle(QUESTIONS).slice(0,20);
+  qIdx=0;score=0;streak=0;typeTally={};answered=false;
+  document.getElementById('result-section').style.display='none';
+  document.getElementById('quiz-section').style.display='';
+  showQuestion();
+}
+function showQuestion(){
+  answered=false;
+  var q=queue[qIdx];
+  var ts=TYPE_STYLES[q.type]||{label:q.type.toUpperCase(),color:'#94a3b8',bg:'rgba(51,65,85,.4)'};
+  document.getElementById('q-counter').textContent='Question '+(qIdx+1)+' of '+queue.length;
+  document.getElementById('q-score').textContent='Score: '+score;
+  document.getElementById('streak-badge').textContent='🔥 '+streak+' streak';
+  document.getElementById('progress-fill').style.width=((qIdx/queue.length)*100)+'%';
+  var bw=document.getElementById('type-badge-wrap');
+  clearEl(bw);
+  var badge=mk('span','type-badge',ts.label);
+  badge.style.color=ts.color;badge.style.background=ts.bg;
+  bw.appendChild(badge);
+  document.getElementById('q-word').textContent=q.word.toUpperCase();
+  document.getElementById('q-text').textContent=q.q;
+  var hb=document.getElementById('hint-box');
+  hb.style.display='none';hb.textContent=q.hint;
+  var cc=document.getElementById('choices');
+  clearEl(cc);
+  shuffle(q.ch).forEach(function(opt){
+    var btn=mk('button','choice-btn',opt);
+    btn.addEventListener('click',function(){selectAnswer(this,opt,q);});
+    cc.appendChild(btn);
+  });
+  document.getElementById('feedback').textContent='';
+  document.getElementById('feedback').className='feedback';
+  document.getElementById('next-btn').style.display='none';
+}
+document.getElementById('hint-btn').addEventListener('click',function(){
+  var hb=document.getElementById('hint-box');
+  hb.style.display=hb.style.display==='none'?'block':'none';
+});
+function selectAnswer(btn,opt,q){
+  if(answered)return;
+  answered=true;
+  var correct=opt===q.a;
+  var rect=btn.getBoundingClientRect();
+  var cx=rect.left+rect.width/2,cy=rect.top+rect.height/2;
+  var fb=document.getElementById('feedback');
+  if(correct){
+    btn.classList.add('correct');score++;streak++;
+    fb.textContent='Correct! ✓';fb.className='feedback ok';
+    spawnBurst(cx,cy,'#4ade80',18);
+    if(streak>=3)spawnConfetti();
+  } else {
+    btn.classList.add('wrong');streak=0;
+    fb.textContent='Incorrect. The answer is: '+q.a;fb.className='feedback no';
+    spawnBurst(cx,cy,'#fb923c',12);
+    document.getElementById('choices').querySelectorAll('.choice-btn').forEach(function(b){if(b.textContent===q.a)b.classList.add('correct');});
+  }
+  typeTally[q.type]=typeTally[q.type]||{c:0,t:0};
+  typeTally[q.type].t++;if(correct)typeTally[q.type].c++;
+  document.querySelectorAll('.choice-btn').forEach(function(b){b.disabled=true;});
+  document.getElementById('next-btn').style.display='block';
+}
+document.getElementById('next-btn').addEventListener('click',function(){
+  qIdx++;if(qIdx>=queue.length){showResult();}else{showQuestion();}
+});
+function showResult(){
+  document.getElementById('quiz-section').style.display='none';
+  document.getElementById('result-section').style.display='block';
+  document.getElementById('result-score').textContent=score;
+  var pct=score/queue.length;
+  var msgs=[
+    'Like the camel, you adapted to every challenge and depleted nothing — perfect score!',
+    'Outstanding! Your efficiency would impress even the ship of the desert.',
+    'Strong effort — you persevered through the rigors of this quiz.',
+    'Good work — keep going and no vocabulary challenge will remain outmoded for you.',
+    'Every journey wends through setbacks. Study, adapt, and return stronger.'
+  ];
+  document.getElementById('result-msg').textContent=pct===1?msgs[0]:pct>=.85?msgs[1]:pct>=.7?msgs[2]:pct>=.5?msgs[3]:msgs[4];
+  var bd=document.getElementById('result-breakdown');
+  clearEl(bd);
+  Object.keys(typeTally).forEach(function(k){
+    var d=typeTally[k];
+    var item=mk('div','rb-item');
+    var lbl=mk('span',null,(TYPE_STYLES[k]||{label:k}).label+': ');
+    var val=mk('span',null,d.c+'/'+d.t);
+    item.appendChild(lbl);item.appendChild(val);
+    bd.appendChild(item);
+  });
+  document.getElementById('progress-fill').style.width='100%';
+}
+document.getElementById('restart-btn').addEventListener('click',startQuiz);
+
+document.getElementById('btn-quiz').addEventListener('click',function(){
+  this.classList.add('active');document.getElementById('btn-flash').classList.remove('active');
+  document.getElementById('flashcard-section').style.display='none';
+  document.getElementById('quiz-section').style.display='';
+  document.getElementById('result-section').style.display='none';
+});
+document.getElementById('btn-flash').addEventListener('click',function(){
+  this.classList.add('active');document.getElementById('btn-quiz').classList.remove('active');
+  document.getElementById('quiz-section').style.display='none';
+  document.getElementById('result-section').style.display='none';
+  document.getElementById('flashcard-section').style.display='';
+  initFlashcards();
+});
+
+initFlashcards();
+startQuiz();
+</script>
+</body>
+</html>

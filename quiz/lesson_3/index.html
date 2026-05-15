@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wordly Wise — Lesson 3: Land of Contrasts</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#0a0a1a;color:#e8e8f0;min-height:100vh;overflow-x:hidden}
+canvas#stars{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.screen{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+.screen.hidden{display:none}
+#home-link{position:fixed;top:14px;left:18px;z-index:100;color:#34d399;text-decoration:none;font-size:14px;background:rgba(6,78,59,.7);padding:6px 14px;border-radius:20px;border:1px solid #059669;transition:background .2s}
+#home-link:hover{background:rgba(5,150,105,.35)}
+
+/* START */
+.start-card{background:rgba(5,20,15,.85);border:1px solid #059669;border-radius:24px;padding:48px 40px;max-width:540px;width:100%;text-align:center;box-shadow:0 0 60px rgba(16,185,129,.25)}
+.start-card h1{font-size:2.4rem;font-weight:800;background:linear-gradient(135deg,#34d399,#60a5fa,#fbbf24);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+.start-card .subtitle{color:#94a3b8;margin-bottom:28px;font-size:1rem}
+.start-card p{color:#cbd5e1;line-height:1.7;margin-bottom:32px;font-size:.97rem}
+.btn{display:inline-block;padding:13px 34px;border-radius:50px;border:none;cursor:pointer;font-size:1rem;font-weight:700;transition:transform .15s,box-shadow .15s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.btn-primary{background:linear-gradient(135deg,#059669,#0d9488);color:#fff;box-shadow:0 4px 18px rgba(5,150,105,.5)}
+.btn-secondary{background:rgba(5,20,15,.8);color:#34d399;border:1px solid #059669;margin-top:14px}
+.btn-sm{padding:8px 20px;font-size:.85rem}
+
+/* QUIZ */
+.quiz-wrap{max-width:680px;width:100%}
+.progress-bar-outer{background:rgba(255,255,255,.08);border-radius:10px;height:8px;margin-bottom:20px;overflow:hidden}
+.progress-bar-inner{height:100%;border-radius:10px;background:linear-gradient(90deg,#059669,#60a5fa);transition:width .4s}
+.q-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.q-counter{color:#94a3b8;font-size:.9rem}
+.streak-badge{background:rgba(251,191,36,.15);border:1px solid #f59e0b;color:#fbbf24;border-radius:20px;padding:4px 12px;font-size:.8rem;font-weight:700}
+.type-badge{border-radius:20px;padding:4px 14px;font-size:.78rem;font-weight:700;display:inline-block;margin-bottom:14px}
+.q-text{font-size:1.2rem;font-weight:600;color:#e2e8f0;line-height:1.6;margin-bottom:24px}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.choice-btn{background:rgba(5,20,15,.7);border:1.5px solid rgba(5,150,105,.4);border-radius:14px;padding:14px 18px;color:#e2e8f0;font-size:.95rem;cursor:pointer;transition:all .15s;text-align:left}
+.choice-btn:hover:not(:disabled){background:rgba(5,150,105,.25);border-color:#059669}
+.choice-btn.correct{background:rgba(16,185,129,.2);border-color:#10b981;color:#6ee7b7}
+.choice-btn.wrong{background:rgba(239,68,68,.2);border-color:#ef4444;color:#fca5a5}
+.hint-text{color:#94a3b8;font-size:.85rem;font-style:italic;margin-top:6px;min-height:20px}
+
+/* RESULTS */
+.results-card{background:rgba(5,20,15,.85);border:1px solid #059669;border-radius:24px;padding:40px 36px;max-width:620px;width:100%;text-align:center}
+.score-ring{width:120px;height:120px;border-radius:50%;margin:0 auto 20px;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:800;border:4px solid #059669;background:rgba(5,150,105,.15)}
+.breakdown{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:20px 0}
+.bd-chip{border-radius:20px;padding:5px 14px;font-size:.8rem;font-weight:600}
+.review-list{margin-top:24px;text-align:left;max-height:280px;overflow-y:auto}
+.review-item{background:rgba(255,255,255,.05);border-radius:10px;padding:10px 14px;margin-bottom:8px;font-size:.85rem;line-height:1.5}
+.review-item .ri-q{color:#94a3b8}
+.review-item .ri-a{color:#6ee7b7;font-weight:600}
+.review-item .ri-yours{color:#fca5a5}
+.results-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:24px}
+
+/* FLASHCARDS */
+.fc-wrap{max-width:540px;width:100%;display:flex;flex-direction:column;align-items:center}
+.fc-wrap h2{font-size:1.5rem;font-weight:700;color:#34d399;margin-bottom:6px}
+.fc-count{color:#64748b;font-size:.85rem;margin-bottom:24px}
+.fc-scene{width:100%;max-width:420px;height:260px;perspective:1000px;cursor:pointer;margin-bottom:20px}
+.fc-card{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.4,0,.2,1)}
+.fc-card.flipped{transform:rotateY(180deg)}
+.fc-face{position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center}
+.fc-front{background:linear-gradient(135deg,rgba(5,150,105,.35),rgba(13,148,136,.25));border:1.5px solid #059669}
+.fc-back{background:linear-gradient(135deg,rgba(30,64,175,.4),rgba(96,165,250,.15));border:1.5px solid #60a5fa;transform:rotateY(180deg)}
+#fc-word{font-size:2rem;font-weight:800;color:#e2e8f0}
+#fc-pos{font-size:.85rem;color:#34d399;margin-top:6px}
+#fc-flip-hint{font-size:.75rem;color:#64748b;margin-top:14px}
+#fc-def{font-size:.95rem;color:#bfdbfe;line-height:1.6}
+#fc-example{font-size:.82rem;color:#93c5fd;font-style:italic;margin-top:10px}
+.fc-nav{display:flex;align-items:center;gap:18px}
+.fc-nav button{background:rgba(5,150,105,.3);border:1.5px solid #059669;color:#34d399;border-radius:50%;width:42px;height:42px;font-size:1.2rem;cursor:pointer;transition:background .15s}
+.fc-nav button:hover{background:rgba(5,150,105,.6)}
+.fc-nav span{color:#94a3b8;font-size:.9rem;min-width:70px;text-align:center}
+.fc-progress{width:100%;background:rgba(255,255,255,.08);border-radius:10px;height:6px;margin-top:18px;overflow:hidden}
+.fc-progress-inner{height:100%;background:linear-gradient(90deg,#059669,#60a5fa);transition:width .35s;border-radius:10px}
+
+/* PARTICLES */
+#particle-canvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:200}
+
+@media(max-width:500px){
+.choices{grid-template-columns:1fr}
+.start-card h1{font-size:1.8rem}
+}
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+<canvas id="particle-canvas"></canvas>
+<a href="../index.html" id="home-link">← Home</a>
+
+<!-- START -->
+<div id="screen-start" class="screen">
+  <div class="start-card">
+    <div style="font-size:3rem;margin-bottom:10px">🌏</div>
+    <h1>Land of Contrasts</h1>
+    <div class="subtitle">Wordly Wise · Lesson 3</div>
+    <p>From the arid plains of the northeast to the humid rainforests of the south, Thailand is a land of stunning contrasts. Master 15 words that describe the natural world, landscapes, and the incredible variety of life on Earth.</p>
+    <div>
+      <button class="btn btn-primary" id="btn-start">Begin the Challenge →</button>
+    </div>
+    <div>
+      <button class="btn btn-secondary" id="btn-flash-start">📚 Study Flashcards</button>
+    </div>
+  </div>
+</div>
+
+<!-- QUIZ -->
+<div id="screen-quiz" class="screen hidden">
+  <div class="quiz-wrap">
+    <div class="progress-bar-outer"><div class="progress-bar-inner" id="prog-bar" style="width:0%"></div></div>
+    <div class="q-header">
+      <span class="q-counter" id="q-counter">Question 1 of 20</span>
+      <span class="streak-badge hidden" id="streak-badge">🔥 0 streak</span>
+    </div>
+    <div id="type-badge" class="type-badge"></div>
+    <div class="q-text" id="q-text"></div>
+    <div class="choices" id="choices"></div>
+    <div class="hint-text" id="hint-text"></div>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div id="screen-results" class="screen hidden">
+  <div class="results-card">
+    <div class="score-ring" id="score-ring"></div>
+    <h2 id="results-title" style="margin-bottom:6px;color:#e2e8f0"></h2>
+    <p id="results-msg" style="color:#94a3b8;margin-bottom:4px"></p>
+    <div class="breakdown" id="breakdown"></div>
+    <div class="review-list" id="review-list"></div>
+    <div class="results-btns">
+      <button class="btn btn-primary btn-sm" id="btn-retry">Try Again</button>
+      <button class="btn btn-secondary btn-sm" id="btn-flash-results">📚 Review Flashcards</button>
+    </div>
+  </div>
+</div>
+
+<!-- FLASHCARDS -->
+<div id="screen-flash" class="screen hidden">
+  <div class="fc-wrap">
+    <h2>📚 Lesson 3 Flashcards</h2>
+    <div class="fc-count" id="fc-count">Card 1 of 15</div>
+    <div class="fc-scene" id="fc-scene">
+      <div class="fc-card" id="fc-card">
+        <div class="fc-face fc-front">
+          <div id="fc-word"></div>
+          <div id="fc-pos"></div>
+          <div id="fc-flip-hint">tap to reveal →</div>
+        </div>
+        <div class="fc-face fc-back">
+          <div id="fc-def"></div>
+          <div id="fc-example"></div>
+        </div>
+      </div>
+    </div>
+    <div class="fc-nav">
+      <button id="fc-prev">‹</button>
+      <span id="fc-nav-label">1 / 15</span>
+      <button id="fc-next">›</button>
+    </div>
+    <div class="fc-progress"><div class="fc-progress-inner" id="fc-prog" style="width:6.67%"></div></div>
+    <button class="btn btn-secondary btn-sm" id="btn-fc-back" style="margin-top:22px">← Back</button>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+// ── STARFIELD ──────────────────────────────────────────────────────────────
+var sc=document.getElementById('stars'),ctx=sc.getContext('2d'),W,H,stars=[];
+function initStars(){W=sc.width=window.innerWidth;H=sc.height=window.innerHeight;stars=[];for(var i=0;i<220;i++)stars.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.4+.3,s:Math.random()*.4+.1,b:Math.random()});}
+function drawStars(){ctx.clearRect(0,0,W,H);var g=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,W*.7);g.addColorStop(0,'rgba(5,150,105,.15)');g.addColorStop(.5,'rgba(13,148,136,.07)');g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);stars.forEach(function(s){s.b+=s.s*.016;var a=.4+.55*Math.abs(Math.sin(s.b));ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle='rgba(180,240,200,'+a+')';ctx.fill();});requestAnimationFrame(drawStars);}
+window.addEventListener('resize',initStars);initStars();drawStars();
+
+// ── PARTICLES ──────────────────────────────────────────────────────────────
+var pc=document.getElementById('particle-canvas'),pctx=pc.getContext('2d'),particles=[];
+function resizePC(){pc.width=window.innerWidth;pc.height=window.innerHeight;}resizePC();window.addEventListener('resize',resizePC);
+function burst(x,y,color,count){for(var i=0;i<count;i++)particles.push({x:x,y:y,vx:(Math.random()-0.5)*7,vy:(Math.random()-2.5)*6,r:Math.random()*5+2,color:color,life:1,dec:Math.random()*.025+.015});}
+function confettiBurst(){var cols=['#34d399','#60a5fa','#fbbf24','#f472b6','#a78bfa'];for(var i=0;i<90;i++){var c=cols[Math.floor(Math.random()*cols.length)];particles.push({x:Math.random()*pc.width,y:-10,vx:(Math.random()-0.5)*4,vy:Math.random()*4+2,r:Math.random()*6+2,color:c,life:1,dec:Math.random()*.012+.008});}}
+function animParticles(){pctx.clearRect(0,0,pc.width,pc.height);particles=particles.filter(function(p){p.x+=p.vx;p.y+=p.vy;p.vy+=0.12;p.life-=p.dec;if(p.life<=0)return false;pctx.globalAlpha=p.life;pctx.beginPath();pctx.arc(p.x,p.y,p.r,0,Math.PI*2);pctx.fillStyle=p.color;pctx.fill();return true;});pctx.globalAlpha=1;requestAnimationFrame(animParticles);}animParticles();
+
+// ── DOM HELPERS ─────────────────────────────────────────────────────────────
+function clearEl(el){while(el.firstChild)el.removeChild(el.firstChild);}
+function mk(tag,cls,txt){var el=document.createElement(tag);if(cls)el.className=cls;if(txt!==undefined)el.textContent=txt;return el;}
+function show(id){document.getElementById(id).classList.remove('hidden');}
+function hide(id){document.getElementById(id).classList.add('hidden');}
+function $(id){return document.getElementById(id);}
+
+// ── DATA ───────────────────────────────────────────────────────────────────
+var WORDS=[
+  {word:'abundant',pos:'adj.',def:'More than enough; plentiful. Abundance (n.) means a great amount.',ex:'"If good weather continues, farmers can expect an abundant harvest."'},
+  {word:'arid',pos:'adj.',def:'Having little or no rainfall; very dry.',ex:'"Much of North Africa is arid land."'},
+  {word:'distinct',pos:'adj.',def:'1. Not the same; different or separate. 2. Unmistakable; definite.',ex:'"Apples come in over two thousand distinct varieties."'},
+  {word:'graze',pos:'v.',def:'1. To feed on growing grass. 2. To touch lightly in passing.',ex:'"A small herd of cows grazed in the meadow."'},
+  {word:'hectic',pos:'adj.',def:'Full of feverish activity, haste, or confusion.',ex:'"After a hectic week of sightseeing, the tourists were glad to go home and relax."'},
+  {word:'horde',pos:'n.',def:'A large group or crowd, especially one on the move.',ex:'"Hordes of swimmers head for the pool in summer."'},
+  {word:'humid',pos:'adj.',def:'Having a large amount of water or moisture in the air.',ex:'"Residents of Hong Kong escape the hot, humid weather by going inside where it is cool and dry."'},
+  {word:'incredible',pos:'adj.',def:'Hard or impossible to believe.',ex:'"It seems incredible that humans and stars are made of the same stuff."'},
+  {word:'inhabit',pos:'v.',def:'To live in or on. Inhabitant (n.) is a person or animal that lives in a certain place.',ex:'"Millions of bison once inhabited the great plains of America."'},
+  {word:'peninsula',pos:'n.',def:'A piece of land, connected to a larger land mass, that juts out and is almost completely surrounded by water.',ex:'"Bays along the Baja peninsula provide shelter for several kinds of whales."'},
+  {word:'rural',pos:'adj.',def:'Of or relating to the country and the people who live there; away from cities.',ex:'"The villagers believe that a shopping mall has no place in a rural area."'},
+  {word:'sanctuary',pos:'n.',def:'1. A place of safety or shelter. 2. Protection offered by such a place.',ex:'"The neighboring country was a sanctuary to those who were being persecuted."'},
+  {word:'splendor',pos:'n.',def:'Magnificence; brilliance of appearance. Splendid (adj.) means very impressive.',ex:'"The splendor of the palace at Versailles took our breath away."'},
+  {word:'squalor',pos:'n.',def:'Filth; misery. Squalid (adj.) means dirty and unfit for living.',ex:'"People lived in squalor after their homes were destroyed by the hurricane."'},
+  {word:'terrain',pos:'n.',def:'1. An area of land; a region. 2. The surface features of a region.',ex:'"The mountainous terrain of western Colorado attracts skiers from all parts of the country."'}
+];
+
+var TYPE_STYLES={
+  synonym:{label:'Synonym',color:'#60a5fa',bg:'rgba(96,165,250,.15)'},
+  antonym:{label:'Antonym',color:'#f472b6',bg:'rgba(244,114,182,.15)'},
+  analogy:{label:'Analogy',color:'#a78bfa',bg:'rgba(167,139,250,.15)'},
+  simile:{label:'Simile',color:'#34d399',bg:'rgba(52,211,153,.15)'},
+  metaphor:{label:'Metaphor',color:'#fbbf24',bg:'rgba(251,191,36,.15)'}
+};
+
+var QUESTIONS=[
+  // ── SYNONYMS (50) ─────────────────────────────────────────────────────────
+  {type:'synonym',word:'abundant',q:'Which word is closest in meaning to ABUNDANT?',a:'plentiful',ch:['plentiful','scarce','rare','meager'],hint:'Think: more than enough'},
+  {type:'synonym',word:'abundant',q:'Choose the best synonym for ABUNDANT.',a:'ample',ch:['ample','lacking','sparse','thin'],hint:'Ample means more than sufficient'},
+  {type:'synonym',word:'abundant',q:'Select the word most similar to ABUNDANT.',a:'bountiful',ch:['bountiful','empty','void','dry'],hint:'A bountiful harvest overflows with food'},
+  {type:'synonym',word:'arid',q:'Which word is closest in meaning to ARID?',a:'dry',ch:['dry','wet','soggy','lush'],hint:'Think: little or no rain'},
+  {type:'synonym',word:'arid',q:'Choose the best synonym for ARID.',a:'parched',ch:['parched','damp','moist','humid'],hint:'Parched means extremely dry'},
+  {type:'synonym',word:'arid',q:'Select the word most similar to ARID.',a:'barren',ch:['barren','fertile','rich','lush'],hint:'Barren land produces nothing'},
+  {type:'synonym',word:'distinct',q:'Which word is closest in meaning to DISTINCT?',a:'different',ch:['different','identical','same','alike'],hint:'Think: not the same'},
+  {type:'synonym',word:'distinct',q:'Choose the best synonym for DISTINCT (meaning clear).',a:'unmistakable',ch:['unmistakable','vague','unclear','hidden'],hint:'Unmistakable means obvious and clear'},
+  {type:'synonym',word:'distinct',q:'Select the word most similar to DISTINCT.',a:'unique',ch:['unique','ordinary','common','typical'],hint:'Unique means one of a kind'},
+  {type:'synonym',word:'graze',q:'Which word is closest in meaning to GRAZE (animals eating)?',a:'feed',ch:['feed','hunt','sleep','migrate'],hint:'Animals graze when they eat grass'},
+  {type:'synonym',word:'graze',q:'Choose the best synonym for GRAZE (to touch lightly).',a:'skim',ch:['skim','crash','smash','press'],hint:'Skim means to pass lightly over a surface'},
+  {type:'synonym',word:'graze',q:'Select the word most similar to GRAZE (eating grass).',a:'browse',ch:['browse','sprint','soar','dive'],hint:'Animals browse the vegetation'},
+  {type:'synonym',word:'hectic',q:'Which word is closest in meaning to HECTIC?',a:'frantic',ch:['frantic','calm','peaceful','slow'],hint:'Think: wild, rushed activity'},
+  {type:'synonym',word:'hectic',q:'Choose the best synonym for HECTIC.',a:'chaotic',ch:['chaotic','orderly','quiet','relaxed'],hint:'Chaos describes hectic situations'},
+  {type:'synonym',word:'hectic',q:'Select the word most similar to HECTIC.',a:'frenzied',ch:['frenzied','leisurely','gentle','easy'],hint:'Frenzied means wildly active and busy'},
+  {type:'synonym',word:'horde',q:'Which word is closest in meaning to HORDE?',a:'crowd',ch:['crowd','individual','person','loner'],hint:'Think: a large moving mass of people'},
+  {type:'synonym',word:'horde',q:'Choose the best synonym for HORDE.',a:'swarm',ch:['swarm','trickle','pair','duo'],hint:'A swarm is a large, moving group'},
+  {type:'synonym',word:'horde',q:'Select the word most similar to HORDE.',a:'throng',ch:['throng','handful','few','solitary'],hint:'A throng is a dense crowd'},
+  {type:'synonym',word:'humid',q:'Which word is closest in meaning to HUMID?',a:'moist',ch:['moist','arid','dry','parched'],hint:'Think: moisture in the air'},
+  {type:'synonym',word:'humid',q:'Choose the best synonym for HUMID.',a:'muggy',ch:['muggy','breezy','crisp','cool'],hint:'Muggy describes hot, damp air'},
+  {type:'synonym',word:'humid',q:'Select the word most similar to HUMID.',a:'damp',ch:['damp','scorched','baked','withered'],hint:'Damp means slightly wet'},
+  {type:'synonym',word:'incredible',q:'Which word is closest in meaning to INCREDIBLE?',a:'unbelievable',ch:['unbelievable','ordinary','boring','common'],hint:'Think: hard to believe'},
+  {type:'synonym',word:'incredible',q:'Choose the best synonym for INCREDIBLE.',a:'astonishing',ch:['astonishing','dull','plain','typical'],hint:'Astonishing means shocking with amazement'},
+  {type:'synonym',word:'incredible',q:'Select the word most similar to INCREDIBLE.',a:'extraordinary',ch:['extraordinary','average','normal','expected'],hint:'Extraordinary means well beyond what is ordinary'},
+  {type:'synonym',word:'inhabit',q:'Which word is closest in meaning to INHABIT?',a:'occupy',ch:['occupy','vacate','abandon','flee'],hint:'Think: to live in a place'},
+  {type:'synonym',word:'inhabit',q:'Choose the best synonym for INHABIT.',a:'reside in',ch:['reside in','desert','leave','escape'],hint:'To reside means to live somewhere'},
+  {type:'synonym',word:'peninsula',q:'A PENINSULA is a piece of land almost completely ___.',a:'surrounded by water',ch:['surrounded by water','underground','covered in snow','built up with cities'],hint:'Think of Italy — it sticks out into the sea'},
+  {type:'synonym',word:'rural',q:'Which word is closest in meaning to RURAL?',a:'countryside',ch:['countryside','downtown','urban','metropolitan'],hint:'Think: away from cities, near farms'},
+  {type:'synonym',word:'rural',q:'Choose the best synonym for RURAL.',a:'pastoral',ch:['pastoral','bustling','industrial','crowded'],hint:'Pastoral refers to peaceful country life'},
+  {type:'synonym',word:'sanctuary',q:'Which word is closest in meaning to SANCTUARY?',a:'refuge',ch:['refuge','danger','threat','peril'],hint:'Think: a safe place to go'},
+  {type:'synonym',word:'sanctuary',q:'Choose the best synonym for SANCTUARY.',a:'haven',ch:['haven','hazard','risk','trap'],hint:'A haven is a place of safety'},
+  {type:'synonym',word:'sanctuary',q:'Select the word most similar to SANCTUARY.',a:'shelter',ch:['shelter','battlefield','trap','prison'],hint:'Shelter protects from harm'},
+  {type:'synonym',word:'splendor',q:'Which word is closest in meaning to SPLENDOR?',a:'magnificence',ch:['magnificence','ugliness','filth','misery'],hint:'Think: brilliant, breathtaking beauty'},
+  {type:'synonym',word:'splendor',q:'Choose the best synonym for SPLENDOR.',a:'grandeur',ch:['grandeur','squalor','poverty','drabness'],hint:'Grandeur describes impressive size and beauty'},
+  {type:'synonym',word:'squalor',q:'Which word is closest in meaning to SQUALOR?',a:'filth',ch:['filth','cleanliness','beauty','luxury'],hint:'Think: dirty, miserable conditions'},
+  {type:'synonym',word:'squalor',q:'Choose the best synonym for SQUALOR.',a:'misery',ch:['misery','comfort','splendor','wealth'],hint:'Misery describes the suffering of squalor'},
+  {type:'synonym',word:'terrain',q:'Which word is closest in meaning to TERRAIN?',a:'landscape',ch:['landscape','ocean','sky','atmosphere'],hint:'Think: features of the land'},
+  {type:'synonym',word:'terrain',q:'Choose the best synonym for TERRAIN.',a:'geography',ch:['geography','weather','culture','language'],hint:'Geography describes land and its features'},
+  {type:'synonym',word:'abundant',q:'An ABUNDANT supply of crops means the land is ___.',a:'fertile',ch:['fertile','dry','barren','rocky'],hint:'Fertile land produces abundance'},
+  {type:'synonym',word:'hectic',q:'A HECTIC schedule is packed with ___.',a:'activity',ch:['activity','rest','silence','leisure'],hint:'No time to breathe — that is hectic'},
+  {type:'synonym',word:'horde',q:'A HORDE of tourists in Bangkok is a ___ group.',a:'massive',ch:['massive','small','quiet','solitary'],hint:'Hordes are always large'},
+  {type:'synonym',word:'incredible',q:'Thailand\'s INCREDIBLE variety of butterflies is ___.',a:'remarkable',ch:['remarkable','unremarkable','boring','expected'],hint:'Remarkable means worthy of notice'},
+  {type:'synonym',word:'inhabit',q:'Animals that INHABIT the rainforest ___ there.',a:'live',ch:['live','visit','pass through','avoid'],hint:'Inhabit means to make a home there'},
+  {type:'synonym',word:'rural',q:'A RURAL village has mostly ___ around it.',a:'farmland',ch:['farmland','skyscrapers','highways','factories'],hint:'Rural = country, farms, fields'},
+  {type:'synonym',word:'sanctuary',q:'A wildlife SANCTUARY provides ___ for animals.',a:'protection',ch:['protection','danger','hunting','trapping'],hint:'Sanctuaries keep animals safe'},
+  {type:'synonym',word:'splendor',q:'The SPLENDOR of the Grand Palace was ___.',a:'breathtaking',ch:['breathtaking','ugly','shabby','forgettable'],hint:'Splendor takes your breath away'},
+  {type:'synonym',word:'squalor',q:'Living in SQUALOR means conditions are ___.',a:'wretched',ch:['wretched','luxurious','comfortable','pleasant'],hint:'Wretched means miserable and terrible'},
+  {type:'synonym',word:'terrain',q:'Mountainous TERRAIN makes travel ___.',a:'difficult',ch:['difficult','easy','fast','pleasant'],hint:'Mountains make it hard to get around'},
+  {type:'synonym',word:'distinct',q:'The four regions of Thailand are ___ from one another.',a:'distinct',ch:['distinct','identical','merged','blended'],hint:'Each region has its own character'},
+  {type:'synonym',word:'graze',q:'Buffalo that GRAZE on the plains are ___.',a:'feeding',ch:['feeding','resting','sleeping','hiding'],hint:'Grazing is a form of eating for animals'},
+
+  // ── ANTONYMS (35) ─────────────────────────────────────────────────────────
+  {type:'antonym',word:'abundant',q:'What is the ANTONYM (opposite) of ABUNDANT?',a:'scarce',ch:['scarce','plentiful','ample','rich'],hint:'The opposite of more than enough'},
+  {type:'antonym',word:'abundant',q:'Choose the word most OPPOSITE to ABUNDANT.',a:'meager',ch:['meager','bountiful','generous','full'],hint:'Meager means barely enough'},
+  {type:'antonym',word:'arid',q:'What is the ANTONYM of ARID?',a:'humid',ch:['humid','dry','parched','barren'],hint:'The opposite of dry is wet or humid'},
+  {type:'antonym',word:'arid',q:'Choose the word most OPPOSITE to ARID.',a:'lush',ch:['lush','barren','withered','dusty'],hint:'Lush means full of green growth'},
+  {type:'antonym',word:'arid',q:'An arid region has almost no rain. Its opposite has ___.',a:'abundant rainfall',ch:['abundant rainfall','dry soil','dust storms','cracked earth'],hint:'The opposite is wet, not dry'},
+  {type:'antonym',word:'distinct',q:'What is the ANTONYM of DISTINCT?',a:'identical',ch:['identical','unique','different','separate'],hint:'Identical means exactly the same'},
+  {type:'antonym',word:'distinct',q:'Choose the word most OPPOSITE to DISTINCT.',a:'similar',ch:['similar','clear','definite','unmistakable'],hint:'Similar means nearly the same'},
+  {type:'antonym',word:'hectic',q:'What is the ANTONYM of HECTIC?',a:'calm',ch:['calm','frantic','busy','rushed'],hint:'The opposite of chaotic bustle'},
+  {type:'antonym',word:'hectic',q:'Choose the word most OPPOSITE to HECTIC.',a:'peaceful',ch:['peaceful','frenzied','wild','active'],hint:'Peaceful is quiet and unhurried'},
+  {type:'antonym',word:'hectic',q:'After a hectic week, everyone craved a ___ weekend.',a:'leisurely',ch:['leisurely','chaotic','frantic','noisy'],hint:'Leisurely means slow and relaxed'},
+  {type:'antonym',word:'horde',q:'What is the ANTONYM of HORDE?',a:'handful',ch:['handful','swarm','crowd','mob'],hint:'A handful is very few — the opposite of a horde'},
+  {type:'antonym',word:'humid',q:'What is the ANTONYM of HUMID?',a:'arid',ch:['arid','moist','damp','muggy'],hint:'Think: dry air vs. moist air'},
+  {type:'antonym',word:'humid',q:'Choose the word most OPPOSITE to HUMID.',a:'parched',ch:['parched','soggy','damp','wet'],hint:'Parched means bone dry'},
+  {type:'antonym',word:'incredible',q:'What is the ANTONYM of INCREDIBLE?',a:'ordinary',ch:['ordinary','amazing','astonishing','shocking'],hint:'The opposite of hard to believe'},
+  {type:'antonym',word:'incredible',q:'Choose the word most OPPOSITE to INCREDIBLE.',a:'believable',ch:['believable','extraordinary','unreal','stunning'],hint:'What you easily believe is not incredible'},
+  {type:'antonym',word:'inhabit',q:'What is the ANTONYM of INHABIT?',a:'abandon',ch:['abandon','occupy','reside','dwell'],hint:'Leaving a place empty is the opposite of inhabiting it'},
+  {type:'antonym',word:'inhabit',q:'Choose the word most OPPOSITE to INHABIT.',a:'vacate',ch:['vacate','settle','colonize','nest'],hint:'Vacate means to leave a place empty'},
+  {type:'antonym',word:'rural',q:'What is the ANTONYM of RURAL?',a:'urban',ch:['urban','pastoral','remote','countryside'],hint:'Urban means relating to cities'},
+  {type:'antonym',word:'rural',q:'Choose the word most OPPOSITE to RURAL.',a:'metropolitan',ch:['metropolitan','farming','wilderness','forested'],hint:'Metropolitan means relating to large cities'},
+  {type:'antonym',word:'sanctuary',q:'What is the ANTONYM of SANCTUARY?',a:'danger',ch:['danger','refuge','haven','shelter'],hint:'A sanctuary is safe; its opposite is threatening'},
+  {type:'antonym',word:'sanctuary',q:'Choose the word most OPPOSITE to SANCTUARY.',a:'peril',ch:['peril','safety','protection','shelter'],hint:'Peril means serious danger'},
+  {type:'antonym',word:'splendor',q:'What is the ANTONYM of SPLENDOR?',a:'squalor',ch:['squalor','grandeur','magnificence','beauty'],hint:'Squalor is filth — the opposite of magnificence'},
+  {type:'antonym',word:'splendor',q:'Choose the word most OPPOSITE to SPLENDOR.',a:'ugliness',ch:['ugliness','brilliance','glory','dazzle'],hint:'Ugliness is the opposite of magnificent beauty'},
+  {type:'antonym',word:'squalor',q:'What is the ANTONYM of SQUALOR?',a:'splendor',ch:['splendor','misery','filth','neglect'],hint:'Splendor and squalor are direct opposites'},
+  {type:'antonym',word:'squalor',q:'Choose the word most OPPOSITE to SQUALOR.',a:'luxury',ch:['luxury','poverty','dirt','ruin'],hint:'Luxury is comfort and wealth — opposite of squalor'},
+  {type:'antonym',word:'abundant',q:'A region with abundant water is the opposite of one with ___ water.',a:'scarce',ch:['scarce','plentiful','fresh','flowing'],hint:'Scarce means not enough'},
+  {type:'antonym',word:'distinct',q:'The flavors of the two dishes were not distinct — they were almost ___.',a:'identical',ch:['identical','different','unique','bold'],hint:'Identical means exactly the same'},
+  {type:'antonym',word:'horde',q:'Instead of a horde of tourists, there was only a ___ of visitors.',a:'handful',ch:['handful','mob','throng','swarm'],hint:'Just a few, not a large group'},
+  {type:'antonym',word:'incredible',q:'The magic trick seemed incredible at first, but the explanation was ___.',a:'ordinary',ch:['ordinary','amazing','shocking','miraculous'],hint:'Once explained, it seemed mundane'},
+  {type:'antonym',word:'rural',q:'Farmers left their ___ lives for the rural countryside.',a:'urban',ch:['urban','peaceful','quiet','simple'],hint:'Urban life is city life'},
+  {type:'antonym',word:'humid',q:'The travelers crossed from the ___ rainforest into the arid desert.',a:'humid',ch:['humid','dry','dusty','barren'],hint:'Rainforests are the opposite of deserts'},
+  {type:'antonym',word:'terrain',q:'Flat, easy terrain is the opposite of ___ terrain.',a:'mountainous',ch:['mountainous','flat','open','smooth'],hint:'Mountains make terrain difficult'},
+  {type:'antonym',word:'sanctuary',q:'The jungle was a sanctuary, but the city was a place of ___.',a:'danger',ch:['danger','refuge','safety','peace'],hint:'The city held threats, not shelter'},
+  {type:'antonym',word:'splendor',q:'The royal palace gleamed with splendor, while the slums showed only ___.',a:'squalor',ch:['squalor','beauty','glory','magnificence'],hint:'Two extremes — rich beauty vs. filth and misery'},
+  {type:'antonym',word:'graze',q:'Instead of grazing peacefully, the animals ___ when startled.',a:'fled',ch:['fled','ate','browsed','rested'],hint:'Fleeing is the opposite of calmly grazing'},
+
+  // ── ANALOGIES (40) ─────────────────────────────────────────────────────────
+  {type:'analogy',word:'humid',q:'HUMID is to ARID as WET is to ___.',a:'dry',ch:['dry','moist','damp','soggy'],hint:'Humid and arid are opposites; wet and ___ are opposites'},
+  {type:'analogy',word:'splendor',q:'SPLENDOR is to SQUALOR as WEALTH is to ___.',a:'poverty',ch:['poverty','luxury','richness','comfort'],hint:'Splendor and squalor are opposites; so are wealth and poverty'},
+  {type:'analogy',word:'abundant',q:'ABUNDANT is to SCARCE as FULL is to ___.',a:'empty',ch:['empty','overflowing','packed','crowded'],hint:'Abundant and scarce are opposites; full and ___ are opposites'},
+  {type:'analogy',word:'rural',q:'RURAL is to URBAN as COUNTRYSIDE is to ___.',a:'city',ch:['city','forest','ocean','mountain'],hint:'Rural = countryside; urban = city'},
+  {type:'analogy',word:'sanctuary',q:'SANCTUARY is to SAFETY as PRISON is to ___.',a:'confinement',ch:['confinement','freedom','shelter','comfort'],hint:'A sanctuary provides safety; a prison provides confinement'},
+  {type:'analogy',word:'graze',q:'GRAZE is to COW as BROWSE is to ___.',a:'deer',ch:['deer','lion','eagle','shark'],hint:'Cows graze; deer browse the vegetation'},
+  {type:'analogy',word:'horde',q:'HORDE is to PEOPLE as FLOCK is to ___.',a:'birds',ch:['birds','fish','cattle','wolves'],hint:'A horde is a large group of people; a flock is a large group of birds'},
+  {type:'analogy',word:'peninsula',q:'PENINSULA is to WATER as ISLAND is to ___.',a:'ocean',ch:['ocean','land','desert','sky'],hint:'A peninsula is surrounded mostly by water; an island is surrounded entirely by ocean'},
+  {type:'analogy',word:'terrain',q:'TERRAIN is to LAND as CLIMATE is to ___.',a:'weather',ch:['weather','soil','rock','sand'],hint:'Terrain describes land; climate describes weather patterns'},
+  {type:'analogy',word:'inhabit',q:'INHABIT is to ANIMAL as OCCUPY is to ___.',a:'person',ch:['person','lake','cloud','wind'],hint:'Animals inhabit places; people occupy them'},
+  {type:'analogy',word:'arid',q:'ARID is to DESERT as HUMID is to ___.',a:'rainforest',ch:['rainforest','tundra','glacier','canyon'],hint:'Deserts are arid; rainforests are humid'},
+  {type:'analogy',word:'distinct',q:'DISTINCT is to DIFFERENT as IDENTICAL is to ___.',a:'same',ch:['same','unique','separate','unlike'],hint:'Distinct means different; identical means the same'},
+  {type:'analogy',word:'incredible',q:'INCREDIBLE is to UNBELIEVABLE as ORDINARY is to ___.',a:'common',ch:['common','astonishing','shocking','rare'],hint:'Incredible and unbelievable are synonyms; ordinary and common are synonyms'},
+  {type:'analogy',word:'splendor',q:'SPLENDOR is to PALACE as SQUALOR is to ___.',a:'slum',ch:['slum','garden','museum','theater'],hint:'Palaces have splendor; slums have squalor'},
+  {type:'analogy',word:'rural',q:'RURAL is to FARM as URBAN is to ___.',a:'skyscraper',ch:['skyscraper','meadow','valley','forest'],hint:'Farms belong to rural areas; skyscrapers to urban areas'},
+  {type:'analogy',word:'abundant',q:'ABUNDANT is to PLENTIFUL as ARID is to ___.',a:'parched',ch:['parched','moist','lush','wet'],hint:'Abundant means plentiful; arid means parched'},
+  {type:'analogy',word:'terrain',q:'TERRAIN is to MOUNTAIN as SURFACE is to ___.',a:'texture',ch:['texture','color','smell','taste'],hint:'Terrain refers to physical features; surface refers to texture'},
+  {type:'analogy',word:'sanctuary',q:'SANCTUARY is to ANIMAL as SHELTER is to ___.',a:'human',ch:['human','predator','storm','threat'],hint:'Sanctuaries protect animals; shelters protect humans'},
+  {type:'analogy',word:'horde',q:'HORDE is to TOURISTS as SWARM is to ___.',a:'bees',ch:['bees','penguins','horses','elephants'],hint:'Tourists come in hordes; bees come in swarms'},
+  {type:'analogy',word:'humid',q:'HUMID is to MOISTURE as ARID is to ___.',a:'dryness',ch:['dryness','rain','fog','mist'],hint:'Humid brings moisture; arid brings dryness'},
+  {type:'analogy',word:'graze',q:'GRAZE is to MEADOW as SWIM is to ___.',a:'river',ch:['river','sky','cliff','cave'],hint:'Animals graze in meadows; fish swim in rivers'},
+  {type:'analogy',word:'distinct',q:'DISTINCT is to UNIQUE as COMMON is to ___.',a:'ordinary',ch:['ordinary','rare','special','unusual'],hint:'Distinct and unique are synonyms; common and ordinary are synonyms'},
+  {type:'analogy',word:'peninsula',q:'PENINSULA is to LAND as CAPE is to ___.',a:'coast',ch:['coast','mountain','desert','valley'],hint:'Both peninsula and cape are land formations that extend into water'},
+  {type:'analogy',word:'inhabit',q:'INHABIT is to HOME as ATTEND is to ___.',a:'school',ch:['school','land','water','sky'],hint:'You inhabit a home; you attend a school'},
+  {type:'analogy',word:'splendor',q:'SPLENDOR is to EYES as HARMONY is to ___.',a:'ears',ch:['ears','nose','hands','feet'],hint:'Splendor dazzles the eyes; harmony pleases the ears'},
+  {type:'analogy',word:'incredible',q:'INCREDIBLE is to BELIEF as INVISIBLE is to ___.',a:'sight',ch:['sight','sound','smell','taste'],hint:'Incredible challenges belief; invisible challenges sight'},
+  {type:'analogy',word:'squalor',q:'SQUALOR is to NEGLECT as SPLENDOR is to ___.',a:'care',ch:['care','ruin','dirt','decay'],hint:'Squalor results from neglect; splendor results from care'},
+  {type:'analogy',word:'abundant',q:'ABUNDANT is to HARVEST as SPARSE is to ___.',a:'drought',ch:['drought','flood','storm','spring'],hint:'Abundant harvests come from good rains; sparse ones from drought'},
+  {type:'analogy',word:'arid',q:'ARID is to CACTUS as HUMID is to ___.',a:'fern',ch:['fern','tumbleweed','sand','rock'],hint:'Cacti thrive in arid places; ferns thrive in humid ones'},
+  {type:'analogy',word:'rural',q:'RURAL is to QUIET as HECTIC is to ___.',a:'noisy',ch:['noisy','peaceful','calm','still'],hint:'Rural life is quiet; hectic life is noisy'},
+  {type:'analogy',word:'sanctuary',q:'SANCTUARY is to REFUGEE as PORT is to ___.',a:'sailor',ch:['sailor','wave','storm','anchor'],hint:'A sanctuary shelters refugees; a port shelters sailors'},
+  {type:'analogy',word:'terrain',q:'TERRAIN is to GEOGRAPHER as BODY is to ___.',a:'doctor',ch:['doctor','artist','chef','pilot'],hint:'Geographers study terrain; doctors study the body'},
+  {type:'analogy',word:'horde',q:'HORDE is to MOVEMENT as COLONY is to ___.',a:'settlement',ch:['settlement','migration','invasion','escape'],hint:'A horde moves; a colony settles'},
+  {type:'analogy',word:'distinct',q:'DISTINCT is to FLAVOR as VIVID is to ___.',a:'color',ch:['color','sound','shape','weight'],hint:'A distinct flavor stands out; a vivid color stands out'},
+  {type:'analogy',word:'inhabit',q:'INHABIT is to NATIVE as VISIT is to ___.',a:'tourist',ch:['tourist','citizen','resident','settler'],hint:'Natives inhabit places; tourists only visit'},
+  {type:'analogy',word:'incredible',q:'INCREDIBLE is to WONDER as TERRIBLE is to ___.',a:'fear',ch:['fear','joy','hope','pride'],hint:'Incredible things inspire wonder; terrible things inspire fear'},
+  {type:'analogy',word:'peninsula',q:'PENINSULA is to BAJA as ISLAND is to ___.',a:'Hawaii',ch:['Hawaii','Texas','Nevada','Colorado'],hint:'Baja is a famous peninsula; Hawaii is a famous island'},
+  {type:'analogy',word:'splendor',q:'SPLENDOR is to OBSERVER as AROMA is to ___.',a:'diner',ch:['diner','reader','listener','speaker'],hint:'An observer takes in splendor; a diner takes in aroma'},
+  {type:'analogy',word:'squalor',q:'SQUALOR is to POVERTY as CLEANLINESS is to ___.',a:'wealth',ch:['wealth','dust','ruin','neglect'],hint:'Squalor goes with poverty; cleanliness often comes with wealth'},
+  {type:'analogy',word:'abundant',q:'ABUNDANT is to FEAST as SCARCE is to ___.',a:'famine',ch:['famine','harvest','plenty','surplus'],hint:'A feast has abundant food; a famine has scarce food'},
+
+  // ── SIMILES (35) ─────────────────────────────────────────────────────────
+  {type:'simile',word:'abundant',q:'Which simile best shows what ABUNDANT means?',a:'like a river that never runs dry',ch:['like a river that never runs dry','like a dry streambed in summer','like a crack in the soil','like a single drop of rain'],hint:'Abundance means a constant, full supply'},
+  {type:'simile',word:'arid',q:'Which simile best describes an ARID landscape?',a:'like a forgotten oven left on for years',ch:['like a forgotten oven left on for years','like a morning after fresh rain','like a lush meadow in spring','like a waterfall in the mountains'],hint:'Arid = dry and hot, like an oven'},
+  {type:'simile',word:'distinct',q:'Which simile best shows what DISTINCT means?',a:'like a fingerprint — no two are the same',ch:['like a fingerprint — no two are the same','like two peas in a pod','like copies from the same machine','like echoes of the same sound'],hint:'Distinct things are unique and unmistakable'},
+  {type:'simile',word:'graze',q:'Cattle GRAZING in a meadow are like ___.',a:'lawnmowers moving slowly across the green',ch:['lawnmowers moving slowly across the green','rockets blasting through the sky','fish jumping out of the water','leaves falling in autumn'],hint:'They slowly trim the grass as they eat'},
+  {type:'simile',word:'hectic',q:'A HECTIC day in Bangkok is like ___.',a:'a spinning top that never slows down',ch:['a spinning top that never slows down','a quiet river flowing gently','a sleeping bear in winter','a still lake at dawn'],hint:'Hectic = constant, dizzying movement'},
+  {type:'simile',word:'horde',q:'A HORDE of tourists flooding Bangkok is like ___.',a:'a tidal wave washing over the city',ch:['a tidal wave washing over the city','a gentle breeze through the trees','a single boat on a calm lake','a bird perched on a branch'],hint:'A horde moves with unstoppable force and mass'},
+  {type:'simile',word:'humid',q:'A HUMID rainforest is like ___.',a:'a warm, wet sponge you cannot escape',ch:['a warm, wet sponge you cannot escape','a cool glass of water on a hot day','a crisp winter morning','a dry canyon at noon'],hint:'Humid air soaks you like a sponge'},
+  {type:'simile',word:'incredible',q:'Thailand\'s INCREDIBLE variety of butterflies is like ___.',a:'a living rainbow scattered through the trees',ch:['a living rainbow scattered through the trees','a gray cloud on a still day','a blank canvas waiting for paint','a single drop in a vast ocean'],hint:'So many colors and types — like a rainbow come alive'},
+  {type:'simile',word:'inhabit',q:'Animals that INHABIT the Thai rainforest are like ___.',a:'neighbors who have lived on the same street for centuries',ch:['neighbors who have lived on the same street for centuries','travelers passing through for a day','tourists snapping photos and leaving','strangers meeting for the first time'],hint:'They are native — this is truly their home'},
+  {type:'simile',word:'peninsula',q:'A PENINSULA jutting into the sea is like ___.',a:'a finger pointing out from the hand of the land',ch:['a finger pointing out from the hand of the land','an island floating alone','a mountain rising from flat ground','a river cutting through rock'],hint:'It reaches out into the water like an extended finger'},
+  {type:'simile',word:'rural',q:'A RURAL Thai village is like ___.',a:'a quiet page in a book full of loud chapters',ch:['a quiet page in a book full of loud chapters','a stadium packed with cheering fans','a highway at rush hour','a market on its busiest day'],hint:'Rural life is peaceful and slow compared to cities'},
+  {type:'simile',word:'sanctuary',q:'A wildlife SANCTUARY is like ___.',a:'a safe harbor for ships in a storm',ch:['a safe harbor for ships in a storm','an open hunting ground','a road with no guardrails','a trap without a door'],hint:'A harbor protects ships; a sanctuary protects animals'},
+  {type:'simile',word:'splendor',q:'The SPLENDOR of the Grand Palace is like ___.',a:'a jewel set in the center of a great city',ch:['a jewel set in the center of a great city','a plain stone forgotten by the road','a rusted gate left in the rain','a faded photograph in a drawer'],hint:'Jewels dazzle; so does great splendor'},
+  {type:'simile',word:'squalor',q:'Living in SQUALOR is like ___.',a:'being trapped in a room where the windows never open',ch:['being trapped in a room where the windows never open','resting in a garden in full bloom','floating on a clear mountain lake','waking in a freshly made bed'],hint:'Squalor is suffocating and without relief'},
+  {type:'simile',word:'terrain',q:'Mountainous TERRAIN in Thailand is like ___.',a:'a crumpled piece of paper stretched across the land',ch:['a crumpled piece of paper stretched across the land','a flat mirror reflecting the sky','a smooth road through the plains','a still pond without a ripple'],hint:'Crumpling paper creates ridges and valleys — like mountains'},
+  {type:'simile',word:'abundant',q:'The central plains of Thailand, where crops grow in abundance, are like ___.',a:'a pantry that never runs empty',ch:['a pantry that never runs empty','a jar scraped clean','a barren field after drought','a locked storeroom'],hint:'Always full, always providing food'},
+  {type:'simile',word:'arid',q:'The arid northeast of Thailand is like ___.',a:'a thirsty sponge that the rain forgot',ch:['a thirsty sponge that the rain forgot','a marsh swollen with water','a waterfall rushing over rocks','a delta where rivers meet the sea'],hint:'Arid land longs for water it never receives'},
+  {type:'simile',word:'hectic',q:'The streets of Bangkok during peak tourism are like ___.',a:'a beehive where everyone is always moving',ch:['a beehive where everyone is always moving','a library at midnight','a field under falling snow','a river frozen solid'],hint:'Beehives are full of constant, busy activity'},
+  {type:'simile',word:'distinct',q:'The four regions of Thailand are distinct, like ___.',a:'four different paintings hanging in the same gallery',ch:['four different paintings hanging in the same gallery','four copies of the same photograph','four mirrors reflecting one image','four windows looking at the same view'],hint:'Each region has its own unique character'},
+  {type:'simile',word:'horde',q:'A horde of migrating animals crossing the plain is like ___.',a:'a river of fur flowing across the earth',ch:['a river of fur flowing across the earth','a still pond in early morning','a single leaf on a branch','a lone wolf in winter'],hint:'A large horde moves like a flowing river'},
+  {type:'simile',word:'humid',q:'The humid air of the Thai rainforest clings to you like ___.',a:'a warm, wet blanket you cannot remove',ch:['a warm, wet blanket you cannot remove','a cool breeze off the ocean','a light scarf on a fall day','a dry cloth on a summer evening'],hint:'Humid air wraps around you with moisture'},
+  {type:'simile',word:'sanctuary',q:'For refugees, a neighboring country as sanctuary was like ___.',a:'an outstretched hand in a dark tunnel',ch:['an outstretched hand in a dark tunnel','a locked door with no key','a wall with no opening','a fog with no end'],hint:'It offered hope and help when they needed it most'},
+  {type:'simile',word:'incredible',q:'The biodiversity of the Thai rainforest is incredible, like ___.',a:'a library with a million books written by nature',ch:['a library with a million books written by nature','a single chapter in a thin notebook','a blank page waiting to be written','a dictionary with only ten words'],hint:'Incredible diversity = a vast, varied collection'},
+  {type:'simile',word:'inhabit',q:'The monkeys that inhabit the rainforest canopy are like ___.',a:'gymnasts born in a treetop stadium',ch:['gymnasts born in a treetop stadium','fish out of water struggling to move','birds afraid of heights','bears lost in the jungle'],hint:'They move through treetops with perfect ease'},
+  {type:'simile',word:'rural',q:'Rural areas far from Bangkok are like ___.',a:'islands of calm in a sea of noise',ch:['islands of calm in a sea of noise','hurricanes that never stop','train stations at rush hour','markets where everyone shouts'],hint:'Rural = peaceful, urban = noisy'},
+  {type:'simile',word:'splendor',q:'Bangkok\'s Grand Palace shines with splendor like ___.',a:'a golden crown worn by the whole city',ch:['a golden crown worn by the whole city','a rusted anchor at the bottom of the sea','a forgotten monument overgrown with vines','a crumbling wall in a forgotten alley'],hint:'A crown is the ultimate symbol of magnificence'},
+  {type:'simile',word:'squalor',q:'The squalid parts of Bangkok are like ___.',a:'shadows cast by the towers of wealth',ch:['shadows cast by the towers of wealth','patches of sunlight on the palace walls','reflections of the sky in a clean pool','flowers blooming in the palace garden'],hint:'Poverty and squalor exist in the shadow of great wealth'},
+  {type:'simile',word:'terrain',q:'The terrain of the Thai highlands is like ___.',a:'a green staircase climbing toward the clouds',ch:['a green staircase climbing toward the clouds','a smooth glass table stretching to the horizon','a flat road with no hills in sight','a mirror laid on the ocean'],hint:'Hills and terraced land look like steps going up'},
+  {type:'simile',word:'graze',q:'Deer grazing at the edge of the forest are like ___.',a:'quiet readers turning pages in a library',ch:['quiet readers turning pages in a library','runners sprinting in a race','soldiers charging into battle','eagles diving from the sky'],hint:'Grazing is calm, peaceful, and methodical'},
+  {type:'simile',word:'abundant',q:'A farmers\' market overflowing with produce is like ___.',a:'a treasure chest with the lid left open',ch:['a treasure chest with the lid left open','an empty vault after a robbery','a jar scraped clean with a spoon','a drought-cracked field in July'],hint:'Abundance overflows like a treasure chest'},
+  {type:'simile',word:'peninsula',q:'Malaysia, as a peninsula, reaches into the sea like ___.',a:'an arm stretching out to touch the horizon',ch:['an arm stretching out to touch the horizon','a fist clenched tight on solid ground','a foot stuck in sand on a beach','a shoulder shrugging toward the sky'],hint:'Peninsulas extend outward like a reaching arm'},
+  {type:'simile',word:'arid',q:'Crops trying to grow in an arid region are like ___.',a:'candles trying to burn underwater',ch:['candles trying to burn underwater','seedlings in a greenhouse','sunflowers following the morning light','trees growing tall beside a river'],hint:'The environment is completely wrong for growth'},
+  {type:'simile',word:'distinct',q:'The distinct smell of a Thai spice market is like ___.',a:'a fingerprint your nose never forgets',ch:['a fingerprint your nose never forgets','a blank page without a word','a white wall with no art','a silence with nothing to hear'],hint:'Distinct means unmistakable and one of a kind'},
+  {type:'simile',word:'sanctuary',q:'A bird sanctuary is like ___.',a:'a fortress built of branches and sky',ch:['a fortress built of branches and sky','an open cage with no protection','a net dropped from above','a hunter\'s blind hidden in the reeds'],hint:'It protects the birds inside it'},
+  {type:'simile',word:'hectic',q:'Backstage at a festival is hectic, like ___.',a:'a kitchen where every burner is on at once',ch:['a kitchen where every burner is on at once','a garden where nothing grows','an empty stage before the show','a library at closing time'],hint:'Everything happens at once, with no pause'},
+
+  // ── METAPHORS (35) ─────────────────────────────────────────────────────────
+  {type:'metaphor',word:'abundant',q:'Complete the METAPHOR: The central plains of Thailand are ___ feeding the whole nation.',a:'a kitchen',ch:['a kitchen','a market','a road','a river'],hint:'Kitchens produce food — the plains produce crops in abundance'},
+  {type:'metaphor',word:'arid',q:'Complete the METAPHOR: The arid northeast is ___ that drains life from the land.',a:'a furnace',ch:['a furnace','a fountain','a garden','a stream'],hint:'A furnace burns hot and dry — like arid land'},
+  {type:'metaphor',word:'distinct',q:'Complete the METAPHOR: The four regions of Thailand are four ___ in one book.',a:'chapters',ch:['chapters','sentences','words','punctuation marks'],hint:'Each chapter is distinct — its own world in the larger story'},
+  {type:'metaphor',word:'graze',q:'Complete the METAPHOR: The deer that graze in the sanctuary are ___ of the forest.',a:'caretakers',ch:['caretakers','intruders','hunters','strangers'],hint:'By grazing, they help manage the vegetation'},
+  {type:'metaphor',word:'hectic',q:'Complete the METAPHOR: Bangkok is a ___ that never powers down.',a:'machine',ch:['machine','garden','lake','island'],hint:'A machine runs constantly — hectic cities never stop'},
+  {type:'metaphor',word:'horde',q:'Complete the METAPHOR: The horde of tourists was ___ that swept through the palace.',a:'a flood',ch:['a flood','a trickle','a drought','a frost'],hint:'A flood overwhelms and moves in great numbers'},
+  {type:'metaphor',word:'humid',q:'Complete the METAPHOR: The humid rainforest air is ___ you breathe every moment.',a:'a warm bath',ch:['a warm bath','a cold wind','a dry cloth','a frozen lake'],hint:'Humid air is like being submerged in warm, moist air'},
+  {type:'metaphor',word:'incredible',q:'Complete the METAPHOR: Thailand\'s biodiversity is ___ that nature has been writing for millions of years.',a:'a masterpiece',ch:['a masterpiece','a rough draft','a blank page','a torn note'],hint:'A masterpiece is incredible — a work of extraordinary skill'},
+  {type:'metaphor',word:'inhabit',q:'Complete the METAPHOR: The animals that inhabit the sanctuary are ___ of the wild.',a:'citizens',ch:['citizens','tourists','invaders','strangers'],hint:'Citizens belong — animals that inhabit a place truly belong there'},
+  {type:'metaphor',word:'peninsula',q:'Complete the METAPHOR: The Malaysian peninsula is ___ the continent reaches into the sea.',a:'a finger',ch:['a finger','a fist','an island','a mountain'],hint:'A peninsula reaches out like an extended finger'},
+  {type:'metaphor',word:'rural',q:'Complete the METAPHOR: Rural Thailand is ___ away from the noise of Bangkok.',a:'a breath of fresh air',ch:['a breath of fresh air','a traffic jam','a thunderstorm','a crumbling road'],hint:'Rural areas offer peace and relief from urban chaos'},
+  {type:'metaphor',word:'sanctuary',q:'Complete the METAPHOR: The wildlife sanctuary near Chiang Mai is ___ for endangered species.',a:'a lifeline',ch:['a lifeline','a cage','a trap','a threat'],hint:'A lifeline saves lives — the sanctuary saves species'},
+  {type:'metaphor',word:'splendor',q:'Complete the METAPHOR: The Grand Palace is ___ set in the heart of Bangkok.',a:'a crown jewel',ch:['a crown jewel','a pile of rubble','a forgotten corner','a crumbling wall'],hint:'Crown jewels are the most magnificent treasures'},
+  {type:'metaphor',word:'squalor',q:'Complete the METAPHOR: The slums of Bangkok are ___ in the shadow of the luxury hotels.',a:'open wounds',ch:['open wounds','blooming flowers','shining lights','soaring towers'],hint:'Open wounds are a sign of suffering that has not been healed'},
+  {type:'metaphor',word:'terrain',q:'Complete the METAPHOR: The mountainous terrain of northwest Thailand is ___ that has been folded by ancient forces.',a:'a map',ch:['a map','a painting','a window','a mirror'],hint:'Mountains and valleys look like a three-dimensional map of the land'},
+  {type:'metaphor',word:'abundant',q:'Thailand\'s fertile central plains are ___ of the nation\'s food supply.',a:'the engine',ch:['the engine','the brake','the exhaust','the windshield'],hint:'An engine powers everything — the plains power food production'},
+  {type:'metaphor',word:'arid',q:'The arid northeast is ___ in a land of plenty.',a:'a scar',ch:['a scar','a jewel','a river','a forest'],hint:'A scar is a mark of damage in an otherwise whole body'},
+  {type:'metaphor',word:'distinct',q:'Each distinct region of Thailand is ___ in the country\'s mosaic.',a:'a tile',ch:['a tile','a color','a sound','a shadow'],hint:'A mosaic is made of different tiles — each one distinct'},
+  {type:'metaphor',word:'hectic',q:'The hectic pace of Bangkok is ___ that never stops spinning.',a:'a carousel',ch:['a carousel','a still pond','a sleeping city','a dormant volcano'],hint:'A carousel spins constantly — Bangkok\'s energy never stops'},
+  {type:'metaphor',word:'horde',q:'The hordes of Bangkok tourists are ___ that flows between temples and hotels.',a:'a river',ch:['a river','a puddle','a desert','a cliff'],hint:'A river moves in large, continuous flow — so does a horde'},
+  {type:'metaphor',word:'humid',q:'The humidity of the southern rainforest is ___ draped over the whole region.',a:'a blanket',ch:['a blanket','a cold wind','a frost','a dry cloth'],hint:'Humid air wraps around you like a thick blanket'},
+  {type:'metaphor',word:'incredible',q:'The thousand species of butterflies in the rainforest are ___ painted by nature.',a:'a living canvas',ch:['a living canvas','a gray fog','a still shadow','a blank wall'],hint:'So many colors — like a canvas filled with life'},
+  {type:'metaphor',word:'inhabit',q:'The monks who inhabit the temples of Bangkok are ___ of the city\'s spiritual life.',a:'the heartbeat',ch:['the heartbeat','the shadow','the echo','the memory'],hint:'A heartbeat keeps something alive — monks sustain spiritual life'},
+  {type:'metaphor',word:'peninsula',q:'The Malay Peninsula is ___ that Asia uses to reach toward the equator.',a:'a bridge',ch:['a bridge','a wall','a barrier','a moat'],hint:'A bridge reaches from one place toward another'},
+  {type:'metaphor',word:'rural',q:'The rural farming villages are ___ that feed the whole nation.',a:'roots',ch:['roots','branches','leaves','flowers'],hint:'Roots anchor and nourish a tree — rural farms nourish the nation'},
+  {type:'metaphor',word:'sanctuary',q:'For stray animals, the shelter is ___ in an otherwise dangerous city.',a:'an island of calm',ch:['an island of calm','a maze with no exit','a hunting ground','a locked door'],hint:'An island of calm is safe in the middle of danger'},
+  {type:'metaphor',word:'splendor',q:'The splendor of Versailles is ___ of human craftsmanship.',a:'a testament',ch:['a testament','a warning','a question','a rumor'],hint:'A testament shows the proof and power of something'},
+  {type:'metaphor',word:'squalor',q:'Poverty and squalor are ___ that the city\'s shine cannot hide.',a:'shadows',ch:['shadows','spotlights','mirrors','windows'],hint:'Shadows follow even the brightest things'},
+  {type:'metaphor',word:'terrain',q:'The terrain of a country is ___ that tells the story of its ancient past.',a:'a book',ch:['a book','a clock','a flag','a song'],hint:'Layers of rock and valleys record millions of years of history'},
+  {type:'metaphor',word:'graze',q:'Buffalo grazing on the plateau are ___ slowly cutting the grass.',a:'lawnmowers',ch:['lawnmowers','tractors plowing','seeds sprouting','rain falling'],hint:'They trim the grass systematically as they move'},
+  {type:'metaphor',word:'abundant',q:'An abundant harvest is ___ built up all season by hard work.',a:'a treasure',ch:['a treasure','a burden','a mistake','a debt'],hint:'A treasure is something of great value accumulated over time'},
+  {type:'metaphor',word:'arid',q:'An arid region is ___ that the rain abandoned long ago.',a:'a ghost town',ch:['a ghost town','a thriving city','a busy port','a tropical beach'],hint:'Ghost towns are empty and forgotten — like arid land by rainfall'},
+  {type:'metaphor',word:'hectic',q:'A hectic Bangkok market is ___ where a thousand deals happen at once.',a:'a battlefield',ch:['a battlefield','a monastery','a library','a museum'],hint:'A marketplace can feel like controlled chaos — a battlefield of commerce'},
+  {type:'metaphor',word:'horde',q:'To a shop owner in Bangkok, a horde of tourists is ___ of opportunity.',a:'a wave',ch:['a wave','a drought','a stillness','a freeze'],hint:'A wave brings with it everything in its path'},
+  {type:'metaphor',word:'incredible',q:'The rainforest\'s incredible diversity is ___ still being discovered.',a:'a mystery',ch:['a mystery','an accident','a mistake','a rumor'],hint:'New species are still found — the mystery is ongoing'}
+];
+
+// ── STATE ──────────────────────────────────────────────────────────────────
+var quiz={questions:[],index:0,score:0,streak:0,answers:[],answered:false};
+var fcIndex=0,fcFlipped=false;
+
+// ── SHUFFLE ────────────────────────────────────────────────────────────────
+function shuffle(arr){var a=arr.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+
+// ── SCREEN MANAGEMENT ──────────────────────────────────────────────────────
+function showStart(){show('screen-start');hide('screen-quiz');hide('screen-results');hide('screen-flash');}
+function showQuiz(){hide('screen-start');show('screen-quiz');hide('screen-results');hide('screen-flash');}
+function showResults(){hide('screen-start');hide('screen-quiz');show('screen-results');hide('screen-flash');}
+function showFlashcards(){hide('screen-start');hide('screen-quiz');hide('screen-results');show('screen-flash');fcIndex=0;fcFlipped=false;renderFlashcard();}
+
+// ── QUIZ ───────────────────────────────────────────────────────────────────
+function startQuiz(){
+  var pool=shuffle(QUESTIONS).slice(0,20);
+  quiz.questions=pool;quiz.index=0;quiz.score=0;quiz.streak=0;quiz.answers=[];quiz.answered=false;
+  showQuiz();renderQuestion();
+}
+
+function renderQuestion(){
+  var q=quiz.questions[quiz.index];
+  var pct=Math.round((quiz.index/20)*100);
+  $('prog-bar').style.width=pct+'%';
+  $('q-counter').textContent='Question '+(quiz.index+1)+' of 20';
+  var sb=$('streak-badge');
+  if(quiz.streak>=3){sb.classList.remove('hidden');sb.textContent='🔥 '+quiz.streak+' streak';}else{sb.classList.add('hidden');}
+  var ts=TYPE_STYLES[q.type];
+  var badge=$('type-badge');
+  badge.textContent=ts.label;badge.style.color=ts.color;badge.style.background=ts.bg;badge.style.border='1px solid '+ts.color;
+  $('q-text').textContent=q.q;
+  var choiceBox=$('choices');clearEl(choiceBox);
+  var shuffled=shuffle(q.ch);
+  shuffled.forEach(function(c){
+    var btn=document.createElement('button');
+    btn.className='choice-btn';btn.textContent=c;
+    btn.addEventListener('click',function(){selectAnswer(c,btn,q);});
+    choiceBox.appendChild(btn);
+  });
+  $('hint-text').textContent='';
+  quiz.answered=false;
+}
+
+function selectAnswer(choice,btn,q){
+  if(quiz.answered)return;
+  quiz.answered=true;
+  var correct=choice===q.a;
+  var allBtns=$('choices').querySelectorAll('.choice-btn');
+  allBtns.forEach(function(b){
+    b.disabled=true;
+    if(b.textContent===q.a)b.classList.add('correct');
+    else if(b===btn&&!correct)b.classList.add('wrong');
+  });
+  if(correct){
+    quiz.score++;quiz.streak++;
+    burst(btn.getBoundingClientRect().left+btn.offsetWidth/2,btn.getBoundingClientRect().top,'#34d399',22);
+    if(quiz.streak>0&&quiz.streak%3===0)confettiBurst();
+  }else{
+    quiz.streak=0;
+    $('hint-text').textContent='💡 '+q.hint;
+    burst(btn.getBoundingClientRect().left+btn.offsetWidth/2,btn.getBoundingClientRect().top,'#ef4444',14);
+  }
+  quiz.answers.push({q:q,chosen:choice,correct:correct});
+  setTimeout(function(){
+    quiz.index++;
+    if(quiz.index<quiz.questions.length){renderQuestion();}
+    else{buildResults();}
+  },1100);
+}
+
+function buildResults(){
+  showResults();
+  var pct=Math.round((quiz.score/20)*100);
+  var ring=$('score-ring');clearEl(ring);
+  var span=mk('span','',quiz.score+'/20');ring.appendChild(span);
+  ring.style.borderColor=pct>=80?'#34d399':pct>=60?'#fbbf24':'#ef4444';
+  var title=$('results-title');
+  if(pct===100)title.textContent='Perfect! Geography Scholar! 🏆';
+  else if(pct>=80)title.textContent='Excellent Work! Keep Exploring! ⭐';
+  else if(pct>=60)title.textContent='Good Effort! Keep Studying! 📚';
+  else title.textContent='Keep Practicing — You\'ll Master It! 💪';
+  $('results-msg').textContent='You scored '+quiz.score+' out of 20 ('+pct+'%)';
+  var bd=$('breakdown');clearEl(bd);
+  var counts={synonym:0,antonym:0,analogy:0,simile:0,metaphor:0};
+  var totals={synonym:0,antonym:0,analogy:0,simile:0,metaphor:0};
+  quiz.answers.forEach(function(a){totals[a.q.type]++;if(a.correct)counts[a.q.type]++;});
+  Object.keys(counts).forEach(function(t){
+    if(totals[t]===0)return;
+    var ts=TYPE_STYLES[t];var chip=mk('span','bd-chip',ts.label+': '+counts[t]+'/'+totals[t]);
+    chip.style.color=ts.color;chip.style.background=ts.bg;chip.style.border='1px solid '+ts.color;
+    bd.appendChild(chip);
+  });
+  var rl=$('review-list');clearEl(rl);
+  var wrong=quiz.answers.filter(function(a){return!a.correct;});
+  if(wrong.length===0){var p=mk('p','','✨ Perfect score — no missed questions!');p.style.color='#34d399';p.style.textAlign='center';rl.appendChild(p);}
+  else{
+    wrong.forEach(function(a){
+      var div=mk('div','review-item');
+      div.appendChild(mk('div','ri-q',a.q.q));
+      div.appendChild(mk('div','ri-a','✓ Correct: '+a.q.a));
+      div.appendChild(mk('div','ri-yours','✗ Your answer: '+a.chosen));
+      rl.appendChild(div);
+    });
+  }
+}
+
+// ── FLASHCARDS ──────────────────────────────────────────────────────────────
+function renderFlashcard(){
+  var w=WORDS[fcIndex];fcFlipped=false;
+  $('fc-card').classList.remove('flipped');
+  $('fc-word').textContent=w.word;
+  $('fc-pos').textContent=w.pos;
+  $('fc-def').textContent=w.def;
+  $('fc-example').textContent=w.ex;
+  $('fc-count').textContent='Card '+(fcIndex+1)+' of '+WORDS.length;
+  $('fc-nav-label').textContent=(fcIndex+1)+' / '+WORDS.length;
+  $('fc-prog').style.width=(((fcIndex+1)/WORDS.length)*100)+'%';
+}
+
+function flipCard(){
+  fcFlipped=!fcFlipped;
+  if(fcFlipped)$('fc-card').classList.add('flipped');
+  else $('fc-card').classList.remove('flipped');
+}
+
+function fcNav(dir){
+  fcIndex=(fcIndex+dir+WORDS.length)%WORDS.length;
+  renderFlashcard();
+}
+
+// ── EVENTS ──────────────────────────────────────────────────────────────────
+$('btn-start').addEventListener('click',startQuiz);
+$('btn-flash-start').addEventListener('click',showFlashcards);
+$('btn-retry').addEventListener('click',startQuiz);
+$('btn-flash-results').addEventListener('click',showFlashcards);
+$('btn-fc-back').addEventListener('click',showStart);
+$('fc-scene').addEventListener('click',flipCard);
+$('fc-prev').addEventListener('click',function(){fcNav(-1);});
+$('fc-next').addEventListener('click',function(){fcNav(1);});
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lesson 7 – Home on the Range | Wordly Wise Quiz</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',sans-serif;background:#1c0f00;color:#e2e8f0;min-height:100vh;overflow-x:hidden}
+  canvas{position:fixed;top:0;left:0;z-index:0;pointer-events:none}
+  #app{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:16px}
+  header{text-align:center;padding:24px 0 12px}
+  header h1{font-size:2rem;font-weight:800;background:linear-gradient(135deg,#fbbf24,#d97706);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  header p{color:#a16207;margin-top:6px;font-size:.95rem}
+  #home-link{display:inline-flex;align-items:center;gap:6px;color:#fbbf24;text-decoration:none;font-size:.9rem;margin-bottom:12px;opacity:.8;transition:opacity .2s}
+  #home-link:hover{opacity:1}
+  nav.mode-tabs{display:flex;gap:8px;justify-content:center;margin:16px 0}
+  nav.mode-tabs button{padding:8px 22px;border-radius:999px;border:2px solid #d97706;background:transparent;color:#fbbf24;font-size:.9rem;cursor:pointer;transition:all .2s}
+  nav.mode-tabs button.active{background:#d97706;color:#fff}
+  #flashcard-section{display:none}
+  .fc-controls{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+  .fc-controls button{padding:8px 18px;border-radius:8px;border:none;background:#3b1f00;color:#fbbf24;cursor:pointer;font-size:.9rem;transition:background .2s}
+  .fc-controls button:hover{background:#d97706}
+  #fc-counter{color:#a16207;font-size:.9rem}
+  .fc-scene{width:100%;max-width:520px;height:230px;margin:0 auto 18px;perspective:1000px;cursor:pointer}
+  .fc-card{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.4,0,.2,1)}
+  .fc-card.flipped{transform:rotateY(180deg)}
+  .fc-face{position:absolute;inset:0;border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+  .fc-front{background:linear-gradient(135deg,#3b1f00,#7c4500);border:2px solid #d9770640}
+  .fc-back{background:linear-gradient(135deg,#1c0f00,#3b1f00);border:2px solid #d9770640;transform:rotateY(180deg)}
+  .fc-word{font-size:2rem;font-weight:800;color:#fbbf24}
+  .fc-pos{font-size:.85rem;color:#a16207;margin-top:4px}
+  .fc-hint{font-size:.8rem;color:#78350f;margin-top:8px}
+  .fc-def{font-size:.95rem;color:#e2e8f0;text-align:center;line-height:1.6}
+  .fc-ex{font-size:.82rem;color:#a16207;margin-top:10px;font-style:italic;text-align:center}
+  #quiz-section{}
+  .quiz-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+  #progress-bar-wrap{width:100%;height:8px;background:#2d1700;border-radius:999px;margin-bottom:16px;overflow:hidden}
+  #progress-bar{height:100%;background:linear-gradient(90deg,#d97706,#fbbf24);border-radius:999px;transition:width .4s}
+  #score-display{font-size:.9rem;color:#a16207}
+  #streak-display{font-size:.9rem;color:#fbbf24;font-weight:600}
+  .question-card{background:linear-gradient(135deg,#2d1700,#3b1f00);border:1px solid #d9770640;border-radius:18px;padding:28px;margin-bottom:16px}
+  .q-type-badge{display:inline-block;padding:3px 12px;border-radius:999px;font-size:.75rem;font-weight:700;letter-spacing:.05em;margin-bottom:14px}
+  .q-word{font-size:1.5rem;font-weight:700;color:#fbbf24;margin-bottom:8px}
+  .q-text{font-size:1rem;color:#cbd5e1;margin-bottom:20px;line-height:1.6}
+  .choices{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media(max-width:520px){.choices{grid-template-columns:1fr}}
+  .choice-btn{padding:12px 16px;border-radius:12px;border:2px solid #3b1f00;background:#1c0f00;color:#e2e8f0;font-size:.95rem;cursor:pointer;text-align:left;transition:all .2s;line-height:1.4}
+  .choice-btn:hover:not(:disabled){border-color:#fbbf24;background:#2d1700}
+  .choice-btn.correct{border-color:#10b981;background:#064e3b;color:#6ee7b7}
+  .choice-btn.wrong{border-color:#ef4444;background:#450a0a;color:#fca5a5}
+  .choice-btn:disabled{cursor:default}
+  #hint-area{min-height:22px;margin-bottom:10px}
+  #hint-text{font-size:.85rem;color:#fbbf24;font-style:italic;display:none}
+  #hint-btn{padding:5px 14px;border-radius:8px;border:1px solid #fbbf2460;background:transparent;color:#fbbf24;font-size:.82rem;cursor:pointer}
+  #feedback-area{min-height:28px;margin-top:10px;font-size:.95rem;font-weight:600}
+  #feedback-area.correct{color:#10b981}
+  #feedback-area.wrong{color:#ef4444}
+  #next-btn{display:none;margin-top:14px;padding:10px 28px;border-radius:12px;border:none;background:linear-gradient(135deg,#d97706,#fbbf24);color:#1c0f00;font-size:1rem;font-weight:700;cursor:pointer;transition:opacity .2s}
+  #next-btn:hover{opacity:.85}
+  #result-section{display:none;text-align:center;padding:32px 16px}
+  #result-section h2{font-size:2rem;font-weight:800;color:#fbbf24;margin-bottom:8px}
+  #result-section p{color:#a16207;margin-bottom:20px}
+  #final-score{font-size:3rem;font-weight:900;color:#fbbf24;margin:16px 0}
+  #result-section button{padding:12px 32px;border-radius:12px;border:none;background:linear-gradient(135deg,#d97706,#fbbf24);color:#1c0f00;font-size:1rem;font-weight:700;cursor:pointer}
+  .particle{position:fixed;pointer-events:none;border-radius:50%;z-index:999;animation:particleFly .8s ease-out forwards}
+  @keyframes particleFly{to{transform:translate(var(--dx),var(--dy)) scale(0);opacity:0}}
+  .confetti-piece{position:fixed;pointer-events:none;z-index:999;animation:confettiFall 1s ease-in forwards}
+  @keyframes confettiFall{to{transform:translate(var(--dx),calc(var(--dy) + 80px)) rotate(720deg);opacity:0}}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<div id="app">
+  <a id="home-link" href="../index.html">&#8592; All Lessons</a>
+  <header>
+    <h1>&#x1F920; Lesson 7 – Home on the Range</h1>
+    <p>brawl &bull; casual &bull; constant &bull; excel &bull; exhaust &bull; hardy &bull; mediocre &bull; monotonous &bull; originate &bull; punctuate &bull; ravenous &bull; realistic &bull; soothe &bull; stampede &bull; veteran</p>
+  </header>
+  <nav class="mode-tabs">
+    <button id="tab-quiz" class="active" onclick="showMode('quiz')">Quiz Mode</button>
+    <button id="tab-flash" onclick="showMode('flash')">Flashcards</button>
+  </nav>
+
+  <div id="flashcard-section">
+    <div class="fc-controls">
+      <button onclick="fcPrev()">&#8592; Prev</button>
+      <span id="fc-counter">1 / 15</span>
+      <button onclick="fcNext()">Next &#8594;</button>
+      <button onclick="fcShuffle()">&#x1F500; Shuffle</button>
+    </div>
+    <div class="fc-scene" onclick="fcFlip()">
+      <div class="fc-card" id="fc-card">
+        <div class="fc-face fc-front">
+          <div class="fc-word" id="fc-word"></div>
+          <div class="fc-pos" id="fc-pos"></div>
+          <div class="fc-hint">Click to reveal definition</div>
+        </div>
+        <div class="fc-face fc-back">
+          <div class="fc-def" id="fc-def"></div>
+          <div class="fc-ex" id="fc-ex"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="quiz-section">
+    <div class="quiz-header">
+      <span id="score-display">Score: 0/0</span>
+      <span id="streak-display">Streak: 0 &#x1F525;</span>
+    </div>
+    <div id="progress-bar-wrap"><div id="progress-bar" style="width:0%"></div></div>
+    <div class="question-card" id="question-card">
+      <div id="q-badge" class="q-type-badge"></div>
+      <div class="q-word" id="q-word"></div>
+      <div class="q-text" id="q-text"></div>
+      <div id="hint-area">
+        <button id="hint-btn" onclick="showHint()">&#x1F4A1; Hint</button>
+        <span id="hint-text"></span>
+      </div>
+      <div class="choices" id="choices"></div>
+      <div id="feedback-area"></div>
+      <button id="next-btn" onclick="nextQuestion()">Next &#8594;</button>
+    </div>
+  </div>
+
+  <div id="result-section">
+    <h2>Round Complete!</h2>
+    <p>Here&#39;s how you did on this round of 20 questions.</p>
+    <div id="final-score"></div>
+    <p id="result-msg"></p>
+    <button onclick="startQuiz()">Play Again</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  var c=document.getElementById('bg'),ctx=c.getContext('2d'),W,H,stars=[];
+  function resize(){W=c.width=window.innerWidth;H=c.height=window.innerHeight;}
+  resize();window.addEventListener('resize',resize);
+  for(var i=0;i<180;i++)stars.push({x:Math.random()*9999,y:Math.random()*9999,r:Math.random()*1.4+.3,s:Math.random()*.4+.1});
+  function drawBg(){
+    ctx.clearRect(0,0,W,H);
+    var g=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,Math.max(W,H)*.75);
+    g.addColorStop(0,'#3b1f00');g.addColorStop(.5,'#1c0f00');g.addColorStop(1,'#0c0700');
+    ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    stars.forEach(function(s){
+      s.x+=s.s;if(s.x>W)s.x=0;
+      ctx.beginPath();ctx.arc(s.x,s.y%H,s.r,0,Math.PI*2);
+      ctx.fillStyle='rgba(251,191,36,0.8)';ctx.fill();
+    });
+    requestAnimationFrame(drawBg);
+  }
+  drawBg();
+})();
+
+var WORDS=[
+  {word:'brawl',pos:'n./v.',def:'(n.) A rough, noisy fight. (v.) To fight noisily.',ex:'"Teachers walk the halls between classes to prevent brawls between students."'},
+  {word:'casual',pos:'adj.',def:'1. Not planned. 2. Not regular; occasional. 3. Suitable for everyday use; comfortable.',ex:'"Several friends got together for a casual meeting after the movie."'},
+  {word:'constant',pos:'adj.',def:'1. Not changing. 2. Loyal; faithful. 3. Without a pause; unending.',ex:'"When I ride my bike, I try to maintain a constant speed."'},
+  {word:'excel',pos:'v.',def:'To do well; to be better or greater than others.',ex:'"Jackie Robinson excelled as both a fielder and a batter."'},
+  {word:'exhaust',pos:'v./n.',def:'(v.) 1. To use up. 2. To tire out. (n.) The waste gases from an engine.',ex:'"Lost on the mountain, the climbers exhausted their supplies after two days."'},
+  {word:'hardy',pos:'adj.',def:'Able to survive under bad conditions; tough.',ex:'"Sage is a hardy plant that can be left outside during the winter."'},
+  {word:'mediocre',pos:'adj.',def:'Of low to medium quality; barely passable.',ex:'"Mediocre grades make it difficult to get into a good college."'},
+  {word:'monotonous',pos:'adj.',def:'Always the same; not varying; boring.',ex:'"Making photocopies is monotonous work."'},
+  {word:'originate',pos:'v.',def:'To bring or come into being.',ex:'"The custom of sending Valentine cards originated in the 1800s."'},
+  {word:'punctuate',pos:'v.',def:'1. To add marks such as commas and periods to writing. 2. To interrupt from time to time.',ex:'"Claps of thunder punctuated the evening."'},
+  {word:'ravenous',pos:'adj.',def:'1. Very hungry. 2. Eager for whatever satisfies one\'s needs or wants.',ex:'"The skaters were ravenous because they\'d skipped lunch."'},
+  {word:'realistic',pos:'adj.',def:'1. Closely resembling real life. 2. Aware of things as they are; practical.',ex:'"Running a Saturday car wash is a realistic way for the club to raise money."'},
+  {word:'soothe',pos:'v.',def:'1. To make calm and relaxed. 2. To relieve soreness; to make less painful.',ex:'"Calamine lotion will soothe a sunburn."'},
+  {word:'stampede',pos:'n./v.',def:'(n.) A sudden rush of animals or people, usually caused by fear. (v.) To take part in a stampede.',ex:'"A breeze carried the lion\'s scent to the antelope and began a stampede of the herd."'},
+  {word:'veteran',pos:'n./adj.',def:'(n.) 1. A person who has served in the armed forces. 2. A person with much experience. (adj.) Experienced.',ex:'"Veterans in their uniforms marched in the Memorial Day parade."'}
+];
+
+var TYPE_STYLES={
+  synonym:{label:'SYNONYM',color:'#fbbf24',bg:'rgba(161,98,7,.35)'},
+  antonym:{label:'ANTONYM',color:'#f472b6',bg:'rgba(157,23,77,.35)'},
+  analogy:{label:'ANALOGY',color:'#a78bfa',bg:'rgba(109,40,217,.35)'},
+  simile:{label:'SIMILE',color:'#34d399',bg:'rgba(6,78,59,.35)'},
+  metaphor:{label:'METAPHOR',color:'#38bdf8',bg:'rgba(7,89,133,.35)'}
+};
+
+var QUESTIONS=[
+  // ── SYNONYMS (50) ──────────────────────────────────────────────────────────
+  {type:'synonym',word:'brawl',q:'Which word is closest in meaning to BRAWL?',a:'fight',ch:['fight','dance','race','celebration'],hint:'Think: a rough, noisy conflict'},
+  {type:'synonym',word:'brawl',q:'Which word best replaces BRAWL?',a:'scuffle',ch:['scuffle','feast','parade','meeting'],hint:'Think: a disorderly physical struggle'},
+  {type:'synonym',word:'brawl',q:'Which word is a synonym for BRAWL?',a:'melee',ch:['melee','ceremony','festival','march'],hint:'Think: a chaotic fight involving many people at once'},
+  {type:'synonym',word:'casual',q:'Which word is closest in meaning to CASUAL?',a:'informal',ch:['informal','formal','strict','scheduled'],hint:'Think: relaxed and not very serious or official'},
+  {type:'synonym',word:'casual',q:'Which word best replaces CASUAL?',a:'relaxed',ch:['relaxed','rigid','planned','urgent'],hint:'Think: easygoing and comfortable in manner'},
+  {type:'synonym',word:'casual',q:'Which word is a synonym for CASUAL meaning not regular?',a:'occasional',ch:['occasional','constant','steady','regular'],hint:'Think: happening only now and then'},
+  {type:'synonym',word:'constant',q:'Which word is closest in meaning to CONSTANT?',a:'steady',ch:['steady','changing','variable','unstable'],hint:'Think: not changing, always the same'},
+  {type:'synonym',word:'constant',q:'Which word best replaces CONSTANT?',a:'unceasing',ch:['unceasing','occasional','irregular','pausing'],hint:'Think: going on without ever stopping'},
+  {type:'synonym',word:'constant',q:'Which word is a synonym for CONSTANT meaning loyal?',a:'faithful',ch:['faithful','treacherous','fickle','disloyal'],hint:'Think: dependable and always there for you'},
+  {type:'synonym',word:'constant',q:'Which word means the same as CONSTANT?',a:'unwavering',ch:['unwavering','shifting','changing','fluctuating'],hint:'Think: not moving from a position or commitment'},
+  {type:'synonym',word:'excel',q:'Which word is closest in meaning to EXCEL?',a:'surpass',ch:['surpass','fail','lose','struggle'],hint:'Think: to go beyond others in skill or ability'},
+  {type:'synonym',word:'excel',q:'Which word best replaces EXCEL?',a:'outshine',ch:['outshine','underperform','lag','fall behind'],hint:'Think: to be brighter or better than the rest'},
+  {type:'synonym',word:'excel',q:'Which word is a synonym for EXCEL?',a:'thrive',ch:['thrive','flounder','fail','struggle'],hint:'Think: to grow and do very well in what you do'},
+  {type:'synonym',word:'exhaust',q:'Which word is closest in meaning to EXHAUST meaning to use up?',a:'deplete',ch:['deplete','replenish','restore','refill'],hint:'Think: to empty a supply completely'},
+  {type:'synonym',word:'exhaust',q:'Which word best replaces EXHAUST meaning to tire out?',a:'drain',ch:['drain','energize','refresh','restore'],hint:'Think: to take all the energy out of someone'},
+  {type:'synonym',word:'exhaust',q:'Which word is a synonym for EXHAUST?',a:'tire',ch:['tire','invigorate','refresh','energize'],hint:'Think: to make someone very weary'},
+  {type:'synonym',word:'exhaust',q:'Which word means the same as EXHAUST?',a:'wear out',ch:['wear out','build up','recharge','restore'],hint:'Think: to completely use up strength or resources'},
+  {type:'synonym',word:'hardy',q:'Which word is closest in meaning to HARDY?',a:'tough',ch:['tough','fragile','delicate','weak'],hint:'Think: strong enough to survive harsh conditions'},
+  {type:'synonym',word:'hardy',q:'Which word best replaces HARDY?',a:'resilient',ch:['resilient','fragile','tender','brittle'],hint:'Think: able to bounce back from hardship'},
+  {type:'synonym',word:'hardy',q:'Which word is a synonym for HARDY?',a:'sturdy',ch:['sturdy','delicate','frail','weak'],hint:'Think: solid and strong, hard to damage'},
+  {type:'synonym',word:'mediocre',q:'Which word is closest in meaning to MEDIOCRE?',a:'ordinary',ch:['ordinary','outstanding','excellent','exceptional'],hint:'Think: not very good and not very bad — just average'},
+  {type:'synonym',word:'mediocre',q:'Which word best replaces MEDIOCRE?',a:'average',ch:['average','superb','brilliant','extraordinary'],hint:'Think: neither great nor terrible, just okay'},
+  {type:'synonym',word:'mediocre',q:'Which word is a synonym for MEDIOCRE?',a:'passable',ch:['passable','impressive','remarkable','superior'],hint:'Think: just barely acceptable in quality'},
+  {type:'synonym',word:'monotonous',q:'Which word is closest in meaning to MONOTONOUS?',a:'dull',ch:['dull','exciting','varied','thrilling'],hint:'Think: lacking variety or interest'},
+  {type:'synonym',word:'monotonous',q:'Which word best replaces MONOTONOUS?',a:'repetitive',ch:['repetitive','stimulating','dynamic','lively'],hint:'Think: doing the same thing over and over without change'},
+  {type:'synonym',word:'monotonous',q:'Which word is a synonym for MONOTONOUS?',a:'tedious',ch:['tedious','engaging','absorbing','interesting'],hint:'Think: long and slow because it never changes'},
+  {type:'synonym',word:'monotonous',q:'Which word means the same as MONOTONOUS?',a:'boring',ch:['boring','exciting','varied','dynamic'],hint:'Think: so same that it makes you want to fall asleep'},
+  {type:'synonym',word:'originate',q:'Which word is closest in meaning to ORIGINATE?',a:'begin',ch:['begin','end','finish','conclude'],hint:'Think: to start or come into being for the first time'},
+  {type:'synonym',word:'originate',q:'Which word best replaces ORIGINATE?',a:'arise',ch:['arise','terminate','conclude','cease'],hint:'Think: to come up and start from a source'},
+  {type:'synonym',word:'originate',q:'Which word is a synonym for ORIGINATE?',a:'emerge',ch:['emerge','disappear','end','vanish'],hint:'Think: to come into being or come into existence'},
+  {type:'synonym',word:'punctuate',q:'Which word is closest in meaning to PUNCTUATE meaning to interrupt?',a:'interrupt',ch:['interrupt','continue','complete','finish'],hint:'Think: to break into something from time to time'},
+  {type:'synonym',word:'punctuate',q:'Which word best replaces PUNCTUATE meaning to mark writing?',a:'mark',ch:['mark','erase','remove','clear'],hint:'Think: to add signs that clarify meaning in text'},
+  {type:'synonym',word:'punctuate',q:'Which word is a synonym for PUNCTUATE meaning to accent?',a:'accent',ch:['accent','mute','silence','suppress'],hint:'Think: to make certain moments stand out more clearly'},
+  {type:'synonym',word:'ravenous',q:'Which word is closest in meaning to RAVENOUS?',a:'starving',ch:['starving','full','satisfied','content'],hint:'Think: extremely hungry, like you have not eaten in days'},
+  {type:'synonym',word:'ravenous',q:'Which word best replaces RAVENOUS?',a:'famished',ch:['famished','stuffed','satisfied','sated'],hint:'Think: desperately in need of food'},
+  {type:'synonym',word:'ravenous',q:'Which word is a synonym for RAVENOUS meaning eager?',a:'voracious',ch:['voracious','reluctant','indifferent','satisfied'],hint:'Think: having an extremely strong desire for something'},
+  {type:'synonym',word:'ravenous',q:'Which word means the same as RAVENOUS?',a:'greedy',ch:['greedy','content','satisfied','indifferent'],hint:'Think: wanting much more than is needed'},
+  {type:'synonym',word:'realistic',q:'Which word is closest in meaning to REALISTIC?',a:'practical',ch:['practical','fanciful','unrealistic','dreamy'],hint:'Think: dealing with things as they really are'},
+  {type:'synonym',word:'realistic',q:'Which word best replaces REALISTIC?',a:'lifelike',ch:['lifelike','fantasy','imaginary','fictional'],hint:'Think: looking very much like the real thing'},
+  {type:'synonym',word:'realistic',q:'Which word is a synonym for REALISTIC?',a:'sensible',ch:['sensible','fanciful','impractical','idealistic'],hint:'Think: showing good judgment about what is possible'},
+  {type:'synonym',word:'soothe',q:'Which word is closest in meaning to SOOTHE?',a:'calm',ch:['calm','agitate','upset','disturb'],hint:'Think: to make someone feel less worried or upset'},
+  {type:'synonym',word:'soothe',q:'Which word best replaces SOOTHE?',a:'comfort',ch:['comfort','irritate','provoke','alarm'],hint:'Think: to give ease and reassurance to someone in distress'},
+  {type:'synonym',word:'soothe',q:'Which word is a synonym for SOOTHE?',a:'ease',ch:['ease','worsen','inflame','aggravate'],hint:'Think: to lessen pain or worry gently'},
+  {type:'synonym',word:'stampede',q:'Which word is closest in meaning to STAMPEDE?',a:'rush',ch:['rush','march','stroll','gather'],hint:'Think: a sudden, uncontrolled mass movement driven by panic'},
+  {type:'synonym',word:'stampede',q:'Which word best replaces STAMPEDE?',a:'panic',ch:['panic','parade','ceremony','procession'],hint:'Think: a wild, fearful mass movement of a crowd or herd'},
+  {type:'synonym',word:'stampede',q:'Which word is a synonym for STAMPEDE?',a:'charge',ch:['charge','retreat','withdrawal','halt'],hint:'Think: a fast forward rush of a large group'},
+  {type:'synonym',word:'veteran',q:'Which word is closest in meaning to VETERAN?',a:'expert',ch:['expert','novice','beginner','amateur'],hint:'Think: someone with years of skill and experience'},
+  {type:'synonym',word:'veteran',q:'Which word best replaces VETERAN?',a:'seasoned',ch:['seasoned','green','inexperienced','untrained'],hint:'Think: made wise through many years of doing something'},
+  {type:'synonym',word:'veteran',q:'Which word is a synonym for VETERAN?',a:'experienced',ch:['experienced','new','untested','naive'],hint:'Think: having done something for a long time'},
+  {type:'synonym',word:'veteran',q:'Which word means the same as VETERAN?',a:'pro',ch:['pro','rookie','freshman','newcomer'],hint:'Think: a real professional, not a beginner'},
+
+  // ── ANTONYMS (35) ──────────────────────────────────────────────────────────
+  {type:'antonym',word:'brawl',q:'Which word is OPPOSITE in meaning to BRAWL?',a:'peace',ch:['peace','fight','scuffle','melee'],hint:'Think: a state of calm and no conflict at all'},
+  {type:'antonym',word:'casual',q:'Which word is OPPOSITE in meaning to CASUAL?',a:'formal',ch:['formal','relaxed','informal','comfortable'],hint:'Think: very official and proper in dress or manner'},
+  {type:'antonym',word:'constant',q:'Which word is OPPOSITE in meaning to CONSTANT?',a:'variable',ch:['variable','steady','stable','uniform'],hint:'Think: always changing and never staying the same'},
+  {type:'antonym',word:'excel',q:'Which word is OPPOSITE in meaning to EXCEL?',a:'fail',ch:['fail','succeed','surpass','thrive'],hint:'Think: to fall short and not perform well at all'},
+  {type:'antonym',word:'exhaust',q:'Which word is OPPOSITE in meaning to EXHAUST meaning to tire out?',a:'energize',ch:['energize','drain','tire','deplete'],hint:'Think: to fill someone with energy and fresh strength'},
+  {type:'antonym',word:'hardy',q:'Which word is OPPOSITE in meaning to HARDY?',a:'fragile',ch:['fragile','tough','resilient','sturdy'],hint:'Think: easily broken or damaged, cannot survive hardship'},
+  {type:'antonym',word:'mediocre',q:'Which word is OPPOSITE in meaning to MEDIOCRE?',a:'outstanding',ch:['outstanding','ordinary','average','passable'],hint:'Think: far above average; truly excellent quality'},
+  {type:'antonym',word:'monotonous',q:'Which word is OPPOSITE in meaning to MONOTONOUS?',a:'varied',ch:['varied','dull','repetitive','tedious'],hint:'Think: full of change, never the same twice'},
+  {type:'antonym',word:'originate',q:'Which word is OPPOSITE in meaning to ORIGINATE?',a:'end',ch:['end','begin','start','arise'],hint:'Think: to come to a close instead of a beginning'},
+  {type:'antonym',word:'ravenous',q:'Which word is OPPOSITE in meaning to RAVENOUS?',a:'satisfied',ch:['satisfied','starving','famished','hungry'],hint:'Think: full and needing nothing more to eat'},
+  {type:'antonym',word:'realistic',q:'Which word is OPPOSITE in meaning to REALISTIC?',a:'fanciful',ch:['fanciful','practical','sensible','lifelike'],hint:'Think: based on fantasy rather than how things really are'},
+  {type:'antonym',word:'soothe',q:'Which word is OPPOSITE in meaning to SOOTHE?',a:'agitate',ch:['agitate','calm','comfort','ease'],hint:'Think: to stir up and make someone more anxious or upset'},
+  {type:'antonym',word:'stampede',q:'Which word is OPPOSITE in meaning to STAMPEDE?',a:'calm',ch:['calm','rush','charge','panic'],hint:'Think: a quiet, orderly state with no panic at all'},
+  {type:'antonym',word:'veteran',q:'Which word is OPPOSITE in meaning to VETERAN?',a:'novice',ch:['novice','expert','pro','seasoned'],hint:'Think: someone brand new with no experience'},
+  {type:'antonym',word:'casual',q:'Which word is OPPOSITE in meaning to CASUAL meaning not planned?',a:'deliberate',ch:['deliberate','relaxed','unplanned','informal'],hint:'Think: done on purpose, carefully thought out in advance'},
+  {type:'antonym',word:'constant',q:'Which word is OPPOSITE in meaning to CONSTANT meaning loyal?',a:'fickle',ch:['fickle','faithful','steady','unwavering'],hint:'Think: changing opinions or loyalty very easily'},
+  {type:'antonym',word:'excel',q:'Which word is OPPOSITE in meaning to EXCEL?',a:'underperform',ch:['underperform','surpass','outshine','lead'],hint:'Think: to do worse than expected'},
+  {type:'antonym',word:'exhaust',q:'Which word is OPPOSITE in meaning to EXHAUST meaning to use up?',a:'replenish',ch:['replenish','deplete','drain','empty'],hint:'Think: to fill back up what was used'},
+  {type:'antonym',word:'hardy',q:'Which word is OPPOSITE in meaning to HARDY?',a:'delicate',ch:['delicate','tough','rugged','resilient'],hint:'Think: easily harmed by rough or cold conditions'},
+  {type:'antonym',word:'mediocre',q:'Which word is OPPOSITE in meaning to MEDIOCRE?',a:'superb',ch:['superb','average','ordinary','passable'],hint:'Think: truly excellent, far beyond average quality'},
+  {type:'antonym',word:'monotonous',q:'Which word is OPPOSITE in meaning to MONOTONOUS?',a:'exciting',ch:['exciting','dull','boring','repetitive'],hint:'Think: full of energy and interest, always changing'},
+  {type:'antonym',word:'originate',q:'Which word is OPPOSITE in meaning to ORIGINATE?',a:'conclude',ch:['conclude','start','begin','arise'],hint:'Think: to bring something to its final end'},
+  {type:'antonym',word:'ravenous',q:'Which word is OPPOSITE in meaning to RAVENOUS?',a:'full',ch:['full','famished','hungry','starving'],hint:'Think: having had more than enough to eat'},
+  {type:'antonym',word:'realistic',q:'Which word is OPPOSITE in meaning to REALISTIC?',a:'idealistic',ch:['idealistic','practical','grounded','sensible'],hint:'Think: seeing things as perfect rather than as they really are'},
+  {type:'antonym',word:'soothe',q:'Which word is OPPOSITE in meaning to SOOTHE?',a:'disturb',ch:['disturb','calm','relax','comfort'],hint:'Think: to trouble and break the peace of something'},
+  {type:'antonym',word:'stampede',q:'Which word is OPPOSITE in meaning to STAMPEDE?',a:'retreat',ch:['retreat','charge','rush','surge'],hint:'Think: a calm, orderly withdrawal instead of a wild rush forward'},
+  {type:'antonym',word:'veteran',q:'Which word is OPPOSITE in meaning to VETERAN?',a:'beginner',ch:['beginner','expert','master','pro'],hint:'Think: someone with no experience, just starting out'},
+  {type:'antonym',word:'brawl',q:'Which word is OPPOSITE in meaning to BRAWL?',a:'truce',ch:['truce','fight','conflict','skirmish'],hint:'Think: an agreement to stop fighting'},
+  {type:'antonym',word:'constant',q:'Which word is OPPOSITE in meaning to CONSTANT?',a:'irregular',ch:['irregular','steady','uniform','stable'],hint:'Think: not regular, happening at random and unpredictable times'},
+  {type:'antonym',word:'casual',q:'Which word is OPPOSITE in meaning to CASUAL?',a:'serious',ch:['serious','relaxed','informal','easygoing'],hint:'Think: treating something with great importance and care'},
+  {type:'antonym',word:'exhaust',q:'Which word is OPPOSITE in meaning to EXHAUST?',a:'refresh',ch:['refresh','drain','deplete','tire'],hint:'Think: to give back energy and make someone feel new again'},
+  {type:'antonym',word:'hardy',q:'Which word is OPPOSITE in meaning to HARDY?',a:'weak',ch:['weak','tough','rugged','durable'],hint:'Think: lacking the strength to withstand hardship'},
+  {type:'antonym',word:'mediocre',q:'Which word is OPPOSITE in meaning to MEDIOCRE?',a:'exceptional',ch:['exceptional','ordinary','common','average'],hint:'Think: far above what is usual or expected'},
+  {type:'antonym',word:'monotonous',q:'Which word is OPPOSITE in meaning to MONOTONOUS?',a:'stimulating',ch:['stimulating','tedious','dull','repetitive'],hint:'Think: interesting and engaging, always keeping your attention'},
+  {type:'antonym',word:'ravenous',q:'Which word is OPPOSITE in meaning to RAVENOUS?',a:'sated',ch:['sated','hungry','starving','famished'],hint:'Think: completely satisfied and wanting absolutely nothing more'},
+
+  // ── ANALOGIES (40) ─────────────────────────────────────────────────────────
+  {type:'analogy',word:'brawl',q:'BRAWL is to FIGHTERS as STAMPEDE is to ___',a:'cattle',ch:['cattle','farmers','sheriffs','musicians'],hint:'Think: what group of beings is involved in each event'},
+  {type:'analogy',word:'veteran',q:'VETERAN is to EXPERIENCE as NOVICE is to ___',a:'inexperience',ch:['inexperience','skill','wisdom','knowledge'],hint:'Think: what quality each person has or lacks'},
+  {type:'analogy',word:'monotonous',q:'MONOTONOUS is to EXCITING as CONSTANT is to ___',a:'changing',ch:['changing','steady','reliable','stable'],hint:'Think: each pair contains opposites'},
+  {type:'analogy',word:'soothe',q:'SOOTHE is to ANGER as QUENCH is to ___',a:'thirst',ch:['thirst','hunger','sadness','boredom'],hint:'Think: what each action relieves or satisfies'},
+  {type:'analogy',word:'excel',q:'EXCEL is to GOLD MEDAL as FAIL is to ___',a:'last place',ch:['last place','first place','prize','ribbon'],hint:'Think: what each outcome earns in a competition'},
+  {type:'analogy',word:'exhaust',q:'EXHAUST is to SUPPLY as DRAIN is to ___',a:'battery',ch:['battery','engine','motor','fuel'],hint:'Think: what each verb completely empties'},
+  {type:'analogy',word:'hardy',q:'HARDY is to FROST as RESILIENT is to ___',a:'pressure',ch:['pressure','sunshine','comfort','warmth'],hint:'Think: what each tough quality helps something withstand'},
+  {type:'analogy',word:'mediocre',q:'MEDIOCRE is to OUTSTANDING as AVERAGE is to ___',a:'exceptional',ch:['exceptional','ordinary','common','usual'],hint:'Think: each pair moves from just okay to truly great'},
+  {type:'analogy',word:'originate',q:'ORIGINATE is to BEGINNING as CONCLUDE is to ___',a:'ending',ch:['ending','middle','pause','start'],hint:'Think: each verb points to a different part of a sequence'},
+  {type:'analogy',word:'punctuate',q:'PUNCTUATE is to COMMA as SEASON is to ___',a:'spice',ch:['spice','plate','fork','napkin'],hint:'Think: what is added to bring out greater clarity or flavor'},
+  {type:'analogy',word:'ravenous',q:'RAVENOUS is to HUNGER as EXHAUSTED is to ___',a:'fatigue',ch:['fatigue','energy','strength','power'],hint:'Think: each adjective is caused by which condition'},
+  {type:'analogy',word:'realistic',q:'REALISTIC is to PRACTICAL as FANCIFUL is to ___',a:'impractical',ch:['impractical','sensible','grounded','useful'],hint:'Think: each pair of words describes the same degree of real vs. imagined'},
+  {type:'analogy',word:'brawl',q:'BRAWL is to PEACE as STAMPEDE is to ___',a:'calm',ch:['calm','panic','rush','charge'],hint:'Think: each violent or chaotic event is opposite to what state'},
+  {type:'analogy',word:'constant',q:'CONSTANT is to LOYAL as FICKLE is to ___',a:'unreliable',ch:['unreliable','faithful','steady','dependable'],hint:'Think: each adjective describes either steady or shifting loyalty'},
+  {type:'analogy',word:'casual',q:'CASUAL is to FORMAL as RELAXED is to ___',a:'tense',ch:['tense','easy','calm','gentle'],hint:'Think: each pair of words describes opposite moods or dress codes'},
+  {type:'analogy',word:'excel',q:'EXCEL is to ATHLETE as COMPOSE is to ___',a:'musician',ch:['musician','writer','painter','teacher'],hint:'Think: each action is what that professional is best known for'},
+  {type:'analogy',word:'exhaust',q:'EXHAUST is to MARATHON RUNNER as DEPLETE is to ___',a:'battery',ch:['battery','engine','river','lamp'],hint:'Think: each thing is emptied by a long and demanding effort'},
+  {type:'analogy',word:'hardy',q:'HARDY is to CACTUS as FRAGILE is to ___',a:'orchid',ch:['orchid','oak','pine','cactus'],hint:'Think: which plant survives harsh conditions vs which needs gentle care'},
+  {type:'analogy',word:'mediocre',q:'MEDIOCRE is to GRADE C as OUTSTANDING is to ___',a:'grade A',ch:['grade A','grade D','grade F','grade B'],hint:'Think: each quality level matches which letter grade'},
+  {type:'analogy',word:'soothe',q:'SOOTHE is to LULLABY as AGITATE is to ___',a:'alarm',ch:['alarm','blanket','cradle','pillow'],hint:'Think: what sound calms vs what sound disturbs'},
+  {type:'analogy',word:'originate',q:'ORIGINATE is to INVENTION as PRODUCE is to ___',a:'factory',ch:['factory','shop','school','library'],hint:'Think: each action is what its location is built to do'},
+  {type:'analogy',word:'veteran',q:'VETERAN is to ROOKIE as EXPERT is to ___',a:'beginner',ch:['beginner','master','professional','leader'],hint:'Think: each pair contrasts skill levels'},
+  {type:'analogy',word:'stampede',q:'STAMPEDE is to HERD as PANIC is to ___',a:'crowd',ch:['crowd','soldier','horse','single person'],hint:'Think: what large group of beings each event affects'},
+  {type:'analogy',word:'monotonous',q:'MONOTONOUS is to DRONE as VARIED is to ___',a:'orchestra',ch:['orchestra','horn','drum','whistle'],hint:'Think: which sound is one repeated note vs many changing ones'},
+  {type:'analogy',word:'punctuate',q:'PUNCTUATE is to SPEECH as INTERRUPT is to ___',a:'conversation',ch:['conversation','silence','thought','rest'],hint:'Think: each word describes breaking into what kind of exchange'},
+  {type:'analogy',word:'ravenous',q:'RAVENOUS is to WOLF as CONTENT is to ___',a:'well-fed cat',ch:['well-fed cat','hungry bear','starving fox','empty stomach'],hint:'Think: which animal image matches each state of hunger'},
+  {type:'analogy',word:'realistic',q:'REALISTIC is to PHOTOGRAPH as UNREALISTIC is to ___',a:'fairy tale',ch:['fairy tale','biography','news report','history book'],hint:'Think: which type of story is grounded in fact vs which is pure fantasy'},
+  {type:'analogy',word:'brawl',q:'BRAWL is to BRUISE as FALL is to ___',a:'scrape',ch:['scrape','jump','run','swim'],hint:'Think: each rough action leads to which type of minor injury'},
+  {type:'analogy',word:'constant',q:'CONSTANT is to TEMPERATURE as STEADY is to ___',a:'heartbeat',ch:['heartbeat','storm','flood','earthquake'],hint:'Think: each adjective describes which natural rhythm or measure'},
+  {type:'analogy',word:'casual',q:'CASUAL is to JEANS as FORMAL is to ___',a:'tuxedo',ch:['tuxedo','sneakers','hoodie','tracksuit'],hint:'Think: which clothing item goes with each dress level'},
+  {type:'analogy',word:'exhaust',q:'EXHAUST is to MARATHON as DRAIN is to ___',a:'long journey',ch:['long journey','short rest','quick nap','brief walk'],hint:'Think: each tiring event is caused by what kind of effort'},
+  {type:'analogy',word:'hardy',q:'HARDY is to MUSTANG as FRAGILE is to ___',a:'hothouse flower',ch:['hothouse flower','oak tree','redwood','cactus'],hint:'Think: the wild plains horse vs which delicate growing thing'},
+  {type:'analogy',word:'originate',q:'ORIGINATE is to TEXAS as SPREAD is to ___',a:'nationwide',ch:['nationwide','local','nearby','regional'],hint:'Think: cattle trails began in one state then went where'},
+  {type:'analogy',word:'veteran',q:'VETERAN is to HALL OF FAME as ROOKIE is to ___',a:'first day',ch:['first day','championship','trophy','career award'],hint:'Think: each represents where someone is in their career journey'},
+  {type:'analogy',word:'monotonous',q:'MONOTONOUS is to FLAT PLAINS as VARIED is to ___',a:'mountain landscape',ch:['mountain landscape','empty desert','calm lake','open field'],hint:'Think: which scenery matches dull sameness vs constant change'},
+  {type:'analogy',word:'soothe',q:'SOOTHE is to GENTLE SONG as DISTURB is to ___',a:'sudden loud noise',ch:['sudden loud noise','soft breeze','warm blanket','quiet evening'],hint:'Think: what type of sound calms and what type startles'},
+  {type:'analogy',word:'punctuate',q:'PUNCTUATE is to SENTENCES as BOOKMARK is to ___',a:'pages',ch:['pages','covers','spines','ink'],hint:'Think: each thing marks specific points within a larger text'},
+  {type:'analogy',word:'realistic',q:'REALISTIC is to DOCUMENTARY as UNREALISTIC is to ___',a:'fantasy film',ch:['fantasy film','news broadcast','history class','science report'],hint:'Think: which type of film shows life as it is vs as imagined'},
+  {type:'analogy',word:'stampede',q:'STAMPEDE is to THUNDER as EXODUS is to ___',a:'tide',ch:['tide','raindrop','cloud','snowflake'],hint:'Think: each is a massive movement compared to which natural force'},
+  {type:'analogy',word:'exhaust',q:'EXHAUST is to ENERGY as SILENCE is to ___',a:'sound',ch:['sound','strength','time','motion'],hint:'Think: each state is the complete absence of what thing'},
+
+  // ── SIMILES (35) ────────────────────────────────────────────────────────────
+  {type:'simile',word:'brawl',q:'Which sentence uses BRAWL in a simile correctly?',a:'The argument erupted like a brawl between two storm fronts colliding in the sky.',ch:['The argument erupted like a brawl between two storm fronts colliding in the sky.','The brawl was as quiet as a sleeping dog.','He brawled like a gentle river flowing downstream.','The brawl cost nothing like free sunshine.'],hint:'Think: comparing a conflict to a sudden violent clash'},
+  {type:'simile',word:'casual',q:'Which sentence uses CASUAL in a simile correctly?',a:'He strolled in as casual as a leaf drifting down from a branch.',ch:['He strolled in as casual as a leaf drifting down from a branch.','She was casual like a thunderstorm.','He was as casual as a loud alarm.','Casual was as sharp as a knife.'],hint:'Think: comparing ease and lack of concern to something gently floating'},
+  {type:'simile',word:'constant',q:'Which sentence uses CONSTANT in a simile correctly?',a:'The cowboy\'s watch over the herd was as constant as the stars above the plains.',ch:['The cowboy\'s watch over the herd was as constant as the stars above the plains.','His watch was constant like a broken clock.','Constant was as changing as the weather.','The guard was constant like a feather in the wind.'],hint:'Think: something that never moves from its place, like the stars'},
+  {type:'simile',word:'excel',q:'Which sentence uses EXCEL in a simile correctly?',a:'Bill Pickett excelled at rodeo like a hawk excels at riding the wind.',ch:['Bill Pickett excelled at rodeo like a hawk excels at riding the wind.','He excelled like a stone sinking in water.','Excel was as slow as a sleeping turtle.','She excelled like a dimming candle.'],hint:'Think: a natural mastery compared to how a bird commands the air'},
+  {type:'simile',word:'exhaust',q:'Which sentence uses EXHAUST in a simile correctly?',a:'After a long cattle drive, the cowboys were as exhausted as candles burned to the wick.',ch:['After a long cattle drive, the cowboys were as exhausted as candles burned to the wick.','The exhaust fumes were as quiet as falling snow.','They were exhausted like fresh horses at the start.','The cowboys exhaust like a growing flame.'],hint:'Think: something completely used up, with nothing left to give'},
+  {type:'simile',word:'hardy',q:'Which sentence uses HARDY in a simile correctly?',a:'The mustangs were as hardy as the prairie grass that grew back after every drought.',ch:['The mustangs were as hardy as the prairie grass that grew back after every drought.','The horses were hardy like soft petals in the rain.','Hardy was as fragile as glass in a storm.','The plant was hardy like a melting snowflake.'],hint:'Think: something that keeps surviving no matter what'},
+  {type:'simile',word:'mediocre',q:'Which sentence uses MEDIOCRE in a simile correctly?',a:'The cowboy\'s cooking was mediocre, like a song that hits all the right notes but none of the feeling.',ch:['The cowboy\'s cooking was mediocre, like a song that hits all the right notes but none of the feeling.','Mediocre was as bold as a trumpet solo.','His work was mediocre like a shining gold medal.','She was mediocre like a star blazing in the sky.'],hint:'Think: something technically fine but not inspiring'},
+  {type:'simile',word:'monotonous',q:'Which sentence uses MONOTONOUS in a simile correctly?',a:'The days on the cattle drive were as monotonous as a fence stretching endlessly over flat land.',ch:['The days on the cattle drive were as monotonous as a fence stretching endlessly over flat land.','The days were monotonous like a thrilling roller coaster.','Monotonous was as varied as a jazz concert.','The work was monotonous like a fireworks show.'],hint:'Think: something that goes on and on without any change or break'},
+  {type:'simile',word:'originate',q:'Which sentence uses ORIGINATE in a simile correctly?',a:'New ideas originate in a creative mind like sparks originate from a struck flint.',ch:['New ideas originate in a creative mind like sparks originate from a struck flint.','The idea originated like a slow-moving glacier.','Originate was as final as an ending.','Ideas originate like rivers running dry.'],hint:'Think: the beginning of something compared to the start of a flame'},
+  {type:'simile',word:'punctuate',q:'Which sentence uses PUNCTUATE in a simile correctly?',a:'Lightning punctuated the dark sky like exclamation points on a page.',ch:['Lightning punctuated the dark sky like exclamation points on a page.','The speech was punctuated like a silent room.','Punctuate was as smooth as a river without rocks.','He punctuated his words like a vanishing echo.'],hint:'Think: something that breaks up a continuous surface at sharp moments'},
+  {type:'simile',word:'ravenous',q:'Which sentence uses RAVENOUS in a simile correctly?',a:'After the long cattle drive, the cowboys ate like ravenous wolves at a winter feast.',ch:['After the long cattle drive, the cowboys ate like ravenous wolves at a winter feast.','She was ravenous like a sleeping bear.','The ravenous child ate like someone already full.','Ravenous was as still as a pond.'],hint:'Think: hungry people compared to wild animals driven by desperate need'},
+  {type:'simile',word:'realistic',q:'Which sentence uses REALISTIC in a simile correctly?',a:'The actor\'s performance was as realistic as a reflection staring back from still water.',ch:['The actor\'s performance was as realistic as a reflection staring back from still water.','The story was realistic like a dream in bright colors.','She was realistic like a tale from a faraway land.','Realistic was as unreal as a floating cloud.'],hint:'Think: something that mirrors life so closely it seems true'},
+  {type:'simile',word:'soothe',q:'Which sentence uses SOOTHE in a simile correctly?',a:'The cowboy\'s singing soothed the herd like a warm fire soothes cold hands.',ch:['The cowboy\'s singing soothed the herd like a warm fire soothes cold hands.','She soothed her anger like a crashing wave.','He soothed the crowd like a thunderclap.','Soothe was as sharp as broken glass.'],hint:'Think: gentle warmth compared to a calming voice at night'},
+  {type:'simile',word:'stampede',q:'Which sentence uses STAMPEDE in a simile correctly?',a:'The crowd stampeded from the stadium like a herd of cattle startled by a crack of thunder.',ch:['The crowd stampeded from the stadium like a herd of cattle startled by a crack of thunder.','She stampeded like a flower unfolding at dawn.','The stampede was as slow as a turtle crossing a road.','He stampeded like a candle flickering in the breeze.'],hint:'Think: people in panic compared to terrified animals in full flight'},
+  {type:'simile',word:'veteran',q:'Which sentence uses VETERAN in a simile correctly?',a:'Nat Love handled the rodeo like a veteran who had been born in the saddle.',ch:['Nat Love handled the rodeo like a veteran who had been born in the saddle.','The veteran moved like someone on their very first day.','He was a veteran like a newborn learning to stand.','Veteran was as uncertain as a first step.'],hint:'Think: a skilled performer compared to someone born to their role'},
+  {type:'simile',word:'brawl',q:'Complete the simile: The debate was as heated as ___',a:'a brawl in the middle of a crowded saloon',ch:['a brawl in the middle of a crowded saloon','a peaceful walk through a meadow','a gentle breeze over a still lake','a quiet conversation at sunset'],hint:'Think: something noisy, rough, and full of conflict'},
+  {type:'simile',word:'casual',q:'Complete the simile: Her attitude about the test was as casual as ___',a:'a cowboy leaning on a fence post',ch:['a cowboy leaning on a fence post','a soldier preparing for battle','a student cramming all night','a runner stretching before a race'],hint:'Think: a relaxed posture showing no worry or urgency'},
+  {type:'simile',word:'constant',q:'Complete the simile: The cattle drive required constant watchfulness, like ___',a:'a lighthouse keeping its beam on the rocks',ch:['a lighthouse keeping its beam on the rocks','a flower closing at night','a fire that burns out at dawn','a clock that stops each afternoon'],hint:'Think: something that never turns away, always watching'},
+  {type:'simile',word:'exhaust',q:'Complete the simile: The long trail ride exhausted the horses like ___',a:'a long race drains the fastest runner',ch:['a long race drains the fastest runner','a short nap refreshes a tired mind','a cool drink energizes on a hot day','a sunrise fills the morning with light'],hint:'Think: an endurance challenge that empties every last bit of strength'},
+  {type:'simile',word:'hardy',q:'Complete the simile: The mustangs were as hardy as ___',a:'weeds that push through cracks in stone',ch:['weeds that push through cracks in stone','roses that wilt in the afternoon heat','snowflakes that melt on warm hands','glass ornaments on a winter tree'],hint:'Think: something that thrives even where conditions are harsh'},
+  {type:'simile',word:'mediocre',q:'Complete the simile: His roping skills were mediocre, about as impressive as ___',a:'a coin toss that lands on its edge',ch:['a coin toss that lands on its edge','a champion sprinter crossing the finish line','a perfect sunset over the mountains','a standing ovation from the crowd'],hint:'Think: something that is neither impressive nor embarrassing'},
+  {type:'simile',word:'monotonous',q:'Complete the simile: Watching the flat plains roll by was as monotonous as ___',a:'counting blades of grass in a field',ch:['counting blades of grass in a field','watching a fireworks show','riding rapids in a canyon','climbing a peak in a thunderstorm'],hint:'Think: an activity so repetitive it numbs the mind'},
+  {type:'simile',word:'originate',q:'Complete the simile: The cowboy tradition originated in Mexico like ___',a:'a river that begins as a trickle in the mountains',ch:['a river that begins as a trickle in the mountains','a storm that blows itself out in a day','a fire that burns and leaves no trace','a seed that never finds soil to grow in'],hint:'Think: something small at its source that grows into something large'},
+  {type:'simile',word:'punctuate',q:'Complete the simile: Gunshots punctuated the silence of the night like ___',a:'exclamation marks in a quiet paragraph',ch:['exclamation marks in a quiet paragraph','commas smoothing out a long sentence','a blank page with nothing on it','a period ending a peaceful thought'],hint:'Think: sharp, sudden breaks in something otherwise continuous'},
+  {type:'simile',word:'ravenous',q:'Complete the simile: The cowboys returned to camp as ravenous as ___',a:'bears waking from a long winter sleep',ch:['bears waking from a long winter sleep','cats curled up after a full meal','dogs snoozing in afternoon sunshine','birds singing at a well-stocked feeder'],hint:'Think: a wild creature that has gone too long without food'},
+  {type:'simile',word:'realistic',q:'Complete the simile: His description of the cattle drive was as realistic as ___',a:'a photograph taken at the moment it happened',ch:['a photograph taken at the moment it happened','a legend told around campfires for fun','a dream that fades by morning','a fairy tale that ends with a wish'],hint:'Think: something that captures truth exactly as it was'},
+  {type:'simile',word:'soothe',q:'Complete the simile: The cowboy\'s soft humming soothed the restless cattle like ___',a:'a lullaby soothing a fussy child to sleep',ch:['a lullaby soothing a fussy child to sleep','a firecracker waking a sleeping town','a thunderclap shaking the barn walls','a coyote howl echoing across the plains'],hint:'Think: a gentle, repeated sound that calms what is anxious'},
+  {type:'simile',word:'stampede',q:'Complete the simile: The sound of the stampede was like ___',a:'a thousand drums all beating at once',ch:['a thousand drums all beating at once','a breeze whispering through tall grass','a single raindrop on a tin roof','a campfire crackling in the still night'],hint:'Think: the thunderous noise of hundreds of hooves on hard ground'},
+  {type:'simile',word:'veteran',q:'Complete the simile: The veteran cowboy read the land like ___',a:'a scholar reads a well-worn book',ch:['a scholar reads a well-worn book','a child stares at an unfamiliar map','a stranger wanders without direction','a tourist reads signs in a foreign language'],hint:'Think: someone who has seen something so many times it speaks to them clearly'},
+  {type:'simile',word:'excel',q:'Which simile best describes how cowboys excelled at roping?',a:'They roped steers like eagles snatch fish, with speed and perfect aim.',ch:['They roped steers like eagles snatch fish, with speed and perfect aim.','They roped like beginners slowly learning to walk.','They roped as quietly as a stone falling to the ground.','They roped steers like a candle slowly melting.'],hint:'Think: natural mastery compared to a predator\'s precise and swift move'},
+  {type:'simile',word:'hardy',q:'Which simile best describes the hardy mustangs of the cattle drives?',a:'The mustangs endured the trail like iron nails that never rust.',ch:['The mustangs endured the trail like iron nails that never rust.','The mustangs were as delicate as flowers after frost.','The horses ran like broken machines winding down.','The mustangs moved like drifting clouds over the plains.'],hint:'Think: an object that endures tough conditions and never breaks down'},
+  {type:'simile',word:'monotonous',q:'Which simile best shows how monotonous life on the cattle trail was?',a:'Each day on the trail looked like the last, as if the same sun rose and set over the same field.',ch:['Each day on the trail looked like the last, as if the same sun rose and set over the same field.','Every day brought something new, like pages of a thrilling book.','The trail was as unpredictable as a storm at sea.','Days flew by like music at a rodeo celebration.'],hint:'Think: how repetition makes days blend into each other'},
+  {type:'simile',word:'stampede',q:'Which simile best captures the terror of a cattle stampede?',a:'A stampede swept across the plain like a wave of thunder that had grown feet.',ch:['A stampede swept across the plain like a wave of thunder that had grown feet.','The stampede drifted past like leaves falling gently in autumn.','The cattle moved like a slow-moving river on a quiet afternoon.','The herd passed like a peaceful parade through a small town.'],hint:'Think: enormous power and unstoppable noise moving across open ground'},
+  {type:'simile',word:'ravenous',q:'Which simile correctly uses RAVENOUS to show the cowboys\' hunger?',a:'After sundown they were as ravenous as prairie dogs who had spent the day digging.',ch:['After sundown they were as ravenous as prairie dogs who had spent the day digging.','They were ravenous like someone who just finished a huge feast.','The cowboys were as ravenous as well-fed guests at a party.','They ate as ravenously as people with no appetite at all.'],hint:'Think: creatures that burn energy all day and have nothing left'},
+
+  // ── METAPHORS (35) ──────────────────────────────────────────────────────────
+  {type:'metaphor',word:'brawl',q:'Which sentence uses BRAWL as a metaphor?',a:'The debate was a brawl of ideas, each argument throwing punches at the other.',ch:['The debate was a brawl of ideas, each argument throwing punches at the other.','The debate was like a brawl in a saloon.','The debate became very heated and rough.','People in the debate argued as if in a brawl.'],hint:'A metaphor says something IS something else without using like or as'},
+  {type:'metaphor',word:'casual',q:'Which sentence uses CASUAL as a metaphor?',a:'His grip on the reins was a casual handshake, loose enough to let the horse decide.',ch:['His grip on the reins was a casual handshake, loose enough to let the horse decide.','He held the reins casually like a relaxed rider.','His grip was as casual as a loose handshake.','He held them without much effort or tension.'],hint:'Think: calling something directly a relaxed gesture without using like or as'},
+  {type:'metaphor',word:'constant',q:'Which sentence uses CONSTANT as a metaphor?',a:'Loyalty is the constant north star of any great friendship, always there to guide the way.',ch:['Loyalty is the constant north star of any great friendship, always there to guide the way.','Loyalty is as constant as the north star.','Loyalty stays constant like a guiding star.','Loyalty remains steady like a star in the sky.'],hint:'Think: calling loyalty directly a star that never moves'},
+  {type:'metaphor',word:'excel',q:'Which sentence uses EXCEL as a metaphor?',a:'On the rodeo floor, Bill Pickett was a blade of lightning that excelled with every strike.',ch:['On the rodeo floor, Bill Pickett was a blade of lightning that excelled with every strike.','He excelled like a bolt of lightning.','He was as fast as lightning when he competed.','Bill Pickett excelled and moved quickly at the rodeo.'],hint:'Think: calling a person directly a force of nature that excels'},
+  {type:'metaphor',word:'exhaust',q:'Which sentence uses EXHAUST as a metaphor?',a:'The endless cattle drive was an engine that exhausted every man down to his last drop.',ch:['The endless cattle drive was an engine that exhausted every man down to his last drop.','The cattle drive tired them like a long engine run.','They were exhausted by the drive as if by a machine.','The drive drained them as if they were engines.'],hint:'Think: calling the cattle drive directly an engine that burns people out'},
+  {type:'metaphor',word:'hardy',q:'Which sentence uses HARDY as a metaphor?',a:'Nat Love was a hardy nail, beaten by hardship but never bent out of shape.',ch:['Nat Love was a hardy nail, beaten by hardship but never bent out of shape.','He was as hardy as a nail hammered into hard wood.','He was hardy like a metal spike that doesn\'t break.','His toughness was like the hardness of a nail.'],hint:'Think: calling a person directly a tough object that withstands force'},
+  {type:'metaphor',word:'mediocre',q:'Which sentence uses MEDIOCRE as a metaphor?',a:'Hollywood\'s version of the cowboy is a mediocre painting — the colors are there but the truth is missing.',ch:['Hollywood\'s version of the cowboy is a mediocre painting — the colors are there but the truth is missing.','Hollywood\'s version was like a mediocre painting.','Their picture of cowboys was as mediocre as bad art.','Hollywood painted a version of cowboys that was just okay.'],hint:'Think: calling a portrayal directly a flawed painting without like or as'},
+  {type:'metaphor',word:'monotonous',q:'Which sentence uses MONOTONOUS as a metaphor?',a:'The cattle trail was a monotonous drum, beating the same rhythm for three months.',ch:['The cattle trail was a monotonous drum, beating the same rhythm for three months.','The trail was as monotonous as a drum.','The trail beat like a boring, repetitive drum.','The trail was monotonous because nothing ever changed.'],hint:'Think: calling the trail directly a drum that never changes its beat'},
+  {type:'metaphor',word:'originate',q:'Which sentence uses ORIGINATE as a metaphor?',a:'Every legend originates from a seed of truth, planted by those who lived it.',ch:['Every legend originates from a seed of truth, planted by those who lived it.','Every legend starts like a seed growing.','Legends originate as if from planted seeds.','A legend begins the same way a seed starts to grow.'],hint:'Think: calling the source of a legend directly a planted seed'},
+  {type:'metaphor',word:'punctuate',q:'Which sentence uses PUNCTUATE as a metaphor?',a:'Bursts of laughter punctuated the storytelling around the campfire, bright commas in the dark.',ch:['Bursts of laughter punctuated the storytelling around the campfire, bright commas in the dark.','Laughter punctuated the stories like bright pauses.','Their laughter was as punctuating as a comma.','Laughter interrupted the stories every now and then.'],hint:'Think: calling bursts of laughter directly the punctuation marks in a story'},
+  {type:'metaphor',word:'ravenous',q:'Which sentence uses RAVENOUS as a metaphor?',a:'After the drive, hunger was a ravenous wolf inside each cowboy, pacing and snarling.',ch:['After the drive, hunger was a ravenous wolf inside each cowboy, pacing and snarling.','They were as hungry as ravenous wolves.','Hunger tore at them like wolves at their insides.','They felt ravenous, as if wolves were pulling at them.'],hint:'Think: calling hunger directly a wolf living inside a person'},
+  {type:'metaphor',word:'realistic',q:'Which sentence uses REALISTIC as a metaphor?',a:'Nat Love\'s autobiography is a realistic window into the true West that movies never show.',ch:['Nat Love\'s autobiography is a realistic window into the true West that movies never show.','His autobiography was as realistic as looking through a window.','It gave a realistic view like a clear window on history.','His book was realistic and gave a clear picture of the West.'],hint:'Think: calling the book directly a window through which truth is seen'},
+  {type:'metaphor',word:'soothe',q:'Which sentence uses SOOTHE as a metaphor?',a:'The cowboy\'s low humming was a warm blanket that soothed the whole herd into stillness.',ch:['The cowboy\'s low humming was a warm blanket that soothed the whole herd into stillness.','His humming soothed them like a warm blanket.','The humming was as soothing as a warm blanket.','His singing calmed the cattle and kept them quiet.'],hint:'Think: calling the humming directly a warm blanket without using like or as'},
+  {type:'metaphor',word:'stampede',q:'Which sentence uses STAMPEDE as a metaphor?',a:'The news of gold was a stampede of excitement that swept through every town on the frontier.',ch:['The news of gold was a stampede of excitement that swept through every town on the frontier.','The news spread like a stampede of excitement.','The excitement was as fast as a stampede.','News of gold spread quickly and got everyone excited.'],hint:'Think: calling the spread of exciting news directly a stampede'},
+  {type:'metaphor',word:'veteran',q:'Which sentence uses VETERAN as a metaphor?',a:'Bill Pickett was the veteran anchor of the Wild West Show, the one the audience always came to see.',ch:['Bill Pickett was the veteran anchor of the Wild West Show, the one the audience always came to see.','Bill Pickett was like a veteran anchor of the show.','He was as experienced as an anchor holding a ship.','Bill Pickett had experience like a reliable anchor at sea.'],hint:'Think: calling a person directly an anchor that keeps everything steady'},
+  {type:'metaphor',word:'brawl',q:'Which sentence is a metaphor using BRAWL?',a:'The rodeo arena was a brawl between man and beast, a daily battle of nerves and skill.',ch:['The rodeo arena was a brawl between man and beast, a daily battle of nerves and skill.','The rodeo was like a brawl between two forces.','Competing in the rodeo was as rough as a brawl.','The rodeo involved fights between riders and animals.'],hint:'Think: calling the entire rodeo directly a brawl, equating sport with conflict'},
+  {type:'metaphor',word:'casual',q:'Which sentence is a metaphor using CASUAL?',a:'The vaquero\'s riding style was a casual river, always moving forward but never in a hurry.',ch:['The vaquero\'s riding style was a casual river, always moving forward but never in a hurry.','He rode casually like a slow, peaceful river.','His style was as casual as a river at low water.','The vaquero rode without any hurry or urgency.'],hint:'Think: calling a style of riding directly a slow, unhurried river'},
+  {type:'metaphor',word:'constant',q:'Which sentence is a metaphor using CONSTANT?',a:'The night watch over the cattle was a constant heartbeat, the pulse that kept the drive alive.',ch:['The night watch over the cattle was a constant heartbeat, the pulse that kept the drive alive.','The watch continued like a heartbeat through the night.','The watch was as constant as a beating heart.','Cowboys watched the herd steadily through the night.'],hint:'Think: calling the night watch directly a heartbeat that sustains life'},
+  {type:'metaphor',word:'excel',q:'Which sentence is a metaphor using EXCEL?',a:'At roping, the best cowboys were eagles — they excelled in the open air as if born to it.',ch:['At roping, the best cowboys were eagles — they excelled in the open air as if born to it.','The best cowboys were like eagles when they roped.','They excelled as if they were eagles in the sky.','The cowboys were as skilled as eagles soaring high.'],hint:'Think: directly calling the cowboys eagles that excel in their element'},
+  {type:'metaphor',word:'exhaust',q:'Which sentence is a metaphor using EXHAUST?',a:'The sun was the great exhaust of the cattle drive, draining every rider by noon.',ch:['The sun was the great exhaust of the cattle drive, draining every rider by noon.','"The sun drained them like exhaust drains a machine.','The heat of the sun exhausted the riders each day.','The sun was as draining as engine exhaust on a long trip.'],hint:'Think: calling the sun directly the exhaust system that drains everything'},
+  {type:'metaphor',word:'hardy',q:'Which sentence is a metaphor using HARDY?',a:'The cowboys were hardy roots sunk deep into the prairie, impossible to pull up.',ch:['The cowboys were hardy roots sunk deep into the prairie, impossible to pull up.','The cowboys were as hardy as roots in the earth.','They were like hardy roots that could not be removed.','The cowboys survived hardship as roots survive drought.'],hint:'Think: calling the cowboys directly roots — buried, strong, and immovable'},
+  {type:'metaphor',word:'mediocre',q:'Which sentence is a metaphor using MEDIOCRE?',a:'A mediocre cowboy was driftwood — carried along by the drive without ever cutting its own path.',ch:['A mediocre cowboy was driftwood — carried along by the drive without ever cutting its own path.','A mediocre cowboy drifted like wood on a river.','He was as mediocre as driftwood floating downstream.','An average cowboy was carried along without steering.'],hint:'Think: calling a mediocre person directly a piece of driftwood'},
+  {type:'metaphor',word:'monotonous',q:'Which sentence is a metaphor using MONOTONOUS?',a:'The cattle trail was a monotonous song with only one verse, played from dawn to dusk.',ch:['The cattle trail was a monotonous song with only one verse, played from dawn to dusk.','The trail was as monotonous as a song with one verse.','The trail felt like a boring, repetitive song.','Nothing changed on the trail, as if the same song played.'],hint:'Think: calling the trail directly a song with no variation'},
+  {type:'metaphor',word:'originate',q:'Which sentence is a metaphor using ORIGINATE?',a:'The rodeo was a flower that originated from the seeds planted by the vaqueros.',ch:['The rodeo was a flower that originated from the seeds planted by the vaqueros.','The rodeo originated like a flower growing from a seed.','The rodeo grew like a flower from the vaquero tradition.','The rodeo started with the vaqueros as a flower starts from a seed.'],hint:'Think: calling the rodeo directly a flower that grew from planted seeds'},
+  {type:'metaphor',word:'punctuate',q:'Which sentence is a metaphor using PUNCTUATE?',a:'The sheriff\'s boots were punctuation marks on the wooden floor, each step announcing arrival.',ch:['The sheriff\'s boots were punctuation marks on the wooden floor, each step announcing arrival.','His boots were like punctuation marks on the floor.','His footsteps were as sharp as punctuation marks.','His walking was punctuated by the sound of his boots.'],hint:'Think: calling the boot sounds directly punctuation marks in a sentence'},
+  {type:'metaphor',word:'ravenous',q:'Which sentence is a metaphor using RAVENOUS?',a:'The cattle drive was a ravenous beast that consumed time, energy, and supplies without rest.',ch:['The cattle drive was a ravenous beast that consumed time, energy, and supplies without rest.','The cattle drive consumed everything like a ravenous beast.','The drive was as ravenous as a beast eating all resources.','The drive kept eating up time and supplies relentlessly.'],hint:'Think: calling the cattle drive directly a hungry beast that devours everything'},
+  {type:'metaphor',word:'realistic',q:'Which sentence is a metaphor using REALISTIC?',a:'Nat Love\'s memoir is a realistic mirror held up to the Wild West, reflecting what was actually there.',ch:['Nat Love\'s memoir is a realistic mirror held up to the Wild West, reflecting what was actually there.','His memoir was as realistic as a mirror of the era.','The memoir reflected the Wild West like a realistic mirror.','His writing gave a realistic view of what life was like.'],hint:'Think: calling the memoir directly a mirror that shows truth'},
+  {type:'metaphor',word:'soothe',q:'Which sentence is a metaphor using SOOTHE?',a:'Music was the great soother of the Wild West night, turning nervous cattle into a peaceful herd.',ch:['Music was the great soother of the Wild West night, turning nervous cattle into a peaceful herd.','Music soothed the cattle like a gentle hand.','The music was as soothing as a calm breeze.','Singing soothed the herd and kept them from panicking.'],hint:'Think: calling music directly the great soother — a force that transforms anxiety'},
+  {type:'metaphor',word:'stampede',q:'Which sentence is a metaphor using STAMPEDE?',a:'Social media was a stampede of opinions, each post trampling the one before it.',ch:['Social media was a stampede of opinions, each post trampling the one before it.','Social media moved like a stampede of voices.','Opinions spread as fast as a stampede.','Each new opinion on social media came faster than the last.'],hint:'Think: calling social media directly a stampede — unstoppable, chaotic, destructive'},
+  {type:'metaphor',word:'veteran',q:'Which sentence is a metaphor using VETERAN?',a:'The old trail was a veteran road, worn smooth by a thousand drives and a thousand stories.',ch:['The old trail was a veteran road, worn smooth by a thousand drives and a thousand stories.','The trail was as experienced as a veteran who knew every rock.','The old road was like a veteran who had seen everything.','The trail was well traveled, just as a veteran is experienced.'],hint:'Think: calling a road directly a veteran — shaped by long experience and use'},
+  {type:'metaphor',word:'exhaust',q:'Which sentence is a metaphor using EXHAUST?',a:'Grief was the exhaust of all his energy, leaving only emptiness at the end of the trail.',ch:['Grief was the exhaust of all his energy, leaving only emptiness at the end of the trail.','Grief drained his energy like exhaust drains a machine.','He was exhausted by grief as if by a long journey.','Grief tired him out as if he\'d worked all day.'],hint:'Think: calling grief directly the exhaust — the waste product that leaves nothing useful'},
+  {type:'simile',word:'excel',q:'Complete the simile: The vaquero excelled at roping like ___',a:'a spider spins its web — naturally and without thought',ch:['a spider spins its web — naturally and without thought','a beginner struggles with every knot','a student guesses at every answer','a clock runs down at the end of the day'],hint:'Think: a skill so natural it seems to happen on its own'},
+  {type:'metaphor',word:'casual',q:'Which sentence is a metaphor using CASUAL?',a:'His casual friendship with danger was a loose saddle — comfortable but one wrong move from disaster.',ch:['His casual friendship with danger was a loose saddle — comfortable but one wrong move from disaster.','He treated danger casually like a loose saddle.','His casual attitude was as risky as a loose saddle.','He was casual about danger the way a rider ignores a loose saddle.'],hint:'Think: calling his attitude directly a loose saddle — relaxed but precarious'},
+  {type:'metaphor',word:'originate',q:'Which sentence is a metaphor using ORIGINATE?',a:'Every great rider is a story that originated in dust and determination.',ch:['Every great rider is a story that originated in dust and determination.','Every great rider began like a story starting from nothing.','Riders originate their skills as stories originate from experience.','A great rider starts their journey like a story starting from scratch.'],hint:'Think: calling a rider\'s life directly a story that originated from humble beginnings'},
+  {type:'metaphor',word:'punctuate',q:'Which sentence is a metaphor using PUNCTUATE?',a:'Each rodeo victory was a bold exclamation point that punctuated Nat Love\'s legend.',ch:['Each rodeo victory was a bold exclamation point that punctuated Nat Love\'s legend.','Each victory punctuated his legend like an exclamation point.','His wins were as punctuating as exclamation marks on a page.','Victories interrupted the story of his life like punctuation marks.'],hint:'Think: calling each victory directly a punctuation mark in a life story'},
+  {type:'metaphor',word:'veteran',q:'Which sentence is a metaphor using VETERAN?',a:'The cattle trail itself was a veteran teacher, hardening those who followed it into true cowboys.',ch:['The cattle trail itself was a veteran teacher, hardening those who followed it into true cowboys.','The trail was like a veteran who taught hard lessons.','Following the trail was as educational as learning from a veteran.','The trail taught cowboys as if it were an experienced guide.'],hint:'Think: calling the trail directly a veteran teacher that shapes its students'}
+];
+
+// ── QUIZ STATE ────────────────────────────────────────────────────────────────
+var pool=[],idx=0,score=0,total=0,streak=0,answered=false;
+
+function shuffle(a){var b=a.slice();for(var i=b.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=b[i];b[i]=b[j];b[j]=t;}return b;}
+
+function startQuiz(){
+  pool=shuffle(QUESTIONS).slice(0,20);
+  idx=0;score=0;total=0;streak=0;answered=false;
+  document.getElementById('result-section').style.display='none';
+  document.getElementById('quiz-section').style.display='';
+  renderQuestion();
+}
+
+function renderQuestion(){
+  var q=pool[idx];
+  document.getElementById('progress-bar').style.width=(idx/20*100)+'%';
+  document.getElementById('score-display').textContent='Score: '+score+'/'+total;
+  document.getElementById('streak-display').textContent='Streak: '+streak+' 🔥';
+  var badge=document.getElementById('q-badge');
+  var ts=TYPE_STYLES[q.type];
+  badge.textContent=ts.label;badge.style.color=ts.color;badge.style.background=ts.bg;
+  document.getElementById('q-word').textContent=q.word.toUpperCase();
+  document.getElementById('q-text').textContent=q.q;
+  document.getElementById('hint-text').style.display='none';
+  document.getElementById('hint-text').textContent=q.hint;
+  document.getElementById('hint-btn').style.display='inline-block';
+  document.getElementById('feedback-area').textContent='';
+  document.getElementById('feedback-area').className='';
+  document.getElementById('next-btn').style.display='none';
+  answered=false;
+  var choices=document.getElementById('choices');
+  clearEl(choices);
+  shuffle(q.ch).forEach(function(c){
+    var btn=mk('button','choice-btn',c);
+    btn.addEventListener('click',function(){handleAnswer(c,q,btn);});
+    choices.appendChild(btn);
+  });
+}
+
+function handleAnswer(chosen,q,btn){
+  if(answered)return;
+  answered=true;total++;
+  document.getElementById('choices').querySelectorAll('.choice-btn').forEach(function(b){
+    b.disabled=true;
+    if(b.textContent===q.a)b.classList.add('correct');
+  });
+  var fb=document.getElementById('feedback-area');
+  if(chosen===q.a){
+    score++;streak++;btn.classList.add('correct');
+    fb.textContent='Correct! ⭐';fb.className='correct';
+    burst(btn,true);if(streak>=3)confetti();
+  }else{
+    streak=0;btn.classList.add('wrong');
+    fb.textContent='Not quite — the answer is: '+q.a;fb.className='wrong';
+    burst(btn,false);
+  }
+  document.getElementById('score-display').textContent='Score: '+score+'/'+total;
+  document.getElementById('streak-display').textContent='Streak: '+streak+' 🔥';
+  document.getElementById('next-btn').style.display='inline-block';
+}
+
+function nextQuestion(){idx++;if(idx>=20){showResult();return;}renderQuestion();}
+
+function showResult(){
+  document.getElementById('quiz-section').style.display='none';
+  var rs=document.getElementById('result-section');rs.style.display='block';
+  document.getElementById('final-score').textContent=score+'/20';
+  var pct=score/20,msg='';
+  if(pct>=.9)msg='Outstanding! Ride tall, cowboy! 🌟';
+  else if(pct>=.7)msg='Great job! Keep wrangling those words! 🤠';
+  else if(pct>=.5)msg='Good effort! Review and try again! 📚';
+  else msg='Keep practicing — every trail boss had to start somewhere! 💪';
+  document.getElementById('result-msg').textContent=msg;
+}
+
+function showHint(){
+  document.getElementById('hint-text').textContent=pool[idx].hint;
+  document.getElementById('hint-text').style.display='inline';
+  document.getElementById('hint-btn').style.display='none';
+}
+
+// ── FLASHCARD STATE ──────────────────────────────────────────────────────────
+var fcWords=[],fcIdx=0;
+function initFlashcards(){fcWords=WORDS.slice();fcIdx=0;renderCard();}
+function renderCard(){
+  var w=fcWords[fcIdx];
+  document.getElementById('fc-word').textContent=w.word;
+  document.getElementById('fc-pos').textContent=w.pos;
+  document.getElementById('fc-def').textContent=w.def;
+  document.getElementById('fc-ex').textContent=w.ex;
+  document.getElementById('fc-counter').textContent=(fcIdx+1)+' / '+fcWords.length;
+  document.getElementById('fc-card').classList.remove('flipped');
+}
+function fcFlip(){document.getElementById('fc-card').classList.toggle('flipped');}
+function fcNext(){fcIdx=(fcIdx+1)%fcWords.length;renderCard();}
+function fcPrev(){fcIdx=(fcIdx-1+fcWords.length)%fcWords.length;renderCard();}
+function fcShuffle(){fcWords=shuffle(fcWords);fcIdx=0;renderCard();}
+
+// ── MODE SWITCHING ────────────────────────────────────────────────────────────
+function showMode(mode){
+  var qs=document.getElementById('quiz-section');
+  var fs=document.getElementById('flashcard-section');
+  var rs=document.getElementById('result-section');
+  var tq=document.getElementById('tab-quiz');
+  var tf=document.getElementById('tab-flash');
+  if(mode==='quiz'){
+    fs.style.display='none';rs.style.display='none';qs.style.display='';
+    tq.classList.add('active');tf.classList.remove('active');
+  }else{
+    qs.style.display='none';rs.style.display='none';fs.style.display='';
+    tf.classList.add('active');tq.classList.remove('active');
+    initFlashcards();
+  }
+}
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+function clearEl(el){while(el.firstChild)el.removeChild(el.firstChild);}
+function mk(tag,cls,txt){var el=document.createElement(tag);if(cls)el.className=cls;if(txt!==undefined)el.textContent=txt;return el;}
+
+function burst(el,correct){
+  var rect=el.getBoundingClientRect();
+  var cx=rect.left+rect.width/2,cy=rect.top+rect.height/2;
+  var colors=correct?['#fbbf24','#d97706','#fcd34d','#f59e0b']:['#ef4444','#fca5a5','#dc2626'];
+  for(var i=0;i<10;i++){
+    var p=document.createElement('div');p.className='particle';
+    var angle=Math.random()*Math.PI*2,dist=40+Math.random()*50;
+    p.style.cssText='left:'+cx+'px;top:'+cy+'px;width:8px;height:8px;background:'+colors[Math.floor(Math.random()*colors.length)]+';--dx:'+Math.cos(angle)*dist+'px;--dy:'+Math.sin(angle)*dist+'px;';
+    document.body.appendChild(p);
+    setTimeout(function(pp){document.body.removeChild(pp);},800,p);
+  }
+}
+function confetti(){
+  var colors=['#fbbf24','#d97706','#f59e0b','#f472b6','#a78bfa','#34d399'];
+  for(var i=0;i<22;i++){
+    var c=document.createElement('div');c.className='confetti-piece';
+    var x=Math.random()*window.innerWidth,size=6+Math.random()*8;
+    var dx=(Math.random()-.5)*120,dy=-(80+Math.random()*120);
+    c.style.cssText='left:'+x+'px;top:'+(-size)+'px;width:'+size+'px;height:'+size+'px;background:'+colors[Math.floor(Math.random()*colors.length)]+';border-radius:'+Math.random()*4+'px;--dx:'+dx+'px;--dy:'+dy+'px;';
+    document.body.appendChild(c);
+    setTimeout(function(cc){document.body.removeChild(cc);},1000,c);
+  }
+}
+
+startQuiz();
+</script>
+</body>
+</html>

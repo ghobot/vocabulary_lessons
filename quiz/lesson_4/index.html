@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wordly Wise — Lesson 4: A Different Way to Fly</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#07101f;color:#e8e8f0;min-height:100vh;overflow-x:hidden}
+canvas#stars{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.screen{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+.screen.hidden{display:none}
+#home-link{position:fixed;top:14px;left:18px;z-index:100;color:#fbbf24;text-decoration:none;font-size:14px;background:rgba(30,20,5,.7);padding:6px 14px;border-radius:20px;border:1px solid #d97706;transition:background .2s}
+#home-link:hover{background:rgba(217,119,6,.3)}
+
+/* START */
+.start-card{background:rgba(10,15,30,.88);border:1px solid #d97706;border-radius:24px;padding:48px 40px;max-width:540px;width:100%;text-align:center;box-shadow:0 0 60px rgba(251,191,36,.2)}
+.start-card h1{font-size:2.4rem;font-weight:800;background:linear-gradient(135deg,#fbbf24,#60a5fa,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+.start-card .subtitle{color:#94a3b8;margin-bottom:28px;font-size:1rem}
+.start-card p{color:#cbd5e1;line-height:1.7;margin-bottom:32px;font-size:.97rem}
+.btn{display:inline-block;padding:13px 34px;border-radius:50px;border:none;cursor:pointer;font-size:1rem;font-weight:700;transition:transform .15s,box-shadow .15s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.btn-primary{background:linear-gradient(135deg,#b45309,#d97706);color:#fff;box-shadow:0 4px 18px rgba(217,119,6,.5)}
+.btn-secondary{background:rgba(10,15,30,.8);color:#fbbf24;border:1px solid #d97706;margin-top:14px}
+.btn-sm{padding:8px 20px;font-size:.85rem}
+
+/* QUIZ */
+.quiz-wrap{max-width:680px;width:100%}
+.progress-bar-outer{background:rgba(255,255,255,.08);border-radius:10px;height:8px;margin-bottom:20px;overflow:hidden}
+.progress-bar-inner{height:100%;border-radius:10px;background:linear-gradient(90deg,#d97706,#60a5fa);transition:width .4s}
+.q-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.q-counter{color:#94a3b8;font-size:.9rem}
+.streak-badge{background:rgba(251,191,36,.15);border:1px solid #f59e0b;color:#fbbf24;border-radius:20px;padding:4px 12px;font-size:.8rem;font-weight:700}
+.type-badge{border-radius:20px;padding:4px 14px;font-size:.78rem;font-weight:700;display:inline-block;margin-bottom:14px}
+.q-text{font-size:1.2rem;font-weight:600;color:#e2e8f0;line-height:1.6;margin-bottom:24px}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.choice-btn{background:rgba(10,15,30,.7);border:1.5px solid rgba(217,119,6,.4);border-radius:14px;padding:14px 18px;color:#e2e8f0;font-size:.95rem;cursor:pointer;transition:all .15s;text-align:left}
+.choice-btn:hover:not(:disabled){background:rgba(217,119,6,.2);border-color:#d97706}
+.choice-btn.correct{background:rgba(16,185,129,.2);border-color:#10b981;color:#6ee7b7}
+.choice-btn.wrong{background:rgba(239,68,68,.2);border-color:#ef4444;color:#fca5a5}
+.hint-text{color:#94a3b8;font-size:.85rem;font-style:italic;margin-top:6px;min-height:20px}
+
+/* RESULTS */
+.results-card{background:rgba(10,15,30,.88);border:1px solid #d97706;border-radius:24px;padding:40px 36px;max-width:620px;width:100%;text-align:center}
+.score-ring{width:120px;height:120px;border-radius:50%;margin:0 auto 20px;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:800;border:4px solid #d97706;background:rgba(217,119,6,.12)}
+.breakdown{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:20px 0}
+.bd-chip{border-radius:20px;padding:5px 14px;font-size:.8rem;font-weight:600}
+.review-list{margin-top:24px;text-align:left;max-height:280px;overflow-y:auto}
+.review-item{background:rgba(255,255,255,.05);border-radius:10px;padding:10px 14px;margin-bottom:8px;font-size:.85rem;line-height:1.5}
+.review-item .ri-q{color:#94a3b8}
+.review-item .ri-a{color:#6ee7b7;font-weight:600}
+.review-item .ri-yours{color:#fca5a5}
+.results-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:24px}
+
+/* FLASHCARDS */
+.fc-wrap{max-width:540px;width:100%;display:flex;flex-direction:column;align-items:center}
+.fc-wrap h2{font-size:1.5rem;font-weight:700;color:#fbbf24;margin-bottom:6px}
+.fc-count{color:#64748b;font-size:.85rem;margin-bottom:24px}
+.fc-scene{width:100%;max-width:420px;height:260px;perspective:1000px;cursor:pointer;margin-bottom:20px}
+.fc-card{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.4,0,.2,1)}
+.fc-card.flipped{transform:rotateY(180deg)}
+.fc-face{position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center}
+.fc-front{background:linear-gradient(135deg,rgba(180,83,9,.35),rgba(217,119,6,.2));border:1.5px solid #d97706}
+.fc-back{background:linear-gradient(135deg,rgba(30,64,175,.4),rgba(96,165,250,.15));border:1.5px solid #60a5fa;transform:rotateY(180deg)}
+#fc-word{font-size:2rem;font-weight:800;color:#e2e8f0}
+#fc-pos{font-size:.85rem;color:#fbbf24;margin-top:6px}
+#fc-flip-hint{font-size:.75rem;color:#64748b;margin-top:14px}
+#fc-def{font-size:.95rem;color:#bfdbfe;line-height:1.6}
+#fc-example{font-size:.82rem;color:#93c5fd;font-style:italic;margin-top:10px}
+.fc-nav{display:flex;align-items:center;gap:18px}
+.fc-nav button{background:rgba(217,119,6,.3);border:1.5px solid #d97706;color:#fbbf24;border-radius:50%;width:42px;height:42px;font-size:1.2rem;cursor:pointer;transition:background .15s}
+.fc-nav button:hover{background:rgba(217,119,6,.6)}
+.fc-nav span{color:#94a3b8;font-size:.9rem;min-width:70px;text-align:center}
+.fc-progress{width:100%;background:rgba(255,255,255,.08);border-radius:10px;height:6px;margin-top:18px;overflow:hidden}
+.fc-progress-inner{height:100%;background:linear-gradient(90deg,#d97706,#60a5fa);transition:width .35s;border-radius:10px}
+
+/* PARTICLES */
+#particle-canvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:200}
+
+@media(max-width:500px){
+.choices{grid-template-columns:1fr}
+.start-card h1{font-size:1.8rem}
+}
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+<canvas id="particle-canvas"></canvas>
+<a href="../index.html" id="home-link">← Home</a>
+
+<!-- START -->
+<div id="screen-start" class="screen">
+  <div class="start-card">
+    <div style="font-size:3rem;margin-bottom:10px">🎈</div>
+    <h1>A Different Way to Fly</h1>
+    <div class="subtitle">Wordly Wise · Lesson 4</div>
+    <p>High above the stadium, a blimp hovers silently — propelled by twin engines, inflated with helium, moored only when the wind demands it. Master 15 words about flight, motion, danger, and the quest to attain the skies.</p>
+    <div>
+      <button class="btn btn-primary" id="btn-start">Begin the Challenge →</button>
+    </div>
+    <div>
+      <button class="btn btn-secondary" id="btn-flash-start">📚 Study Flashcards</button>
+    </div>
+  </div>
+</div>
+
+<!-- QUIZ -->
+<div id="screen-quiz" class="screen hidden">
+  <div class="quiz-wrap">
+    <div class="progress-bar-outer"><div class="progress-bar-inner" id="prog-bar" style="width:0%"></div></div>
+    <div class="q-header">
+      <span class="q-counter" id="q-counter">Question 1 of 20</span>
+      <span class="streak-badge hidden" id="streak-badge">🔥 0 streak</span>
+    </div>
+    <div id="type-badge" class="type-badge"></div>
+    <div class="q-text" id="q-text"></div>
+    <div class="choices" id="choices"></div>
+    <div class="hint-text" id="hint-text"></div>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div id="screen-results" class="screen hidden">
+  <div class="results-card">
+    <div class="score-ring" id="score-ring"></div>
+    <h2 id="results-title" style="margin-bottom:6px;color:#e2e8f0"></h2>
+    <p id="results-msg" style="color:#94a3b8;margin-bottom:4px"></p>
+    <div class="breakdown" id="breakdown"></div>
+    <div class="review-list" id="review-list"></div>
+    <div class="results-btns">
+      <button class="btn btn-primary btn-sm" id="btn-retry">Try Again</button>
+      <button class="btn btn-secondary btn-sm" id="btn-flash-results">📚 Review Flashcards</button>
+    </div>
+  </div>
+</div>
+
+<!-- FLASHCARDS -->
+<div id="screen-flash" class="screen hidden">
+  <div class="fc-wrap">
+    <h2>📚 Lesson 4 Flashcards</h2>
+    <div class="fc-count" id="fc-count">Card 1 of 15</div>
+    <div class="fc-scene" id="fc-scene">
+      <div class="fc-card" id="fc-card">
+        <div class="fc-face fc-front">
+          <div id="fc-word"></div>
+          <div id="fc-pos"></div>
+          <div id="fc-flip-hint">tap to reveal →</div>
+        </div>
+        <div class="fc-face fc-back">
+          <div id="fc-def"></div>
+          <div id="fc-example"></div>
+        </div>
+      </div>
+    </div>
+    <div class="fc-nav">
+      <button id="fc-prev">‹</button>
+      <span id="fc-nav-label">1 / 15</span>
+      <button id="fc-next">›</button>
+    </div>
+    <div class="fc-progress"><div class="fc-progress-inner" id="fc-prog" style="width:6.67%"></div></div>
+    <button class="btn btn-secondary btn-sm" id="btn-fc-back" style="margin-top:22px">← Back</button>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+// ── STARFIELD ──────────────────────────────────────────────────────────────
+var sc=document.getElementById('stars'),ctx=sc.getContext('2d'),W,H,stars=[];
+function initStars(){W=sc.width=window.innerWidth;H=sc.height=window.innerHeight;stars=[];for(var i=0;i<240;i++)stars.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.6+.3,s:Math.random()*.4+.1,b:Math.random()});}
+function drawStars(){ctx.clearRect(0,0,W,H);var g=ctx.createRadialGradient(W*.5,H*.3,0,W*.5,H*.5,W*.8);g.addColorStop(0,'rgba(180,83,9,.12)');g.addColorStop(.4,'rgba(96,165,250,.07)');g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);stars.forEach(function(s){s.b+=s.s*.016;var a=.35+.6*Math.abs(Math.sin(s.b));ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle='rgba(220,210,180,'+a+')';ctx.fill();});requestAnimationFrame(drawStars);}
+window.addEventListener('resize',initStars);initStars();drawStars();
+
+// ── PARTICLES ──────────────────────────────────────────────────────────────
+var pc=document.getElementById('particle-canvas'),pctx=pc.getContext('2d'),particles=[];
+function resizePC(){pc.width=window.innerWidth;pc.height=window.innerHeight;}resizePC();window.addEventListener('resize',resizePC);
+function burst(x,y,color,count){for(var i=0;i<count;i++)particles.push({x:x,y:y,vx:(Math.random()-0.5)*7,vy:(Math.random()-2.5)*6,r:Math.random()*5+2,color:color,life:1,dec:Math.random()*.025+.015});}
+function confettiBurst(){var cols=['#fbbf24','#60a5fa','#f472b6','#34d399','#a78bfa'];for(var i=0;i<90;i++){var c=cols[Math.floor(Math.random()*cols.length)];particles.push({x:Math.random()*pc.width,y:-10,vx:(Math.random()-0.5)*4,vy:Math.random()*4+2,r:Math.random()*6+2,color:c,life:1,dec:Math.random()*.012+.008});}}
+function animParticles(){pctx.clearRect(0,0,pc.width,pc.height);particles=particles.filter(function(p){p.x+=p.vx;p.y+=p.vy;p.vy+=0.12;p.life-=p.dec;if(p.life<=0)return false;pctx.globalAlpha=p.life;pctx.beginPath();pctx.arc(p.x,p.y,p.r,0,Math.PI*2);pctx.fillStyle=p.color;pctx.fill();return true;});pctx.globalAlpha=1;requestAnimationFrame(animParticles);}animParticles();
+
+// ── DOM HELPERS ─────────────────────────────────────────────────────────────
+function clearEl(el){while(el.firstChild)el.removeChild(el.firstChild);}
+function mk(tag,cls,txt){var el=document.createElement(tag);if(cls)el.className=cls;if(txt!==undefined)el.textContent=txt;return el;}
+function show(id){document.getElementById(id).classList.remove('hidden');}
+function hide(id){document.getElementById(id).classList.add('hidden');}
+function $(id){return document.getElementById(id);}
+
+// ── DATA ───────────────────────────────────────────────────────────────────
+var WORDS=[
+  {word:'aloft',pos:'adv.',def:'Up in the air, especially in flight.',ex:'"A strong breeze kept the kites aloft."'},
+  {word:'attain',pos:'v.',def:'1. To reach; to arrive at. 2. To achieve a goal.',ex:'"Redwood trees attain heights of over three hundred feet."'},
+  {word:'buffet',pos:'v./n.',def:'(v.) To pound repeatedly; to batter. (n.) A meal laid out for guests to help themselves, or a storage piece of furniture.',ex:'"High winds and waves buffeted the ship during the storm."'},
+  {word:'elude',pos:'v.',def:'To escape by being quick or clever. Elusive (adj.) means hard to find, capture, or explain.',ex:'"The mouse eluded the cat by slipping through a crack in the wall."'},
+  {word:'flammable',pos:'adj.',def:'Able to catch fire easily.',ex:'"Building materials must be fireproofed so they are not flammable."'},
+  {word:'hover',pos:'v.',def:'To remain in place over an object or location.',ex:'"Hummingbirds hover by beating their wings sixty times a second."'},
+  {word:'inflate',pos:'v.',def:'To fill with air or other gas.',ex:'"Inflate your bike tires to the correct pressure."'},
+  {word:'jeopardy',pos:'n.',def:'Danger. Jeopardize (v.) means to put in danger of loss or injury.',ex:'"Mountaineers who climb without partners put their lives in jeopardy."'},
+  {word:'moor',pos:'v.',def:'To hold in place with ropes or anchors. Mooring (n.) is the place where a vessel is moored.',ex:'"After the sailors moored the boat to the dock, they went ashore."'},
+  {word:'plummet',pos:'v.',def:'To fall suddenly toward the earth or to a lower level; to plunge.',ex:'"We tried not to panic as the apartment elevator plummeted to the basement."'},
+  {word:'pollute',pos:'v.',def:'To make impure or dirty. Pollution (n.) is the state of being polluted.',ex:'"The careless dumping of chemicals caused widespread pollution of the soil."'},
+  {word:'propel',pos:'v.',def:'To push or drive forward.',ex:'"Two engines propelled the speedboat across the lake."'},
+  {word:'stationary',pos:'adj.',def:'1. Not moving. 2. Not changing.',ex:'"A stationary bicycle is used for indoor exercise."'},
+  {word:'superb',pos:'adj.',def:'Of the highest quality; grand; splendid.',ex:'"The view from the mountaintop was superb."'},
+  {word:'swivel',pos:'v./n.',def:'(v.) To turn freely around a fixed point. (n.) A fastening that allows any part joined to it to swing freely.',ex:'"Owls can swivel their heads to look behind them."'}
+];
+
+var TYPE_STYLES={
+  synonym:{label:'Synonym',color:'#60a5fa',bg:'rgba(96,165,250,.15)'},
+  antonym:{label:'Antonym',color:'#f472b6',bg:'rgba(244,114,182,.15)'},
+  analogy:{label:'Analogy',color:'#a78bfa',bg:'rgba(167,139,250,.15)'},
+  simile:{label:'Simile',color:'#34d399',bg:'rgba(52,211,153,.15)'},
+  metaphor:{label:'Metaphor',color:'#fbbf24',bg:'rgba(251,191,36,.15)'}
+};
+
+var QUESTIONS=[
+  // ── SYNONYMS (50) ─────────────────────────────────────────────────────────
+  {type:'synonym',word:'aloft',q:'Which word is closest in meaning to ALOFT?',a:'airborne',ch:['airborne','grounded','sunken','buried'],hint:'Think: up in the air, in flight'},
+  {type:'synonym',word:'aloft',q:'Choose the best synonym for ALOFT.',a:'elevated',ch:['elevated','landed','crashed','anchored'],hint:'Elevated means raised up high'},
+  {type:'synonym',word:'aloft',q:'Select the word most similar to ALOFT.',a:'skyward',ch:['skyward','earthward','downward','inward'],hint:'Skyward means toward the sky'},
+  {type:'synonym',word:'attain',q:'Which word is closest in meaning to ATTAIN?',a:'achieve',ch:['achieve','abandon','lose','miss'],hint:'Think: to succeed in reaching a goal'},
+  {type:'synonym',word:'attain',q:'Choose the best synonym for ATTAIN.',a:'reach',ch:['reach','forfeit','surrender','retreat'],hint:'You reach a height or a goal'},
+  {type:'synonym',word:'attain',q:'Select the word most similar to ATTAIN.',a:'accomplish',ch:['accomplish','fail','drop','neglect'],hint:'Accomplish means to complete successfully'},
+  {type:'synonym',word:'buffet',q:'Which word is closest in meaning to BUFFET (as a verb)?',a:'batter',ch:['batter','protect','shelter','calm'],hint:'Think: to pound or strike repeatedly'},
+  {type:'synonym',word:'buffet',q:'Choose the best synonym for BUFFET (pounding).',a:'pound',ch:['pound','soothe','caress','still'],hint:'To pound is to strike hard and repeatedly'},
+  {type:'synonym',word:'buffet',q:'Select the word most similar to BUFFET (wind hitting).',a:'pummel',ch:['pummel','shield','guard','ease'],hint:'To pummel is to hit hard from many directions'},
+  {type:'synonym',word:'elude',q:'Which word is closest in meaning to ELUDE?',a:'escape',ch:['escape','chase','follow','pursue'],hint:'Think: to get away cleverly'},
+  {type:'synonym',word:'elude',q:'Choose the best synonym for ELUDE.',a:'evade',ch:['evade','confront','face','meet'],hint:'To evade is to avoid or slip away from'},
+  {type:'synonym',word:'elude',q:'Select the word most similar to ELUDE.',a:'dodge',ch:['dodge','capture','catch','seize'],hint:'To dodge is to move quickly to avoid'},
+  {type:'synonym',word:'flammable',q:'Which word is closest in meaning to FLAMMABLE?',a:'combustible',ch:['combustible','fireproof','soaked','frozen'],hint:'Combustible means able to catch fire'},
+  {type:'synonym',word:'flammable',q:'Choose the best synonym for FLAMMABLE.',a:'ignitable',ch:['ignitable','flame-resistant','waterproof','solid'],hint:'Ignitable means it can be set on fire'},
+  {type:'synonym',word:'hover',q:'Which word is closest in meaning to HOVER?',a:'float',ch:['float','plummet','sink','crash'],hint:'Think: staying in one place in the air'},
+  {type:'synonym',word:'hover',q:'Choose the best synonym for HOVER.',a:'linger',ch:['linger','plunge','drop','dive'],hint:'To linger is to stay in one place'},
+  {type:'synonym',word:'hover',q:'Select the word most similar to HOVER.',a:'suspend',ch:['suspend','fall','land','descend'],hint:'Suspend means to hang in place'},
+  {type:'synonym',word:'inflate',q:'Which word is closest in meaning to INFLATE?',a:'expand',ch:['expand','deflate','shrink','collapse'],hint:'Think: to fill with air and make larger'},
+  {type:'synonym',word:'inflate',q:'Choose the best synonym for INFLATE.',a:'pump up',ch:['pump up','let out','flatten','compress'],hint:'Pumping up fills something with air'},
+  {type:'synonym',word:'jeopardy',q:'Which word is closest in meaning to JEOPARDY?',a:'danger',ch:['danger','safety','security','shelter'],hint:'Think: being at risk of harm'},
+  {type:'synonym',word:'jeopardy',q:'Choose the best synonym for JEOPARDY.',a:'peril',ch:['peril','refuge','haven','comfort'],hint:'Peril means serious and immediate danger'},
+  {type:'synonym',word:'jeopardy',q:'Select the word most similar to JEOPARDY.',a:'risk',ch:['risk','guarantee','certainty','protection'],hint:'Risk means the possibility of loss or harm'},
+  {type:'synonym',word:'moor',q:'Which word is closest in meaning to MOOR?',a:'anchor',ch:['anchor','release','launch','free'],hint:'Think: to hold a vessel in place'},
+  {type:'synonym',word:'moor',q:'Choose the best synonym for MOOR.',a:'secure',ch:['secure','cast off','untie','let drift'],hint:'To secure something is to hold it firmly in place'},
+  {type:'synonym',word:'plummet',q:'Which word is closest in meaning to PLUMMET?',a:'plunge',ch:['plunge','soar','ascend','climb'],hint:'Think: to fall suddenly and fast'},
+  {type:'synonym',word:'plummet',q:'Choose the best synonym for PLUMMET.',a:'nosedive',ch:['nosedive','glide','hover','rise'],hint:'A nosedive is a steep, sudden fall'},
+  {type:'synonym',word:'plummet',q:'Select the word most similar to PLUMMET.',a:'drop',ch:['drop','float','drift','sail'],hint:'To drop is to fall downward'},
+  {type:'synonym',word:'pollute',q:'Which word is closest in meaning to POLLUTE?',a:'contaminate',ch:['contaminate','purify','clean','filter'],hint:'Think: to make impure or dirty'},
+  {type:'synonym',word:'pollute',q:'Choose the best synonym for POLLUTE.',a:'taint',ch:['taint','cleanse','purge','restore'],hint:'To taint is to introduce impurity'},
+  {type:'synonym',word:'propel',q:'Which word is closest in meaning to PROPEL?',a:'drive',ch:['drive','brake','halt','stop'],hint:'Think: to push or thrust forward'},
+  {type:'synonym',word:'propel',q:'Choose the best synonym for PROPEL.',a:'thrust',ch:['thrust','stall','slow','reverse'],hint:'Thrust pushes something forward with force'},
+  {type:'synonym',word:'propel',q:'Select the word most similar to PROPEL.',a:'launch',ch:['launch','anchor','moor','restrain'],hint:'To launch is to send something forward'},
+  {type:'synonym',word:'stationary',q:'Which word is closest in meaning to STATIONARY?',a:'motionless',ch:['motionless','moving','spinning','drifting'],hint:'Think: not moving at all'},
+  {type:'synonym',word:'stationary',q:'Choose the best synonym for STATIONARY.',a:'fixed',ch:['fixed','mobile','dynamic','active'],hint:'Fixed means not moving from one place'},
+  {type:'synonym',word:'superb',q:'Which word is closest in meaning to SUPERB?',a:'excellent',ch:['excellent','terrible','poor','mediocre'],hint:'Think: of the highest quality'},
+  {type:'synonym',word:'superb',q:'Choose the best synonym for SUPERB.',a:'magnificent',ch:['magnificent','awful','inferior','dreadful'],hint:'Magnificent means splendidly impressive'},
+  {type:'synonym',word:'superb',q:'Select the word most similar to SUPERB.',a:'outstanding',ch:['outstanding','ordinary','average','typical'],hint:'Outstanding means much better than average'},
+  {type:'synonym',word:'swivel',q:'Which word is closest in meaning to SWIVEL?',a:'rotate',ch:['rotate','lock','freeze','fix'],hint:'Think: to turn around a fixed point'},
+  {type:'synonym',word:'swivel',q:'Choose the best synonym for SWIVEL.',a:'pivot',ch:['pivot','clamp','bolt','pin'],hint:'To pivot is to rotate around a central point'},
+  {type:'synonym',word:'elude',q:'A criminal who ELUDES police is one who ___.',a:'escapes them',ch:['escapes them','surrenders to them','faces them','fights them'],hint:'Eluding means getting away cleverly'},
+  {type:'synonym',word:'hover',q:'A drone that HOVERS is one that ___.',a:'stays in one place in the air',ch:['stays in one place in the air','crashes to the ground','flies in a straight line','glides downward'],hint:'Hovering means suspended in place'},
+  {type:'synonym',word:'inflate',q:'To INFLATE a balloon means to ___.',a:'fill it with air',ch:['fill it with air','pop it','squeeze it','flatten it'],hint:'Inflation fills with gas'},
+  {type:'synonym',word:'moor',q:'To MOOR a blimp means to ___.',a:'tie it to a mast',ch:['tie it to a mast','release it into the sky','repair its envelope','inflate its gas bag'],hint:'Mooring holds the blimp in place on the ground'},
+  {type:'synonym',word:'attain',q:'To ATTAIN a top speed of 40 mph means to ___.',a:'reach that speed',ch:['reach that speed','fall below it','stay far under it','never approach it'],hint:'Attain means to arrive at or reach'},
+  {type:'synonym',word:'superb',q:'A SUPERB view from a blimp is ___.',a:'breathtaking',ch:['breathtaking','ordinary','forgettable','disappointing'],hint:'Superb means of the highest quality'},
+  {type:'synonym',word:'flammable',q:'FLAMMABLE materials should be kept away from ___.',a:'fire',ch:['fire','water','air','soil'],hint:'Flammable things ignite when exposed to fire'},
+  {type:'synonym',word:'plummet',q:'Stock prices that PLUMMET are ___.',a:'falling sharply',ch:['falling sharply','rising steadily','staying flat','growing slowly'],hint:'Plummet means a sudden, steep fall'},
+  {type:'synonym',word:'propel',q:'Engines that PROPEL a blimp ___.',a:'push it forward',ch:['push it forward','keep it stationary','pull it downward','hold it back'],hint:'Propel means to move something forward'},
+  {type:'synonym',word:'pollute',q:'Factories that POLLUTE the air make it ___.',a:'dirty and harmful',ch:['dirty and harmful','clean and fresh','pure and safe','clear and bright'],hint:'Pollution makes things impure'},
+  {type:'synonym',word:'buffet',q:'Strong winds that BUFFET a tent ___.',a:'pound it from all sides',ch:['pound it from all sides','shelter it gently','lift it softly','cool it down'],hint:'Buffeting involves repeated, battering impact'},
+
+  // ── ANTONYMS (35) ─────────────────────────────────────────────────────────
+  {type:'antonym',word:'aloft',q:'What is the ANTONYM (opposite) of ALOFT?',a:'grounded',ch:['grounded','airborne','flying','elevated'],hint:'The opposite of up in the air is back on the ground'},
+  {type:'antonym',word:'aloft',q:'Choose the word most OPPOSITE to ALOFT.',a:'earthbound',ch:['earthbound','skyward','airborne','lofty'],hint:'Earthbound means unable to leave the ground'},
+  {type:'antonym',word:'attain',q:'What is the ANTONYM of ATTAIN?',a:'fail',ch:['fail','achieve','reach','accomplish'],hint:'The opposite of reaching a goal is failing to'},
+  {type:'antonym',word:'attain',q:'Choose the word most OPPOSITE to ATTAIN.',a:'miss',ch:['miss','grasp','gain','secure'],hint:'To miss a goal is the opposite of attaining it'},
+  {type:'antonym',word:'elude',q:'What is the ANTONYM of ELUDE?',a:'confront',ch:['confront','escape','dodge','avoid'],hint:'The opposite of escaping is facing something directly'},
+  {type:'antonym',word:'elude',q:'Choose the word most OPPOSITE to ELUDE.',a:'surrender',ch:['surrender','dodge','flee','slip away'],hint:'Surrendering is the opposite of cleverly escaping'},
+  {type:'antonym',word:'flammable',q:'What is the ANTONYM of FLAMMABLE?',a:'fireproof',ch:['fireproof','combustible','ignitable','burnable'],hint:'Fireproof materials cannot catch fire'},
+  {type:'antonym',word:'hover',q:'What is the ANTONYM of HOVER?',a:'plummet',ch:['plummet','float','suspend','linger'],hint:'The opposite of hanging in place is falling fast'},
+  {type:'antonym',word:'hover',q:'Choose the word most OPPOSITE to HOVER.',a:'land',ch:['land','float','drift','remain'],hint:'Landing ends hovering'},
+  {type:'antonym',word:'inflate',q:'What is the ANTONYM of INFLATE?',a:'deflate',ch:['deflate','expand','fill','pump up'],hint:'Deflating lets the air out'},
+  {type:'antonym',word:'inflate',q:'Choose the word most OPPOSITE to INFLATE.',a:'collapse',ch:['collapse','expand','swell','grow'],hint:'Collapsing is the opposite of filling with air'},
+  {type:'antonym',word:'jeopardy',q:'What is the ANTONYM of JEOPARDY?',a:'safety',ch:['safety','peril','danger','risk'],hint:'Safety is freedom from danger'},
+  {type:'antonym',word:'jeopardy',q:'Choose the word most OPPOSITE to JEOPARDY.',a:'security',ch:['security','hazard','threat','jeopardy'],hint:'Security means being protected from harm'},
+  {type:'antonym',word:'moor',q:'What is the ANTONYM of MOOR?',a:'release',ch:['release','anchor','tie','secure'],hint:'Releasing sets the blimp free from its mooring'},
+  {type:'antonym',word:'plummet',q:'What is the ANTONYM of PLUMMET?',a:'soar',ch:['soar','drop','fall','plunge'],hint:'To soar is to rise high into the sky'},
+  {type:'antonym',word:'plummet',q:'Choose the word most OPPOSITE to PLUMMET.',a:'ascend',ch:['ascend','nosedive','sink','crash'],hint:'To ascend is to move upward'},
+  {type:'antonym',word:'pollute',q:'What is the ANTONYM of POLLUTE?',a:'purify',ch:['purify','contaminate','taint','dirty'],hint:'To purify is to make clean and clear'},
+  {type:'antonym',word:'pollute',q:'Choose the word most OPPOSITE to POLLUTE.',a:'cleanse',ch:['cleanse','infect','corrupt','ruin'],hint:'To cleanse removes all impurity'},
+  {type:'antonym',word:'propel',q:'What is the ANTONYM of PROPEL?',a:'halt',ch:['halt','launch','drive','thrust'],hint:'Halting stops what propelling started'},
+  {type:'antonym',word:'stationary',q:'What is the ANTONYM of STATIONARY?',a:'moving',ch:['moving','still','fixed','frozen'],hint:'The opposite of not moving is moving'},
+  {type:'antonym',word:'stationary',q:'Choose the word most OPPOSITE to STATIONARY.',a:'mobile',ch:['mobile','motionless','static','frozen'],hint:'Mobile means capable of moving'},
+  {type:'antonym',word:'superb',q:'What is the ANTONYM of SUPERB?',a:'terrible',ch:['terrible','excellent','outstanding','magnificent'],hint:'The opposite of the highest quality'},
+  {type:'antonym',word:'superb',q:'Choose the word most OPPOSITE to SUPERB.',a:'mediocre',ch:['mediocre','splendid','superb','grand'],hint:'Mediocre means only average quality'},
+  {type:'antonym',word:'swivel',q:'What is the ANTONYM of SWIVEL (as a verb)?',a:'lock in place',ch:['lock in place','rotate','turn','spin'],hint:'Locking prevents any turning movement'},
+  {type:'antonym',word:'elude',q:'The criminal could not ___ police — he was captured, not eluded.',a:'escape',ch:['escape','dodge','flee','evade'],hint:'Capture is the opposite of eluding'},
+  {type:'antonym',word:'inflate',q:'After the party, all the balloons were ___ — the opposite of inflated.',a:'deflated',ch:['deflated','pumped up','full','swollen'],hint:'Deflated means the air has escaped'},
+  {type:'antonym',word:'jeopardy',q:'The passengers felt ___, not jeopardy, when told the flight was safe.',a:'secure',ch:['secure','threatened','worried','endangered'],hint:'No danger means security'},
+  {type:'antonym',word:'aloft',q:'The blimp that had been aloft all day finally came ___ at sunset.',a:'down',ch:['down','higher','faster','further'],hint:'Down is the opposite direction from aloft'},
+  {type:'antonym',word:'propel',q:'Without fuel, the engines could not propel the blimp — it ___ to a stop.',a:'slowed',ch:['slowed','sped up','launched','accelerated'],hint:'Without propulsion, movement stops'},
+  {type:'antonym',word:'hover',q:'The hawk stopped hovering and began to ___ toward its prey.',a:'plummet',ch:['plummet','float','drift','linger'],hint:'Plummeting is the opposite of hovering'},
+  {type:'antonym',word:'superb',q:'The meal was not superb at all — it was completely ___.',a:'mediocre',ch:['mediocre','magnificent','excellent','superb'],hint:'Mediocre means disappointingly ordinary'},
+  {type:'antonym',word:'stationary',q:'The blimp platform must be stationary for filming, not ___.',a:'mobile',ch:['mobile','fixed','still','frozen'],hint:'Moving is the opposite of stationary'},
+  {type:'antonym',word:'plummet',q:'Temperatures that ___ are the opposite of temperatures that plummet.',a:'soar',ch:['soar','drop','crash','sink'],hint:'Soaring means rising high, not falling'},
+  {type:'antonym',word:'pollute',q:'We want to ___ the river, not pollute it further.',a:'clean',ch:['clean','dirty','taint','infect'],hint:'Cleaning reverses pollution'},
+  {type:'antonym',word:'moor',q:'The crew chose to ___ the blimp rather than moor it for the night.',a:'release',ch:['release','anchor','tie down','secure'],hint:'Releasing is the opposite of mooring'},
+
+  // ── ANALOGIES (40) ─────────────────────────────────────────────────────────
+  {type:'analogy',word:'inflate',q:'INFLATE is to DEFLATE as RISE is to ___.',a:'fall',ch:['fall','soar','climb','ascend'],hint:'Inflate and deflate are opposites; rise and ___ are opposites'},
+  {type:'analogy',word:'aloft',q:'ALOFT is to GROUNDED as FLYING is to ___.',a:'landed',ch:['landed','airborne','hovering','drifting'],hint:'Aloft means up in the air; grounded means on the ground'},
+  {type:'analogy',word:'propel',q:'PROPEL is to FORWARD as PLUMMET is to ___.',a:'downward',ch:['downward','upward','sideways','backward'],hint:'Propel drives forward; plummet drives downward'},
+  {type:'analogy',word:'moor',q:'MOOR is to BLIMP as ANCHOR is to ___.',a:'ship',ch:['ship','kite','balloon','airplane'],hint:'You moor a blimp; you anchor a ship'},
+  {type:'analogy',word:'jeopardy',q:'JEOPARDY is to SAFETY as DANGER is to ___.',a:'security',ch:['security','peril','risk','threat'],hint:'Jeopardy and safety are opposites; danger and security are opposites'},
+  {type:'analogy',word:'hover',q:'HOVER is to HUMMINGBIRD as SOAR is to ___.',a:'eagle',ch:['eagle','fish','turtle','worm'],hint:'Hummingbirds hover; eagles soar'},
+  {type:'analogy',word:'superb',q:'SUPERB is to EXCELLENT as TERRIBLE is to ___.',a:'awful',ch:['awful','great','superb','good'],hint:'Superb and excellent are synonyms; terrible and awful are synonyms'},
+  {type:'analogy',word:'elude',q:'ELUDE is to CAPTURE as ESCAPE is to ___.',a:'prison',ch:['prison','freedom','safety','shelter'],hint:'You elude capture; you escape from prison'},
+  {type:'analogy',word:'pollute',q:'POLLUTE is to CLEAN as DESTROY is to ___.',a:'build',ch:['build','ruin','damage','break'],hint:'Polluting makes dirty; building is the opposite of destroying'},
+  {type:'analogy',word:'stationary',q:'STATIONARY is to MOVING as FROZEN is to ___.',a:'flowing',ch:['flowing','still','solid','icy'],hint:'Stationary and moving are opposites; frozen and flowing are opposites'},
+  {type:'analogy',word:'inflate',q:'INFLATE is to BALLOON as FILL is to ___.',a:'tank',ch:['tank','cloud','wind','smoke'],hint:'You inflate a balloon; you fill a tank'},
+  {type:'analogy',word:'plummet',q:'PLUMMET is to GROUND as SOAR is to ___.',a:'sky',ch:['sky','earth','sea','valley'],hint:'Plummeting goes toward the ground; soaring goes toward the sky'},
+  {type:'analogy',word:'attain',q:'ATTAIN is to GOAL as REACH is to ___.',a:'destination',ch:['destination','beginning','start','departure'],hint:'You attain a goal; you reach a destination'},
+  {type:'analogy',word:'buffet',q:'BUFFET is to WIND as BATTER is to ___.',a:'waves',ch:['waves','sunshine','calm','fog'],hint:'Wind buffets things; waves batter them'},
+  {type:'analogy',word:'swivel',q:'SWIVEL is to CHAIR as ROTATE is to ___.',a:'wheel',ch:['wheel','wall','floor','ceiling'],hint:'A chair swivels; a wheel rotates'},
+  {type:'analogy',word:'hover',q:'HOVER is to STATIONARY as PROPEL is to ___.',a:'moving',ch:['moving','still','fixed','grounded'],hint:'Hovering keeps you stationary; propelling makes you moving'},
+  {type:'analogy',word:'flammable',q:'FLAMMABLE is to FIRE as SOLUBLE is to ___.',a:'water',ch:['water','air','soil','metal'],hint:'Flammable things react to fire; soluble things dissolve in water'},
+  {type:'analogy',word:'moor',q:'MOOR is to ANCHOR as PARK is to ___.',a:'curb',ch:['curb','road','highway','lane'],hint:'You moor at an anchor; you park at a curb'},
+  {type:'analogy',word:'aloft',q:'ALOFT is to AIR as AFLOAT is to ___.',a:'water',ch:['water','land','sky','fire'],hint:'Aloft means up in the air; afloat means on the water'},
+  {type:'analogy',word:'jeopardy',q:'JEOPARDY is to MOUNTAINEER as HAZARD is to ___.',a:'driver',ch:['driver','chef','librarian','teacher'],hint:'Mountaineers face jeopardy; drivers face road hazards'},
+  {type:'analogy',word:'propel',q:'PROPEL is to ENGINE as PEDAL is to ___.',a:'bicycle',ch:['bicycle','car','plane','blimp'],hint:'An engine propels a car; pedaling propels a bicycle'},
+  {type:'analogy',word:'superb',q:'SUPERB is to VIEW as EXQUISITE is to ___.',a:'taste',ch:['taste','noise','smell','weight'],hint:'A superb view dazzles the eyes; an exquisite taste pleases the palate'},
+  {type:'analogy',word:'elude',q:'ELUDE is to DETECTIVE as ESCAPE is to ___.',a:'guard',ch:['guard','teacher','doctor','pilot'],hint:'A criminal eludes a detective; a prisoner escapes a guard'},
+  {type:'analogy',word:'inflate',q:'INFLATE is to HELIUM as FILL is to ___.',a:'water',ch:['water','rock','sand','dirt'],hint:'You inflate something with helium; you fill something with water'},
+  {type:'analogy',word:'plummet',q:'PLUMMET is to STOCK PRICE as SURGE is to ___.',a:'wave',ch:['wave','stillness','calm','flatness'],hint:'A stock price can plummet; a wave surges'},
+  {type:'analogy',word:'buffet',q:'BUFFET is to STORM as BAKE is to ___.',a:'heat',ch:['heat','snow','ice','wind'],hint:'A storm buffets; heat bakes'},
+  {type:'analogy',word:'attain',q:'ATTAIN is to ACHIEVEMENT as EARN is to ___.',a:'reward',ch:['reward','loss','failure','mistake'],hint:'You attain an achievement; you earn a reward'},
+  {type:'analogy',word:'pollute',q:'POLLUTE is to ENVIRONMENT as CORRUPT is to ___.',a:'society',ch:['society','water','air','soil'],hint:'Pollution harms the environment; corruption harms society'},
+  {type:'analogy',word:'stationary',q:'STATIONARY is to BLIMP CAMERA as STEADY is to ___.',a:'tripod',ch:['tripod','jet','rocket','kite'],hint:'A blimp platform is stationary for cameras; a tripod holds them steady'},
+  {type:'analogy',word:'hover',q:'HOVER is to HELICOPTER as GLIDE is to ___.',a:'glider',ch:['glider','submarine','canoe','tank'],hint:'Helicopters hover; gliders glide'},
+  {type:'analogy',word:'swivel',q:'SWIVEL is to OWL as TURN is to ___.',a:'dancer',ch:['dancer','rock','mountain','wall'],hint:'Owls can swivel their heads; dancers can turn their bodies'},
+  {type:'analogy',word:'moor',q:'MOOR is to ROPE as FASTEN is to ___.',a:'bolt',ch:['bolt','cloud','wind','wave'],hint:'You moor with a rope; you fasten with a bolt'},
+  {type:'analogy',word:'flammable',q:'FLAMMABLE is to FLAME as FRAGILE is to ___.',a:'impact',ch:['impact','fire','water','wind'],hint:'Flammable things react to flame; fragile things react to impact'},
+  {type:'analogy',word:'jeopardy',q:'JEOPARDY is to HELMETED CYCLIST as SAFETY is to ___.',a:'seatbelt',ch:['seatbelt','speed','distance','fuel'],hint:'A helmet reduces jeopardy; a seatbelt provides safety'},
+  {type:'analogy',word:'superb',q:'SUPERB is to CRAFTSMAN as ELOQUENT is to ___.',a:'speaker',ch:['speaker','builder','swimmer','runner'],hint:'A craftsman can be superb; a speaker can be eloquent'},
+  {type:'analogy',word:'elude',q:'ELUDE is to GRIP as SLIP is to ___.',a:'grasp',ch:['grasp','hold tight','squeeze','clutch'],hint:'When something eludes your grip it slips from your grasp'},
+  {type:'analogy',word:'propel',q:'PROPEL is to JET as PADDLE is to ___.',a:'kayak',ch:['kayak','blimp','kite','balloon'],hint:'Jets propel planes; paddles propel kayaks'},
+  {type:'analogy',word:'inflate',q:'INFLATE is to PRESSURE as HEAT is to ___.',a:'temperature',ch:['temperature','color','weight','shape'],hint:'Inflating adds pressure; heating raises temperature'},
+  {type:'analogy',word:'pollute',q:'POLLUTE is to FACTORY as LITTER is to ___.',a:'pedestrian',ch:['pedestrian','cloud','mountain','river'],hint:'Factories pollute the air; pedestrians litter the ground'},
+  {type:'analogy',word:'plummet',q:'PLUMMET is to ELEVATOR as CRASH is to ___.',a:'aircraft',ch:['aircraft','balloon','kite','cloud'],hint:'An elevator can plummet; an aircraft can crash'},
+
+  // ── SIMILES (35) ─────────────────────────────────────────────────────────
+  {type:'simile',word:'aloft',q:'Which simile best describes something ALOFT?',a:'like a leaf carried high by the wind',ch:['like a leaf carried high by the wind','like a stone sinking in a pond','like a mole digging underground','like an anchor dropped to the sea floor'],hint:'Aloft means up in the air, carried or kept there'},
+  {type:'simile',word:'attain',q:'Which simile best shows what it means to ATTAIN a goal?',a:'like a climber finally touching the summit',ch:['like a climber finally touching the summit','like a runner tripping at the start','like a swimmer going in circles','like a driver lost on a dirt road'],hint:'Attaining means reaching the highest point after effort'},
+  {type:'simile',word:'buffet',q:'Being BUFFETED by a storm is like ___.',a:'being shaken in a tin can by a giant',ch:['being shaken in a tin can by a giant','floating gently on a calm sea','resting under a warm blanket','drifting on a quiet afternoon'],hint:'Buffeting is violent, repeated pounding from all sides'},
+  {type:'simile',word:'elude',q:'A criminal who ELUDES police is like ___.',a:'smoke that slips through every crack',ch:['smoke that slips through every crack','a wall that stands firm','a stone that never moves','a tree rooted in the ground'],hint:'Eluding means escaping every attempt to catch you'},
+  {type:'simile',word:'flammable',q:'FLAMMABLE material near a flame is like ___.',a:'dry paper next to a match — one touch and it is gone',ch:['dry paper next to a match — one touch and it is gone','a stone soaking in a river','a block of ice on a cold shelf','a steel door with a padlock'],hint:'Flammable things ignite instantly when heat is near'},
+  {type:'simile',word:'hover',q:'A blimp HOVERING above the stadium is like ___.',a:'a giant cloud that refused to move',ch:['a giant cloud that refused to move','a stone rolling downhill','a river rushing to the sea','a kite with a broken string falling fast'],hint:'Hovering means staying perfectly still in the air'},
+  {type:'simile',word:'inflate',q:'To INFLATE a blimp is like ___.',a:'blowing life into a sleeping giant',ch:['blowing life into a sleeping giant','deflating a tire on a rainy day','squeezing the air out of a pillow','pressing the lid onto a sealed box'],hint:'Inflating fills something large with air, bringing it to life'},
+  {type:'simile',word:'jeopardy',q:'Being in JEOPARDY is like ___.',a:'standing on ice that is beginning to crack',ch:['standing on ice that is beginning to crack','relaxing on a warm sunny beach','sitting in a comfortable chair at home','walking on a paved path in the park'],hint:'Jeopardy means danger could break through at any moment'},
+  {type:'simile',word:'moor',q:'To MOOR a blimp to a mast is like ___.',a:'tying a giant balloon to a fence post',ch:['tying a giant balloon to a fence post','setting a sailboat free across the ocean','launching a rocket into outer space','releasing a kite into the wind'],hint:'Mooring anchors something large to keep it from drifting'},
+  {type:'simile',word:'plummet',q:'A blimp gondola falling would PLUMMET like ___.',a:'a stone dropped from a cliff',ch:['a stone dropped from a cliff','a feather drifting on a breeze','a leaf floating on still water','a soap bubble rising slowly'],hint:'Plummeting is sudden and fast — like a dropped stone'},
+  {type:'simile',word:'pollute',q:'Factories that POLLUTE the air are like ___.',a:'invisible poison pens writing on the sky',ch:['invisible poison pens writing on the sky','air filters cleaning every breath','gardens adding flowers to the world','rivers carrying fresh water to the sea'],hint:'Pollution silently makes the environment dirty and harmful'},
+  {type:'simile',word:'propel',q:'The engines that PROPEL a blimp are like ___.',a:'two strong arms pushing it through the air',ch:['two strong arms pushing it through the air','two anchors holding it to the ground','two parachutes slowing it down','two weights pulling it back'],hint:'Engines push the blimp forward just as arms push through water'},
+  {type:'simile',word:'stationary',q:'A blimp hovering as a STATIONARY camera platform is like ___.',a:'a tripod bolted to the sky',ch:['a tripod bolted to the sky','a train racing along its track','a ball rolling down a slope','a river rushing toward the sea'],hint:'Stationary means not moving — perfectly still for recording'},
+  {type:'simile',word:'superb',q:'The SUPERB view from a blimp is like ___.',a:'reading a map the size of the whole world',ch:['reading a map the size of the whole world','looking at a blurry photo taken in the dark','peeking through a keyhole','looking at a puddle in a parking lot'],hint:'From aloft, you can see everything laid out below you'},
+  {type:'simile',word:'swivel',q:'An owl that can SWIVEL its head is like ___.',a:'a radar dish that can point in any direction',ch:['a radar dish that can point in any direction','a wall that cannot move','a stone locked in concrete','a tree rooted deep in the soil'],hint:'A swivel allows full rotation — just like a radar dish'},
+  {type:'simile',word:'aloft',q:'A kite kept ALOFT by the wind is like ___.',a:'a dream held up by hope',ch:['a dream held up by hope','a stone sinking in a pond','a ship anchored to the seafloor','a root growing deeper underground'],hint:'Both the kite and the dream float because of an invisible force'},
+  {type:'simile',word:'attain',q:'Attaining a top speed of 40 mph is like ___.',a:'crossing the finish line after a long race',ch:['crossing the finish line after a long race','backing away from the starting blocks','running the wrong direction','stopping in the middle of the track'],hint:'Attaining means reaching a limit after sustained effort'},
+  {type:'simile',word:'buffet',q:'High winds buffeting a blimp are like ___.',a:'a boxer throwing punch after punch at a giant bag',ch:['a boxer throwing punch after punch at a giant bag','a breeze gently pushing a curtain','a fan cooling the room on a summer day','a quiet snowfall blanketing the ground'],hint:'Buffeting is repeated, forceful blows from the wind'},
+  {type:'simile',word:'elude',q:'The elusive Loch Ness monster that ELUDES cameras is like ___.',a:'a shadow that disappears the moment you look at it',ch:['a shadow that disappears the moment you look at it','a mountain standing firm for centuries','a building visible from miles away','a lake that never changes'],hint:'Elusive things vanish just when you think you have them'},
+  {type:'simile',word:'hover',q:'A helicopter HOVERING over the rescue site is like ___.',a:'a guardian angel watching from above',ch:['a guardian angel watching from above','a stone falling toward the river','a leaf swept away by the current','a rocket blasting into orbit'],hint:'Hovering means staying still above, watching over'},
+  {type:'simile',word:'inflate',q:'Inflating the blimp envelope is like ___.',a:'waking a sleeping giant that slowly rises to its feet',ch:['waking a sleeping giant that slowly rises to its feet','squeezing the last drop from a used tube','pressing a flower between heavy books','sharpening a pencil before an exam'],hint:'Inflation fills and lifts the blimp into shape'},
+  {type:'simile',word:'jeopardy',q:'A hiker without water in the desert is in jeopardy like ___.',a:'a fish slowly running out of water',ch:['a fish slowly running out of water','a whale swimming in the deep ocean','a bird soaring in clear sky','a tree rooted in fertile soil'],hint:'Both face danger from the environment around them'},
+  {type:'simile',word:'moor',q:'A blimp moored to a mast in a storm is like ___.',a:'a dog on a leash trying to run free',ch:['a dog on a leash trying to run free','a bird gliding freely on the wind','a fish swimming with the current','a kite soaring with no string attached'],hint:'The blimp pulls against its mooring just like a dog on a leash'},
+  {type:'simile',word:'plummet',q:'Watching a blimp plummet would be like ___.',a:'watching a cloud fall from the sky',ch:['watching a cloud fall from the sky','watching a feather drift upward','watching a sunrise light the horizon','watching a rainbow form after rain'],hint:'A giant thing that should float suddenly drops — that is shocking'},
+  {type:'simile',word:'pollute',q:'Air pollution over a city is like ___.',a:'a gray blanket smothering the sky',ch:['a gray blanket smothering the sky','a clear window letting in sunlight','a fresh breeze from the mountains','a clean filter purifying the air'],hint:'Pollution covers and smothers like a heavy blanket'},
+  {type:'simile',word:'propel',q:'Engines propelling a blimp are like ___.',a:'two oars rowing a giant boat through the air',ch:['two oars rowing a giant boat through the air','two anchors holding it to the ground','two sails catching the wind backward','two weights pulling the nose down'],hint:'Propulsion pushes the blimp forward like oars push a boat'},
+  {type:'simile',word:'stationary',q:'A stationary blimp for filming is like ___.',a:'a lighthouse that never moves',ch:['a lighthouse that never moves','a sailboat racing before the wind','a bicycle speeding downhill','a train thundering along the rails'],hint:'Both are still, fixed positions used to observe or signal'},
+  {type:'simile',word:'superb',q:'A superb blimp ride at low altitude is like ___.',a:'reading the city like a book laid open below you',ch:['reading the city like a book laid open below you','flying blind through thick fog','racing past the ground at top speed','staring at a wall with nothing on it'],hint:'From a slow, low blimp you see everything clearly spread out'},
+  {type:'simile',word:'swivel',q:'The blimp\'s swivel on the mast is like ___.',a:'a compass needle that always finds its direction',ch:['a compass needle that always finds its direction','a wall nailed in place forever','a locked door with no handle','a frozen joint that cannot bend'],hint:'A swivel rotates freely to find the right position'},
+  {type:'simile',word:'flammable',q:'Flammable helium — wait, it is NOT! Hydrogen is like ___.',a:'a sleeping volcano ready to erupt at the first spark',ch:['a sleeping volcano ready to erupt at the first spark','a cool mountain lake on a still morning','a stone wall in a steady rain','a field of grass after a long rain'],hint:'Flammable materials are like dormant dangers waiting to ignite'},
+  {type:'simile',word:'attain',q:'A blimp attaining its cruising altitude is like ___.',a:'a swimmer finally reaching the far end of the pool',ch:['a swimmer finally reaching the far end of the pool','a diver spiraling toward the bottom','a boat anchored in the harbor','a fish hiding under a rock'],hint:'Attaining means reaching the goal after effort'},
+  {type:'simile',word:'elude',q:'Helium eludes the envelope only slowly, like ___.',a:'a secret that barely leaks out over time',ch:['a secret that barely leaks out over time','a flood that bursts through all at once','an alarm that rings immediately','a truth that is obvious from the start'],hint:'Elusive things leave slowly and cleverly, not all at once'},
+  {type:'simile',word:'buffet',q:'Storm winds buffeting the blimp are like ___.',a:'a bully shoving you from every side',ch:['a bully shoving you from every side','a friend gently guiding you home','a breeze cooling your face on a summer walk','a hug on a cold winter morning'],hint:'Buffeting involves repeated, unwanted force from multiple directions'},
+  {type:'simile',word:'inflate',q:'An inflating blimp envelope growing in the hangar is like ___.',a:'a sleeping whale waking up and filling the room',ch:['a sleeping whale waking up and filling the room','a balloon shrinking as the air escapes','a parachute being folded back into its pack','a kite being rolled up after a flight'],hint:'Inflation gradually grows a massive, gas-filled form'},
+  {type:'simile',word:'hover',q:'Hovering above the game gives the blimp a view like ___.',a:'a hawk circling without moving its wings',ch:['a hawk circling without moving its wings','a stone thrown straight across the field','a runner sprinting along the sideline','a ball bouncing along the ground'],hint:'Hawks can hover in thermals just like blimps hover by engine'},
+
+  // ── METAPHORS (35) ─────────────────────────────────────────────────────────
+  {type:'metaphor',word:'aloft',q:'Complete the METAPHOR: The blimp kept aloft by helium is ___ that never has to touch the earth.',a:'a floating island',ch:['a floating island','a sunken ship','a buried treasure','a locked door'],hint:'An island floats on water; the blimp floats on air'},
+  {type:'metaphor',word:'attain',q:'Complete the METAPHOR: Attaining your goal is ___ you have been building block by block.',a:'a tower',ch:['a tower','a hole','a shadow','a retreat'],hint:'A tower is built step by step until it reaches its full height'},
+  {type:'metaphor',word:'buffet',q:'Complete the METAPHOR: The storm that buffeted the blimp was ___ that punched without mercy.',a:'a fist',ch:['a fist','a pillow','a whisper','a feather'],hint:'Buffeting is violent and repeated — like a fist'},
+  {type:'metaphor',word:'elude',q:'Complete the METAPHOR: The elusive Loch Ness monster is ___ of the deep that refuses to be found.',a:'a ghost',ch:['a ghost','a landmark','a monument','a statue'],hint:'Ghosts are elusive — seen by some, never captured by all'},
+  {type:'metaphor',word:'flammable',q:'Complete the METAPHOR: Flammable hydrogen in an airship is ___ waiting to be lit.',a:'a bomb',ch:['a bomb','a shield','a blanket','a ladder'],hint:'Flammable gas, when ignited, can explode — like a bomb'},
+  {type:'metaphor',word:'hover',q:'Complete the METAPHOR: The blimp hovering above the stadium is ___ watching over the game.',a:'an eye in the sky',ch:['an eye in the sky','a stone on the ground','a root in the earth','a fish in the sea'],hint:'Hovering above and watching — just like an observing eye'},
+  {type:'metaphor',word:'inflate',q:'Complete the METAPHOR: The inflating envelope is ___ coming to life in the hangar.',a:'a giant',ch:['a giant','a mouse','an ant','a seed'],hint:'Something huge fills the space as the gas flows in'},
+  {type:'metaphor',word:'jeopardy',q:'Complete the METAPHOR: Jeopardy is ___ hanging over the climber\'s head.',a:'a sword',ch:['a sword','a pillow','a cloud','a reward'],hint:'Danger hangs like a sword — one slip and it falls'},
+  {type:'metaphor',word:'moor',q:'Complete the METAPHOR: The blimp moored to its mast is ___ waiting to be let loose.',a:'a captive bird',ch:['a captive bird','a free eagle','a swimming fish','a running deer'],hint:'Both are held against their natural tendency to be free'},
+  {type:'metaphor',word:'plummet',q:'Complete the METAPHOR: A stock market crash is ___ from which investors fear no recovery.',a:'a plummet',ch:['a plummet','a soar','a glide','a drift'],hint:'A crash, like plummeting, is a sudden, terrifying fall'},
+  {type:'metaphor',word:'pollute',q:'Complete the METAPHOR: Misinformation that pollutes the mind is ___ poured into clean water.',a:'poison',ch:['poison','sugar','salt','honey'],hint:'Pollution poisons what it enters — so does false information'},
+  {type:'metaphor',word:'propel',q:'Complete the METAPHOR: Ambition is the ___ that propels students toward their goals.',a:'engine',ch:['engine','anchor','brake','weight'],hint:'An engine drives forward motion — ambition drives personal progress'},
+  {type:'metaphor',word:'stationary',q:'Complete the METAPHOR: The stationary blimp above the stadium is ___ fixed in the air.',a:'a satellite',ch:['a satellite','a meteor','a comet','a rocket'],hint:'Satellites can appear stationary above a fixed point on Earth'},
+  {type:'metaphor',word:'superb',q:'Complete the METAPHOR: The superb view from the blimp is ___ spread below the passengers.',a:'a living map',ch:['a living map','a blank page','a locked room','a dark cave'],hint:'From above, everything is laid out like a map you can read'},
+  {type:'metaphor',word:'swivel',q:'Complete the METAPHOR: An owl\'s neck swivel is ___ that can aim in any direction.',a:'a radar dish',ch:['a radar dish','a locked door','a stone wall','a frozen pipe'],hint:'Both a radar dish and an owl\'s neck rotate to scan all directions'},
+  {type:'metaphor',word:'aloft',q:'Hope is the helium that keeps dreams ___.',a:'aloft',ch:['aloft','grounded','sunk','buried'],hint:'Without hope, dreams fall like a blimp losing its gas'},
+  {type:'metaphor',word:'hover',q:'A worried parent ___ over a sick child the way a helicopter hovers over a rescue.',a:'hovers',ch:['hovers','plummets','propels','inflates'],hint:'Hovering means staying close above, watching with attention'},
+  {type:'metaphor',word:'jeopardy',q:'Every unanswered question put the team in ___ of losing the match.',a:'jeopardy',ch:['jeopardy','safety','comfort','shelter'],hint:'Jeopardy means the danger of losing something important'},
+  {type:'metaphor',word:'plummet',q:'When the final buzzer sounded and they had lost, their hopes ___.',a:'plummeted',ch:['plummeted','soared','hovered','inflated'],hint:'Just as a blimp falls, so do feelings when things go wrong'},
+  {type:'metaphor',word:'propel',q:'Her curiosity was the engine that ___ her through every book in the library.',a:'propelled',ch:['propelled','moored','buffeted','polluted'],hint:'Curiosity drives you forward the way engines drive a blimp'},
+  {type:'metaphor',word:'attain',q:'Through years of practice, the pianist ___ a level of skill that left audiences speechless.',a:'attained',ch:['attained','lost','abandoned','missed'],hint:'Attain means to reach a level after sustained effort'},
+  {type:'metaphor',word:'buffet',q:'Life ___ us from all sides — but we can still stay aloft.',a:'buffets',ch:['buffets','shelters','inflates','moors'],hint:'Challenges hit us like wind hitting a blimp'},
+  {type:'metaphor',word:'elude',q:'The solution to the puzzle continued to ___ even the sharpest minds in the room.',a:'elude',ch:['elude','attain','propel','hover'],hint:'Something elusive cannot be captured or understood'},
+  {type:'metaphor',word:'inflate',q:'Praise can ___ someone\'s ego until it floats above reality.',a:'inflate',ch:['inflate','deflate','moor','plummet'],hint:'An inflated ego is too full of air — like an over-inflated balloon'},
+  {type:'metaphor',word:'moor',q:'Fear ___ her to the ground, keeping her from reaching for her dreams.',a:'moored',ch:['moored','propelled','inflated','launched'],hint:'Fear anchors and holds you back, just as a rope holds a blimp'},
+  {type:'metaphor',word:'superb',q:'The chef\'s newest dish was a ___ triumph — every guest asked for the recipe.',a:'superb',ch:['superb','mediocre','average','forgettable'],hint:'Superb means of the highest, most impressive quality'},
+  {type:'metaphor',word:'stationary',q:'During the tense standoff, both sides remained ___ — no one dared to move first.',a:'stationary',ch:['stationary','mobile','propelled','aloft'],hint:'Stationary means not moving — holding perfectly still'},
+  {type:'metaphor',word:'pollute',q:'Hate ___ communities the way chemicals pollute rivers.',a:'pollutes',ch:['pollutes','purifies','cleans','filters'],hint:'Both poison what they enter and spread outward'},
+  {type:'metaphor',word:'swivel',q:'The spy ___ her head like an owl, scanning every corner of the room.',a:'swiveled',ch:['swiveled','moored','inflated','propelled'],hint:'Swiveling means rotating to look in all directions'},
+  {type:'metaphor',word:'flammable',q:'Tension in the room was ___ — one wrong word could set everything on fire.',a:'flammable',ch:['flammable','stationary','superb','aloft'],hint:'A flammable situation ignites easily under pressure'},
+  {type:'metaphor',word:'inflate',q:'The blimp\'s rising envelope was ___ of possibility lifting into the morning sky.',a:'a balloon',ch:['a balloon','an anchor','a stone','a cage'],hint:'The blimp and a balloon of possibility both rise as they fill with hope'},
+  {type:'metaphor',word:'hover',q:'The unasked question ___ in the air between them, neither willing to speak it.',a:'hovered',ch:['hovered','plummeted','propelled','moored'],hint:'Like a blimp, a thought can hover in place without moving'},
+  {type:'metaphor',word:'jeopardy',q:'The blimp pilot knew that a single bad storm would put the whole mission in ___.',a:'jeopardy',ch:['jeopardy','superb','stationary','aloft'],hint:'Jeopardy = serious danger of failure or loss'},
+  {type:'metaphor',word:'plummet',q:'Without funding, the research program would ___ just like a blimp losing its lift.',a:'plummet',ch:['plummet','hover','inflate','propel'],hint:'Without support, something that was rising can suddenly fall'},
+  {type:'metaphor',word:'attain',q:'She finally ___ the confidence she had been searching for — like a blimp reaching cruising altitude.',a:'attained',ch:['attained','lost','abandoned','eluded'],hint:'Attain means to finally arrive at a level you worked toward'}
+];
+
+// ── STATE ──────────────────────────────────────────────────────────────────
+var quiz={questions:[],index:0,score:0,streak:0,answers:[],answered:false};
+var fcIndex=0,fcFlipped=false;
+
+// ── SHUFFLE ────────────────────────────────────────────────────────────────
+function shuffle(arr){var a=arr.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+
+// ── SCREEN MANAGEMENT ──────────────────────────────────────────────────────
+function showStart(){show('screen-start');hide('screen-quiz');hide('screen-results');hide('screen-flash');}
+function showQuiz(){hide('screen-start');show('screen-quiz');hide('screen-results');hide('screen-flash');}
+function showResults(){hide('screen-start');hide('screen-quiz');show('screen-results');hide('screen-flash');}
+function showFlashcards(){hide('screen-start');hide('screen-quiz');hide('screen-results');show('screen-flash');fcIndex=0;fcFlipped=false;renderFlashcard();}
+
+// ── QUIZ ───────────────────────────────────────────────────────────────────
+function startQuiz(){
+  var pool=shuffle(QUESTIONS).slice(0,20);
+  quiz.questions=pool;quiz.index=0;quiz.score=0;quiz.streak=0;quiz.answers=[];quiz.answered=false;
+  showQuiz();renderQuestion();
+}
+
+function renderQuestion(){
+  var q=quiz.questions[quiz.index];
+  var pct=Math.round((quiz.index/20)*100);
+  $('prog-bar').style.width=pct+'%';
+  $('q-counter').textContent='Question '+(quiz.index+1)+' of 20';
+  var sb=$('streak-badge');
+  if(quiz.streak>=3){sb.classList.remove('hidden');sb.textContent='🔥 '+quiz.streak+' streak';}else{sb.classList.add('hidden');}
+  var ts=TYPE_STYLES[q.type];
+  var badge=$('type-badge');
+  badge.textContent=ts.label;badge.style.color=ts.color;badge.style.background=ts.bg;badge.style.border='1px solid '+ts.color;
+  $('q-text').textContent=q.q;
+  var choiceBox=$('choices');clearEl(choiceBox);
+  var shuffled=shuffle(q.ch);
+  shuffled.forEach(function(c){
+    var btn=document.createElement('button');
+    btn.className='choice-btn';btn.textContent=c;
+    btn.addEventListener('click',function(){selectAnswer(c,btn,q);});
+    choiceBox.appendChild(btn);
+  });
+  $('hint-text').textContent='';
+  quiz.answered=false;
+}
+
+function selectAnswer(choice,btn,q){
+  if(quiz.answered)return;
+  quiz.answered=true;
+  var correct=choice===q.a;
+  var allBtns=$('choices').querySelectorAll('.choice-btn');
+  allBtns.forEach(function(b){
+    b.disabled=true;
+    if(b.textContent===q.a)b.classList.add('correct');
+    else if(b===btn&&!correct)b.classList.add('wrong');
+  });
+  if(correct){
+    quiz.score++;quiz.streak++;
+    burst(btn.getBoundingClientRect().left+btn.offsetWidth/2,btn.getBoundingClientRect().top,'#fbbf24',22);
+    if(quiz.streak>0&&quiz.streak%3===0)confettiBurst();
+  }else{
+    quiz.streak=0;
+    $('hint-text').textContent='💡 '+q.hint;
+    burst(btn.getBoundingClientRect().left+btn.offsetWidth/2,btn.getBoundingClientRect().top,'#ef4444',14);
+  }
+  quiz.answers.push({q:q,chosen:choice,correct:correct});
+  setTimeout(function(){
+    quiz.index++;
+    if(quiz.index<quiz.questions.length){renderQuestion();}
+    else{buildResults();}
+  },1100);
+}
+
+function buildResults(){
+  showResults();
+  var pct=Math.round((quiz.score/20)*100);
+  var ring=$('score-ring');clearEl(ring);
+  var span=mk('span','',quiz.score+'/20');ring.appendChild(span);
+  ring.style.borderColor=pct>=80?'#34d399':pct>=60?'#fbbf24':'#ef4444';
+  var title=$('results-title');
+  if(pct===100)title.textContent='Perfect! Master of the Skies! 🏆';
+  else if(pct>=80)title.textContent='Excellent Work! Keep Soaring! ⭐';
+  else if(pct>=60)title.textContent='Good Effort! Keep Studying! 📚';
+  else title.textContent='Keep Practicing — You\'ll Get Aloft! 💪';
+  $('results-msg').textContent='You scored '+quiz.score+' out of 20 ('+pct+'%)';
+  var bd=$('breakdown');clearEl(bd);
+  var counts={synonym:0,antonym:0,analogy:0,simile:0,metaphor:0};
+  var totals={synonym:0,antonym:0,analogy:0,simile:0,metaphor:0};
+  quiz.answers.forEach(function(a){totals[a.q.type]++;if(a.correct)counts[a.q.type]++;});
+  Object.keys(counts).forEach(function(t){
+    if(totals[t]===0)return;
+    var ts=TYPE_STYLES[t];var chip=mk('span','bd-chip',ts.label+': '+counts[t]+'/'+totals[t]);
+    chip.style.color=ts.color;chip.style.background=ts.bg;chip.style.border='1px solid '+ts.color;
+    bd.appendChild(chip);
+  });
+  var rl=$('review-list');clearEl(rl);
+  var wrong=quiz.answers.filter(function(a){return!a.correct;});
+  if(wrong.length===0){var p=mk('p','','✨ Perfect score — no missed questions!');p.style.color='#34d399';p.style.textAlign='center';rl.appendChild(p);}
+  else{
+    wrong.forEach(function(a){
+      var div=mk('div','review-item');
+      div.appendChild(mk('div','ri-q',a.q.q));
+      div.appendChild(mk('div','ri-a','✓ Correct: '+a.q.a));
+      div.appendChild(mk('div','ri-yours','✗ Your answer: '+a.chosen));
+      rl.appendChild(div);
+    });
+  }
+}
+
+// ── FLASHCARDS ──────────────────────────────────────────────────────────────
+function renderFlashcard(){
+  var w=WORDS[fcIndex];fcFlipped=false;
+  $('fc-card').classList.remove('flipped');
+  $('fc-word').textContent=w.word;
+  $('fc-pos').textContent=w.pos;
+  $('fc-def').textContent=w.def;
+  $('fc-example').textContent=w.ex;
+  $('fc-count').textContent='Card '+(fcIndex+1)+' of '+WORDS.length;
+  $('fc-nav-label').textContent=(fcIndex+1)+' / '+WORDS.length;
+  $('fc-prog').style.width=(((fcIndex+1)/WORDS.length)*100)+'%';
+}
+
+function flipCard(){
+  fcFlipped=!fcFlipped;
+  if(fcFlipped)$('fc-card').classList.add('flipped');
+  else $('fc-card').classList.remove('flipped');
+}
+
+function fcNav(dir){
+  fcIndex=(fcIndex+dir+WORDS.length)%WORDS.length;
+  renderFlashcard();
+}
+
+// ── EVENTS ──────────────────────────────────────────────────────────────────
+$('btn-start').addEventListener('click',startQuiz);
+$('btn-flash-start').addEventListener('click',showFlashcards);
+$('btn-retry').addEventListener('click',startQuiz);
+$('btn-flash-results').addEventListener('click',showFlashcards);
+$('btn-fc-back').addEventListener('click',showStart);
+$('fc-scene').addEventListener('click',flipCard);
+$('fc-prev').addEventListener('click',function(){fcNav(-1);});
+$('fc-next').addEventListener('click',function(){fcNav(1);});
+
+})();
+</script>
+</body>
+</html>

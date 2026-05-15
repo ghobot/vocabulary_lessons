@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wordly Wise — Lesson 5: A Born Artist</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#0f0a1a;color:#e8e8f0;min-height:100vh;overflow-x:hidden}
+canvas#stars{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.screen{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+.screen.hidden{display:none}
+#home-link{position:fixed;top:14px;left:18px;z-index:100;color:#f9a8d4;text-decoration:none;font-size:14px;background:rgba(30,10,30,.7);padding:6px 14px;border-radius:20px;border:1px solid #db2777;transition:background .2s}
+#home-link:hover{background:rgba(219,39,119,.3)}
+
+/* START */
+.start-card{background:rgba(20,5,25,.88);border:1px solid #db2777;border-radius:24px;padding:48px 40px;max-width:540px;width:100%;text-align:center;box-shadow:0 0 60px rgba(236,72,153,.2)}
+.start-card h1{font-size:2.4rem;font-weight:800;background:linear-gradient(135deg,#f472b6,#a78bfa,#fbbf24);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+.start-card .subtitle{color:#94a3b8;margin-bottom:28px;font-size:1rem}
+.start-card p{color:#cbd5e1;line-height:1.7;margin-bottom:32px;font-size:.97rem}
+.btn{display:inline-block;padding:13px 34px;border-radius:50px;border:none;cursor:pointer;font-size:1rem;font-weight:700;transition:transform .15s,box-shadow .15s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.btn-primary{background:linear-gradient(135deg,#be185d,#9333ea);color:#fff;box-shadow:0 4px 18px rgba(190,24,93,.4)}
+.btn-secondary{background:rgba(20,5,25,.8);color:#f9a8d4;border:1px solid #db2777;margin-top:14px}
+.btn-sm{padding:8px 20px;font-size:.85rem}
+
+/* QUIZ */
+.quiz-wrap{max-width:680px;width:100%}
+.progress-bar-outer{background:rgba(255,255,255,.08);border-radius:10px;height:8px;margin-bottom:20px;overflow:hidden}
+.progress-bar-inner{height:100%;border-radius:10px;background:linear-gradient(90deg,#db2777,#9333ea);transition:width .4s}
+.q-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.q-counter{color:#94a3b8;font-size:.9rem}
+.streak-badge{background:rgba(251,191,36,.15);border:1px solid #f59e0b;color:#fbbf24;border-radius:20px;padding:4px 12px;font-size:.8rem;font-weight:700}
+.type-badge{border-radius:20px;padding:4px 14px;font-size:.78rem;font-weight:700;display:inline-block;margin-bottom:14px}
+.q-text{font-size:1.2rem;font-weight:600;color:#e2e8f0;line-height:1.6;margin-bottom:24px}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.choice-btn{background:rgba(20,5,25,.7);border:1.5px solid rgba(219,39,119,.4);border-radius:14px;padding:14px 18px;color:#e2e8f0;font-size:.95rem;cursor:pointer;transition:all .15s;text-align:left}
+.choice-btn:hover:not(:disabled){background:rgba(219,39,119,.2);border-color:#db2777}
+.choice-btn.correct{background:rgba(16,185,129,.2);border-color:#10b981;color:#6ee7b7}
+.choice-btn.wrong{background:rgba(239,68,68,.2);border-color:#ef4444;color:#fca5a5}
+.hint-text{color:#94a3b8;font-size:.85rem;font-style:italic;margin-top:6px;min-height:20px}
+
+/* RESULTS */
+.results-card{background:rgba(20,5,25,.88);border:1px solid #db2777;border-radius:24px;padding:40px 36px;max-width:620px;width:100%;text-align:center}
+.score-ring{width:120px;height:120px;border-radius:50%;margin:0 auto 20px;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:800;border:4px solid #db2777;background:rgba(219,39,119,.12)}
+.breakdown{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:20px 0}
+.bd-chip{border-radius:20px;padding:5px 14px;font-size:.8rem;font-weight:600}
+.review-list{margin-top:24px;text-align:left;max-height:280px;overflow-y:auto}
+.review-item{background:rgba(255,255,255,.05);border-radius:10px;padding:10px 14px;margin-bottom:8px;font-size:.85rem;line-height:1.5}
+.review-item .ri-q{color:#94a3b8}
+.review-item .ri-a{color:#6ee7b7;font-weight:600}
+.review-item .ri-yours{color:#fca5a5}
+.results-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:24px}
+
+/* FLASHCARDS */
+.fc-wrap{max-width:540px;width:100%;display:flex;flex-direction:column;align-items:center}
+.fc-wrap h2{font-size:1.5rem;font-weight:700;color:#f472b6;margin-bottom:6px}
+.fc-count{color:#64748b;font-size:.85rem;margin-bottom:24px}
+.fc-scene{width:100%;max-width:420px;height:260px;perspective:1000px;cursor:pointer;margin-bottom:20px}
+.fc-card{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.4,0,.2,1)}
+.fc-card.flipped{transform:rotateY(180deg)}
+.fc-face{position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center}
+.fc-front{background:linear-gradient(135deg,rgba(190,24,93,.35),rgba(147,51,234,.25));border:1.5px solid #db2777}
+.fc-back{background:linear-gradient(135deg,rgba(124,58,237,.35),rgba(167,139,250,.15));border:1.5px solid #a78bfa;transform:rotateY(180deg)}
+#fc-word{font-size:2rem;font-weight:800;color:#e2e8f0}
+#fc-pos{font-size:.85rem;color:#f472b6;margin-top:6px}
+#fc-flip-hint{font-size:.75rem;color:#64748b;margin-top:14px}
+#fc-def{font-size:.95rem;color:#e9d5ff;line-height:1.6}
+#fc-example{font-size:.82rem;color:#c4b5fd;font-style:italic;margin-top:10px}
+.fc-nav{display:flex;align-items:center;gap:18px}
+.fc-nav button{background:rgba(190,24,93,.3);border:1.5px solid #db2777;color:#f9a8d4;border-radius:50%;width:42px;height:42px;font-size:1.2rem;cursor:pointer;transition:background .15s}
+.fc-nav button:hover{background:rgba(190,24,93,.6)}
+.fc-nav span{color:#94a3b8;font-size:.9rem;min-width:70px;text-align:center}
+.fc-progress{width:100%;background:rgba(255,255,255,.08);border-radius:10px;height:6px;margin-top:18px;overflow:hidden}
+.fc-progress-inner{height:100%;background:linear-gradient(90deg,#db2777,#9333ea);transition:width .35s;border-radius:10px}
+
+#particle-canvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:200}
+
+@media(max-width:500px){.choices{grid-template-columns:1fr}.start-card h1{font-size:1.8rem}}
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+<canvas id="particle-canvas"></canvas>
+<a href="../index.html" id="home-link">← Home</a>
+
+<!-- START -->
+<div id="screen-start" class="screen">
+  <div class="start-card">
+    <div style="font-size:3rem;margin-bottom:10px">🎨</div>
+    <h1>A Born Artist</h1>
+    <div class="subtitle">Wordly Wise · Lesson 5</div>
+    <p>At age four, Wang Yani held her first art exhibition in China. At fourteen, the Smithsonian displayed her work. With deft brushstrokes and innate talent, she captivated the world. Master 15 words about art, character, and the creative spirit.</p>
+    <div><button class="btn btn-primary" id="btn-start">Begin the Challenge →</button></div>
+    <div><button class="btn btn-secondary" id="btn-flash-start">📚 Study Flashcards</button></div>
+  </div>
+</div>
+
+<!-- QUIZ -->
+<div id="screen-quiz" class="screen hidden">
+  <div class="quiz-wrap">
+    <div class="progress-bar-outer"><div class="progress-bar-inner" id="prog-bar" style="width:0%"></div></div>
+    <div class="q-header">
+      <span class="q-counter" id="q-counter">Question 1 of 20</span>
+      <span class="streak-badge hidden" id="streak-badge">🔥 0 streak</span>
+    </div>
+    <div id="type-badge" class="type-badge"></div>
+    <div class="q-text" id="q-text"></div>
+    <div class="choices" id="choices"></div>
+    <div class="hint-text" id="hint-text"></div>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div id="screen-results" class="screen hidden">
+  <div class="results-card">
+    <div class="score-ring" id="score-ring"></div>
+    <h2 id="results-title" style="margin-bottom:6px;color:#e2e8f0"></h2>
+    <p id="results-msg" style="color:#94a3b8;margin-bottom:4px"></p>
+    <div class="breakdown" id="breakdown"></div>
+    <div class="review-list" id="review-list"></div>
+    <div class="results-btns">
+      <button class="btn btn-primary btn-sm" id="btn-retry">Try Again</button>
+      <button class="btn btn-secondary btn-sm" id="btn-flash-results">📚 Review Flashcards</button>
+    </div>
+  </div>
+</div>
+
+<!-- FLASHCARDS -->
+<div id="screen-flash" class="screen hidden">
+  <div class="fc-wrap">
+    <h2>📚 Lesson 5 Flashcards</h2>
+    <div class="fc-count" id="fc-count">Card 1 of 15</div>
+    <div class="fc-scene" id="fc-scene">
+      <div class="fc-card" id="fc-card">
+        <div class="fc-face fc-front">
+          <div id="fc-word"></div>
+          <div id="fc-pos"></div>
+          <div id="fc-flip-hint">tap to reveal →</div>
+        </div>
+        <div class="fc-face fc-back">
+          <div id="fc-def"></div>
+          <div id="fc-example"></div>
+        </div>
+      </div>
+    </div>
+    <div class="fc-nav">
+      <button id="fc-prev">‹</button>
+      <span id="fc-nav-label">1 / 15</span>
+      <button id="fc-next">›</button>
+    </div>
+    <div class="fc-progress"><div class="fc-progress-inner" id="fc-prog" style="width:6.67%"></div></div>
+    <button class="btn btn-secondary btn-sm" id="btn-fc-back" style="margin-top:22px">← Back</button>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+var sc=document.getElementById('stars'),ctx=sc.getContext('2d'),W,H,stars=[];
+function initStars(){W=sc.width=window.innerWidth;H=sc.height=window.innerHeight;stars=[];for(var i=0;i<220;i++)stars.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.5+.3,s:Math.random()*.4+.1,b:Math.random()});}
+function drawStars(){ctx.clearRect(0,0,W,H);var g=ctx.createRadialGradient(W*.5,H*.4,0,W*.5,H*.5,W*.75);g.addColorStop(0,'rgba(190,24,93,.12)');g.addColorStop(.5,'rgba(147,51,234,.07)');g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);stars.forEach(function(s){s.b+=s.s*.016;var a=.35+.6*Math.abs(Math.sin(s.b));ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle='rgba(240,200,230,'+a+')';ctx.fill();});requestAnimationFrame(drawStars);}
+window.addEventListener('resize',initStars);initStars();drawStars();
+
+var pc=document.getElementById('particle-canvas'),pctx=pc.getContext('2d'),particles=[];
+function resizePC(){pc.width=window.innerWidth;pc.height=window.innerHeight;}resizePC();window.addEventListener('resize',resizePC);
+function burst(x,y,color,count){for(var i=0;i<count;i++)particles.push({x:x,y:y,vx:(Math.random()-0.5)*7,vy:(Math.random()-2.5)*6,r:Math.random()*5+2,color:color,life:1,dec:Math.random()*.025+.015});}
+function confettiBurst(){var cols=['#f472b6','#a78bfa','#fbbf24','#34d399','#60a5fa'];for(var i=0;i<90;i++){var c=cols[Math.floor(Math.random()*cols.length)];particles.push({x:Math.random()*pc.width,y:-10,vx:(Math.random()-0.5)*4,vy:Math.random()*4+2,r:Math.random()*6+2,color:c,life:1,dec:Math.random()*.012+.008});}}
+function animParticles(){pctx.clearRect(0,0,pc.width,pc.height);particles=particles.filter(function(p){p.x+=p.vx;p.y+=p.vy;p.vy+=0.12;p.life-=p.dec;if(p.life<=0)return false;pctx.globalAlpha=p.life;pctx.beginPath();pctx.arc(p.x,p.y,p.r,0,Math.PI*2);pctx.fillStyle=p.color;pctx.fill();return true;});pctx.globalAlpha=1;requestAnimationFrame(animParticles);}animParticles();
+
+function clearEl(el){while(el.firstChild)el.removeChild(el.firstChild);}
+function mk(tag,cls,txt){var el=document.createElement(tag);if(cls)el.className=cls;if(txt!==undefined)el.textContent=txt;return el;}
+function show(id){document.getElementById(id).classList.remove('hidden');}
+function hide(id){document.getElementById(id).classList.add('hidden');}
+function $(id){return document.getElementById(id);}
+
+var WORDS=[
+  {word:'antic',pos:'n. (pl. antics)',def:'A playful or funny act. Antics (plural) are silly or amusing behaviors.',ex:'"The antics of the clown made the crowd roar with laughter."'},
+  {word:'attire',pos:'n./v.',def:'(n.) Clothes, especially fine and expensive clothes. (v.) To dress up or be dressed up.',ex:'"One often needs special attire to be in a wedding party."'},
+  {word:'captivate',pos:'v.',def:'To please greatly; to win over by special charm.',ex:'"The cast\'s superb acting captivated the audience."'},
+  {word:'deft',pos:'adj.',def:'Quick and sure; skillful at handling.',ex:'"A deft juggler can keep five or more objects in the air at one time."'},
+  {word:'diligent',pos:'adj.',def:'Working with great care and effort.',ex:'"Diligent students succeed in reaching their goals."'},
+  {word:'eclipse',pos:'n./v.',def:'(n.) The total or partial hiding of one heavenly body by another. (v.) To do or be better than; to outshine.',ex:'"Her latest novel eclipses all her previous work."'},
+  {word:'evolve',pos:'v.',def:'To develop and change gradually over time. Evolution (n.) means the changes that take place as something evolves.',ex:'"Scientists think that modern birds may have evolved from dinosaurs."'},
+  {word:'innate',pos:'adj.',def:'Having from birth; occurring naturally rather than being learned.',ex:'"The singer\'s innate musical ability showed itself at a very early age."'},
+  {word:'inscribe',pos:'v.',def:'To write, print, or etch into as a permanent record. Inscription (n.) is what is inscribed.',ex:'"Most of the gravestones were simply inscribed with the person\'s name, date of birth, and date of death."'},
+  {word:'posture',pos:'n./v.',def:'(n.) The way one holds one\'s body; a pose or position. (v.) To assume a particular position, especially a pretended one.',ex:'"You can improve your posture by throwing your shoulders back."'},
+  {word:'shroud',pos:'n./v.',def:'(n.) Something that covers or hides from view; cloth used to wrap a dead body. (v.) To block from sight.',ex:'"Dense fog on the river shrouded the tugboats."'},
+  {word:'stifle',pos:'v.',def:'1. To cut off the air from; to smother. 2. To hold back; to check.',ex:'"The spectators tried to stifle their yawns during the lengthy ceremony."'},
+  {word:'tentative',pos:'adj.',def:'Not fully worked out or final; hesitating or uncertain.',ex:'"The deadline is tentative and may be extended."'},
+  {word:'tranquil',pos:'adj.',def:'Calm; peaceful. Tranquility (n.) is the state of being tranquil.',ex:'"The sea was tranquil with no hint of the approaching storm."'},
+  {word:'versatile',pos:'adj.',def:'Able to do many different things or to be used in many different ways. Versatility (n.) is the state of being versatile.',ex:'"She is a versatile musician who can play eight instruments."'}
+];
+
+var TYPE_STYLES={
+  synonym:{label:'Synonym',color:'#60a5fa',bg:'rgba(96,165,250,.15)'},
+  antonym:{label:'Antonym',color:'#f472b6',bg:'rgba(244,114,182,.15)'},
+  analogy:{label:'Analogy',color:'#a78bfa',bg:'rgba(167,139,250,.15)'},
+  simile:{label:'Simile',color:'#34d399',bg:'rgba(52,211,153,.15)'},
+  metaphor:{label:'Metaphor',color:'#fbbf24',bg:'rgba(251,191,36,.15)'}
+};
+
+var QUESTIONS=[
+  // ── SYNONYMS (50) ─────────────────────────────────────────────────────────
+  {type:'synonym',word:'antic',q:'Which word is closest in meaning to ANTICS?',a:'pranks',ch:['pranks','chores','speeches','warnings'],hint:'Think: playful or funny acts'},
+  {type:'synonym',word:'antic',q:'Choose the best synonym for ANTICS.',a:'capers',ch:['capers','lectures','lessons','tasks'],hint:'Capers are playful, mischievous acts'},
+  {type:'synonym',word:'antic',q:'Select the word most similar to ANTICS.',a:'stunts',ch:['stunts','debates','sermons','warnings'],hint:'Stunts are attention-getting acts performed for fun'},
+  {type:'synonym',word:'attire',q:'Which word is closest in meaning to ATTIRE?',a:'clothing',ch:['clothing','shelter','equipment','tools'],hint:'Think: what you wear, especially formal wear'},
+  {type:'synonym',word:'attire',q:'Choose the best synonym for ATTIRE.',a:'garb',ch:['garb','furniture','vehicle','supplies'],hint:'Garb is another word for clothes or dress'},
+  {type:'synonym',word:'captivate',q:'Which word is closest in meaning to CAPTIVATE?',a:'enchant',ch:['enchant','bore','repel','annoy'],hint:'Think: to win someone over with charm'},
+  {type:'synonym',word:'captivate',q:'Choose the best synonym for CAPTIVATE.',a:'fascinate',ch:['fascinate','disgust','ignore','dismiss'],hint:'To fascinate is to hold someone spellbound'},
+  {type:'synonym',word:'captivate',q:'Select the word most similar to CAPTIVATE.',a:'charm',ch:['charm','drive away','alienate','upset'],hint:'Charm and captivate both win people over'},
+  {type:'synonym',word:'deft',q:'Which word is closest in meaning to DEFT?',a:'skillful',ch:['skillful','clumsy','awkward','careless'],hint:'Think: quick, sure, and expert in handling'},
+  {type:'synonym',word:'deft',q:'Choose the best synonym for DEFT.',a:'nimble',ch:['nimble','fumbling','slow','heavy-handed'],hint:'Nimble means quick and light in movement'},
+  {type:'synonym',word:'deft',q:'Select the word most similar to DEFT.',a:'adept',ch:['adept','bungling','hesitant','incompetent'],hint:'Adept means highly skilled at something'},
+  {type:'synonym',word:'diligent',q:'Which word is closest in meaning to DILIGENT?',a:'hardworking',ch:['hardworking','lazy','careless','inactive'],hint:'Think: working with great care and effort'},
+  {type:'synonym',word:'diligent',q:'Choose the best synonym for DILIGENT.',a:'industrious',ch:['industrious','negligent','idle','distracted'],hint:'Industrious means consistently working hard'},
+  {type:'synonym',word:'diligent',q:'Select the word most similar to DILIGENT.',a:'thorough',ch:['thorough','sloppy','casual','rushed'],hint:'Thorough means careful and complete in doing work'},
+  {type:'synonym',word:'eclipse',q:'Which word is closest in meaning to ECLIPSE (as a verb)?',a:'outshine',ch:['outshine','follow','imitate','equal'],hint:'Think: to do or be better than'},
+  {type:'synonym',word:'eclipse',q:'Choose the best synonym for ECLIPSE (surpass).',a:'surpass',ch:['surpass','fall behind','match','copy'],hint:'To surpass is to go beyond or do better than'},
+  {type:'synonym',word:'eclipse',q:'Select the word most similar to ECLIPSE.',a:'overshadow',ch:['overshadow','support','boost','echo'],hint:'Overshadowing means making someone else look less impressive'},
+  {type:'synonym',word:'evolve',q:'Which word is closest in meaning to EVOLVE?',a:'develop',ch:['develop','freeze','repeat','reverse'],hint:'Think: to change gradually over time'},
+  {type:'synonym',word:'evolve',q:'Choose the best synonym for EVOLVE.',a:'transform',ch:['transform','stagnate','stay the same','stand still'],hint:'Transform means to change into something different'},
+  {type:'synonym',word:'innate',q:'Which word is closest in meaning to INNATE?',a:'inborn',ch:['inborn','learned','practiced','trained'],hint:'Think: having from birth, not taught'},
+  {type:'synonym',word:'innate',q:'Choose the best synonym for INNATE.',a:'natural',ch:['natural','acquired','developed','studied'],hint:'Natural abilities are innate — you are born with them'},
+  {type:'synonym',word:'inscribe',q:'Which word is closest in meaning to INSCRIBE?',a:'engrave',ch:['engrave','erase','paint over','remove'],hint:'Think: to cut or write into a permanent surface'},
+  {type:'synonym',word:'inscribe',q:'Choose the best synonym for INSCRIBE.',a:'etch',ch:['etch','delete','blank','clean'],hint:'Etching creates a permanent mark in a surface'},
+  {type:'synonym',word:'posture',q:'Which word is closest in meaning to POSTURE (body position)?',a:'stance',ch:['stance','feeling','thought','mood'],hint:'Think: how you hold your body'},
+  {type:'synonym',word:'posture',q:'Choose the best synonym for POSTURE.',a:'bearing',ch:['bearing','expression','emotion','voice'],hint:'Bearing refers to the way one carries oneself'},
+  {type:'synonym',word:'shroud',q:'Which word is closest in meaning to SHROUD (as a verb)?',a:'conceal',ch:['conceal','reveal','uncover','display'],hint:'Think: to hide from view'},
+  {type:'synonym',word:'shroud',q:'Choose the best synonym for SHROUD (hide).',a:'veil',ch:['veil','expose','illuminate','show'],hint:'A veil covers and hides, just like a shroud'},
+  {type:'synonym',word:'stifle',q:'Which word is closest in meaning to STIFLE?',a:'suppress',ch:['suppress','encourage','release','allow'],hint:'Think: to hold back or smother'},
+  {type:'synonym',word:'stifle',q:'Choose the best synonym for STIFLE (cut off air).',a:'smother',ch:['smother','breathe','fan','cool'],hint:'Smothering cuts off air, like stifling'},
+  {type:'synonym',word:'tentative',q:'Which word is closest in meaning to TENTATIVE?',a:'uncertain',ch:['uncertain','definite','firm','final'],hint:'Think: not fully worked out or decided'},
+  {type:'synonym',word:'tentative',q:'Choose the best synonym for TENTATIVE.',a:'hesitant',ch:['hesitant','certain','confident','decided'],hint:'Hesitant means unsure and not fully committed'},
+  {type:'synonym',word:'tranquil',q:'Which word is closest in meaning to TRANQUIL?',a:'peaceful',ch:['peaceful','hectic','stormy','chaotic'],hint:'Think: calm and undisturbed'},
+  {type:'synonym',word:'tranquil',q:'Choose the best synonym for TRANQUIL.',a:'serene',ch:['serene','turbulent','frantic','wild'],hint:'Serene means pleasantly calm and undisturbed'},
+  {type:'synonym',word:'versatile',q:'Which word is closest in meaning to VERSATILE?',a:'adaptable',ch:['adaptable','limited','specialized','fixed'],hint:'Think: able to do many different things'},
+  {type:'synonym',word:'versatile',q:'Choose the best synonym for VERSATILE.',a:'multitalented',ch:['multitalented','one-dimensional','narrow','rigid'],hint:'Multitalented means skilled at many things'},
+  {type:'synonym',word:'deft',q:'Wang Yani\'s DEFT brushstrokes were ___.',a:'expert',ch:['expert','clumsy','slow','uncertain'],hint:'Her strokes were quick and sure — expert level'},
+  {type:'synonym',word:'diligent',q:'Yani worked DILIGENTLY at her art, meaning she was ___.',a:'dedicated',ch:['dedicated','careless','inattentive','bored'],hint:'Diligent means committed and careful in your work'},
+  {type:'synonym',word:'captivate',q:'The audience was CAPTIVATED by Yani\'s art — they were ___.',a:'spellbound',ch:['spellbound','bored','confused','unimpressed'],hint:'Captivated means held in complete attention and delight'},
+  {type:'synonym',word:'evolve',q:'As Yani grew older, her style EVOLVED — it ___.',a:'changed and grew',ch:['changed and grew','stayed the same','regressed','disappeared'],hint:'Evolve means to develop and change over time'},
+  {type:'synonym',word:'innate',q:'Yani\'s talent was INNATE — she was ___.',a:'born with it',ch:['born with it','taught it at school','given it by a teacher','trained for years'],hint:'Innate means it came from birth, not instruction'},
+  {type:'synonym',word:'shroud',q:'Mist SHROUDED the Guilin mountains — it ___ them.',a:'covered',ch:['covered','revealed','lifted','brightened'],hint:'Shrouding means hiding from view like a curtain'},
+  {type:'synonym',word:'stifle',q:'Yani\'s father feared formal lessons would STIFLE her — they would ___ her creativity.',a:'suppress',ch:['suppress','encourage','expand','free'],hint:'Stifle means to hold something back from growing'},
+  {type:'synonym',word:'tentative',q:'Yani begins with TENTATIVE strokes — they are ___.',a:'exploratory',ch:['exploratory','bold','final','decisive'],hint:'Tentative means not yet committed — feeling things out'},
+  {type:'synonym',word:'tranquil',q:'Yani paints the TRANQUIL mountains — they appear ___.',a:'peaceful',ch:['peaceful','stormy','hectic','loud'],hint:'Tranquil means calm and still'},
+  {type:'synonym',word:'versatile',q:'Yani is VERSATILE because she ___.',a:'paints many subjects',ch:['paints many subjects','only paints monkeys','uses one style always','never changes topics'],hint:'Versatile means skilled in many areas'},
+  {type:'synonym',word:'antic',q:'The monkeys\' ANTICS amused Yani — she was drawn to their ___.',a:'playful behavior',ch:['playful behavior','sleeping habits','eating routines','migration paths'],hint:'Antics are funny, playful acts'},
+  {type:'synonym',word:'attire',q:'Yani performed at the Smithsonian in casual ATTIRE — she was ___.',a:'dressed informally',ch:['dressed informally','in a formal gown','wearing a uniform','in traditional robes'],hint:'Attire means clothing; she wore shorts and a shirt'},
+  {type:'synonym',word:'inscribe',q:'Yani INSCRIBES Chinese characters on her paintings — she ___.',a:'writes them permanently',ch:['writes them permanently','sketches them lightly','erases them after','hides them beneath the paint'],hint:'Inscribing creates a permanent written record'},
+  {type:'synonym',word:'posture',q:'The 112 monkeys in Yani\'s painting are in different POSTURES — they have different ___.',a:'positions',ch:['positions','colors','sizes','species'],hint:'Posture means body position or pose'},
+  {type:'synonym',word:'eclipse',q:'Yani\'s fame ECLIPSED her father\'s — she ___.',a:'surpassed him',ch:['surpassed him','imitated him','followed him','matched him'],hint:'Eclipse as a verb means to outshine or surpass'},
+
+  // ── ANTONYMS (35) ─────────────────────────────────────────────────────────
+  {type:'antonym',word:'antic',q:'What is the ANTONYM (opposite) of ANTICS?',a:'serious behavior',ch:['serious behavior','funny acts','silly moves','playful gestures'],hint:'The opposite of silly, playful acts is serious, proper behavior'},
+  {type:'antonym',word:'captivate',q:'What is the ANTONYM of CAPTIVATE?',a:'bore',ch:['bore','enchant','charm','fascinate'],hint:'The opposite of winning someone over is driving them away with boredom'},
+  {type:'antonym',word:'captivate',q:'Choose the word most OPPOSITE to CAPTIVATE.',a:'repel',ch:['repel','enthral','delight','interest'],hint:'To repel is to push people away — the opposite of captivating'},
+  {type:'antonym',word:'deft',q:'What is the ANTONYM of DEFT?',a:'clumsy',ch:['clumsy','skilled','nimble','adept'],hint:'The opposite of quick, sure, and skilled is clumsy'},
+  {type:'antonym',word:'deft',q:'Choose the word most OPPOSITE to DEFT.',a:'awkward',ch:['awkward','dexterous','adept','expert'],hint:'Awkward means lacking skill or grace'},
+  {type:'antonym',word:'diligent',q:'What is the ANTONYM of DILIGENT?',a:'lazy',ch:['lazy','hardworking','dedicated','thorough'],hint:'The opposite of working hard and carefully is being lazy'},
+  {type:'antonym',word:'diligent',q:'Choose the word most OPPOSITE to DILIGENT.',a:'negligent',ch:['negligent','careful','industrious','meticulous'],hint:'Negligent means failing to give proper care and attention'},
+  {type:'antonym',word:'eclipse',q:'What is the ANTONYM of ECLIPSE (to outshine)?',a:'fall behind',ch:['fall behind','surpass','excel','outshine'],hint:'If you eclipse someone, you are ahead; the opposite is falling behind'},
+  {type:'antonym',word:'evolve',q:'What is the ANTONYM of EVOLVE?',a:'stagnate',ch:['stagnate','develop','grow','change'],hint:'Stagnating means staying the same without developing'},
+  {type:'antonym',word:'innate',q:'What is the ANTONYM of INNATE?',a:'learned',ch:['learned','inborn','natural','native'],hint:'Innate = from birth; the opposite is something that is taught'},
+  {type:'antonym',word:'innate',q:'Choose the word most OPPOSITE to INNATE.',a:'acquired',ch:['acquired','instinctive','natural','inherent'],hint:'Acquired means developed through practice and experience'},
+  {type:'antonym',word:'inscribe',q:'What is the ANTONYM of INSCRIBE?',a:'erase',ch:['erase','engrave','etch','carve'],hint:'Erasing removes what inscribing puts there permanently'},
+  {type:'antonym',word:'shroud',q:'What is the ANTONYM of SHROUD (to hide)?',a:'reveal',ch:['reveal','conceal','veil','cover'],hint:'The opposite of hiding something is revealing it'},
+  {type:'antonym',word:'shroud',q:'Choose the word most OPPOSITE to SHROUD.',a:'expose',ch:['expose','cloak','mask','block'],hint:'To expose something is to bring it into full view'},
+  {type:'antonym',word:'stifle',q:'What is the ANTONYM of STIFLE?',a:'encourage',ch:['encourage','suppress','smother','hold back'],hint:'Encouragement helps things grow; stifling stops them'},
+  {type:'antonym',word:'stifle',q:'Choose the word most OPPOSITE to STIFLE.',a:'release',ch:['release','suppress','check','hinder'],hint:'Releasing allows what stifling holds back'},
+  {type:'antonym',word:'tentative',q:'What is the ANTONYM of TENTATIVE?',a:'definite',ch:['definite','uncertain','hesitant','unclear'],hint:'The opposite of uncertain is definite and sure'},
+  {type:'antonym',word:'tentative',q:'Choose the word most OPPOSITE to TENTATIVE.',a:'firm',ch:['firm','vague','provisional','tentative'],hint:'Firm means decided and not going to change'},
+  {type:'antonym',word:'tranquil',q:'What is the ANTONYM of TRANQUIL?',a:'turbulent',ch:['turbulent','serene','calm','peaceful'],hint:'Turbulence is the opposite of calm peace'},
+  {type:'antonym',word:'tranquil',q:'Choose the word most OPPOSITE to TRANQUIL.',a:'hectic',ch:['hectic','still','quiet','restful'],hint:'Hectic means chaotic and full of activity — not tranquil at all'},
+  {type:'antonym',word:'versatile',q:'What is the ANTONYM of VERSATILE?',a:'one-dimensional',ch:['one-dimensional','adaptable','flexible','multitalented'],hint:'The opposite of doing many things is doing only one'},
+  {type:'antonym',word:'versatile',q:'Choose the word most OPPOSITE to VERSATILE.',a:'specialized',ch:['specialized','adaptable','wide-ranging','diverse'],hint:'Specialized means focused on only one narrow area'},
+  {type:'antonym',word:'deft',q:'A DEFT artist handles the brush with skill; a ___ one fumbles with it.',a:'clumsy',ch:['clumsy','graceful','nimble','dexterous'],hint:'Clumsy is the direct opposite of deft'},
+  {type:'antonym',word:'diligent',q:'Yani was DILIGENT — she worked hard. A ___ student gives up easily.',a:'lazy',ch:['lazy','dedicated','careful','thorough'],hint:'Lazy is the direct opposite of diligent'},
+  {type:'antonym',word:'innate',q:'Yani\'s talent was INNATE, but technique must be ___.',a:'learned',ch:['learned','natural','inborn','instinctive'],hint:'Innate = born with it; technique is acquired through study'},
+  {type:'antonym',word:'tranquil',q:'The mountains were TRANQUIL in the painting, but the city below was ___.',a:'noisy',ch:['noisy','calm','peaceful','still'],hint:'The opposite of tranquil is loud and chaotic'},
+  {type:'antonym',word:'captivate',q:'The performance CAPTIVATED most of the audience, but it ___ those who disliked modern art.',a:'bored',ch:['bored','enchanted','delighted','amazed'],hint:'Boring is the opposite effect of captivating'},
+  {type:'antonym',word:'eclipse',q:'Yani\'s fame ECLIPSED her father\'s, but in his early years, hers had ___ his.',a:'fallen behind',ch:['fallen behind','surpassed','exceeded','outshone'],hint:'Before Yani became famous, she had not yet surpassed her father'},
+  {type:'antonym',word:'shroud',q:'The fog SHROUDED the harbor, but by afternoon the sun had ___ it.',a:'revealed',ch:['revealed','hidden','veiled','darkened'],hint:'What was hidden became visible again'},
+  {type:'antonym',word:'stifle',q:'Formal lessons would STIFLE her creativity; instead, freedom ___it.',a:'unleashed',ch:['unleashed','suppressed','blocked','stopped'],hint:'Freedom releases what stifling holds back'},
+  {type:'antonym',word:'tentative',q:'Her first strokes were TENTATIVE, but her final brushwork was ___.',a:'bold',ch:['bold','hesitant','uncertain','vague'],hint:'Bold strokes are confident and decisive — the opposite of tentative'},
+  {type:'antonym',word:'evolve',q:'Art styles can EVOLVE — but without practice and challenge they might ___.',a:'stagnate',ch:['stagnate','develop','transform','grow'],hint:'Stagnation is no change, no growth'},
+  {type:'antonym',word:'attire',q:'Yani wore casual ATTIRE at the Smithsonian, not the ___ one might expect.',a:'formal clothing',ch:['formal clothing','jeans','shorts','sneakers'],hint:'The opposite of casual attire is formal dress'},
+  {type:'antonym',word:'posture',q:'Good POSTURE means standing straight; bad posture means ___.',a:'slumping',ch:['slumping','sitting tall','standing firm','stretching'],hint:'Slumping is the opposite of good, upright posture'},
+  {type:'antonym',word:'versatile',q:'A VERSATILE painter explores many subjects; a ___ one paints only one thing.',a:'limited',ch:['limited','wide-ranging','flexible','adaptable'],hint:'Limited means able to do only a few things'},
+
+  // ── ANALOGIES (40) ─────────────────────────────────────────────────────────
+  {type:'analogy',word:'deft',q:'DEFT is to CLUMSY as DILIGENT is to ___.',a:'lazy',ch:['lazy','hardworking','careful','thorough'],hint:'Deft and clumsy are opposites; diligent and lazy are opposites'},
+  {type:'analogy',word:'tranquil',q:'TRANQUIL is to HECTIC as PEACEFUL is to ___.',a:'chaotic',ch:['chaotic','calm','quiet','serene'],hint:'Tranquil and hectic are opposites; peaceful and chaotic are opposites'},
+  {type:'analogy',word:'innate',q:'INNATE is to BORN as LEARNED is to ___.',a:'taught',ch:['taught','natural','instinctive','inherited'],hint:'Innate abilities come at birth; learned ones come through teaching'},
+  {type:'analogy',word:'inscribe',q:'INSCRIBE is to STONE as PAINT is to ___.',a:'canvas',ch:['canvas','pencil','ink','brush'],hint:'You inscribe on stone; you paint on canvas'},
+  {type:'analogy',word:'shroud',q:'SHROUD is to CONCEAL as REVEAL is to ___.',a:'expose',ch:['expose','hide','cover','veil'],hint:'Shroud means conceal; reveal means expose — they pair as opposites'},
+  {type:'analogy',word:'evolve',q:'EVOLVE is to CHANGE as STAGNATE is to ___.',a:'stay the same',ch:['stay the same','grow','develop','transform'],hint:'Evolve means change; stagnate means stay the same'},
+  {type:'analogy',word:'attire',q:'ATTIRE is to WEDDING as UNIFORM is to ___.',a:'sports team',ch:['sports team','museum','ceremony','classroom'],hint:'Weddings require formal attire; sports teams require uniforms'},
+  {type:'analogy',word:'versatile',q:'VERSATILE is to MANY as SPECIALIZED is to ___.',a:'one',ch:['one','several','numerous','various'],hint:'Versatile means skilled at many things; specialized means one'},
+  {type:'analogy',word:'captivate',q:'CAPTIVATE is to AUDIENCE as ENCHANT is to ___.',a:'reader',ch:['reader','speaker','author','painter'],hint:'A performer captivates an audience; a story enchants a reader'},
+  {type:'analogy',word:'diligent',q:'DILIGENT is to WORKER as THOROUGH is to ___.',a:'researcher',ch:['researcher','clown','juggler','athlete'],hint:'Diligent describes a worker; thorough describes a researcher'},
+  {type:'analogy',word:'deft',q:'DEFT is to JUGGLER as ELOQUENT is to ___.',a:'speaker',ch:['speaker','painter','dancer','runner'],hint:'A juggler is deft with objects; a speaker is eloquent with words'},
+  {type:'analogy',word:'eclipse',q:'ECLIPSE is to SUN as OVERSHADOW is to ___.',a:'achievement',ch:['achievement','star','planet','moon'],hint:'The moon eclipses the sun; one achievement overshadows another'},
+  {type:'analogy',word:'stifle',q:'STIFLE is to CREATIVITY as POLLUTE is to ___.',a:'environment',ch:['environment','talent','effort','style'],hint:'Stifling harms creativity; pollution harms the environment'},
+  {type:'analogy',word:'tentative',q:'TENTATIVE is to DEFINITE as UNCERTAIN is to ___.',a:'confirmed',ch:['confirmed','vague','unclear','open'],hint:'Tentative and definite are opposites; uncertain and confirmed are opposites'},
+  {type:'analogy',word:'shroud',q:'SHROUD is to MYSTERY as VEIL is to ___.',a:'face',ch:['face','sky','ground','canvas'],hint:'A shroud hides a mystery; a veil hides a face'},
+  {type:'analogy',word:'innate',q:'INNATE is to TALENT as ACQUIRED is to ___.',a:'skill',ch:['skill','birth','instinct','nature'],hint:'Innate talents are born; acquired skills are developed through practice'},
+  {type:'analogy',word:'evolve',q:'EVOLVE is to SPECIES as MATURE is to ___.',a:'person',ch:['person','rock','river','cloud'],hint:'Species evolve over time; people mature over time'},
+  {type:'analogy',word:'posture',q:'POSTURE is to BODY as EXPRESSION is to ___.',a:'face',ch:['face','hand','foot','arm'],hint:'Posture is how the body holds itself; expression is how the face shows feeling'},
+  {type:'analogy',word:'tranquil',q:'TRANQUIL is to SANCTUARY as HECTIC is to ___.',a:'city',ch:['city','forest','lake','garden'],hint:'Sanctuaries are tranquil; cities are often hectic'},
+  {type:'analogy',word:'captivate',q:'CAPTIVATE is to CHARM as BORE is to ___.',a:'dull',ch:['dull','excite','thrill','enthral'],hint:'Captivate uses charm; bore uses dullness — each has its matching quality'},
+  {type:'analogy',word:'attire',q:'ATTIRE is to COSTUME as INSCRIPTION is to ___.',a:'caption',ch:['caption','painting','canvas','sketch'],hint:'Attire adorns the body; an inscription labels or comments on something'},
+  {type:'analogy',word:'deft',q:'DEFT is to SURGEON as ELOQUENT is to ___.',a:'lawyer',ch:['lawyer','athlete','chef','architect'],hint:'Surgeons need deft hands; lawyers need eloquent words'},
+  {type:'analogy',word:'diligent',q:'DILIGENT is to SUCCESS as CARELESS is to ___.',a:'failure',ch:['failure','triumph','reward','praise'],hint:'Diligence leads to success; carelessness leads to failure'},
+  {type:'analogy',word:'versatile',q:'VERSATILE is to SWISS ARMY KNIFE as SPECIALIZED is to ___.',a:'scalpel',ch:['scalpel','key','hammer','fork'],hint:'A Swiss Army knife does many things; a scalpel is specialized for surgery'},
+  {type:'analogy',word:'inscribe',q:'INSCRIBE is to COIN as TATTOO is to ___.',a:'skin',ch:['skin','paper','canvas','wall'],hint:'You inscribe on a coin; you tattoo on skin — both are permanent marks'},
+  {type:'analogy',word:'stifle',q:'STIFLE is to LAUGHTER as SUPPRESS is to ___.',a:'emotion',ch:['emotion','water','wind','light'],hint:'Stifling holds back laughter; suppressing holds back emotion'},
+  {type:'analogy',word:'shroud',q:'SHROUD is to FOG as CLOAK is to ___.',a:'darkness',ch:['darkness','sunshine','rainbow','breeze'],hint:'Fog shrouds; darkness cloaks — both hide things from view'},
+  {type:'analogy',word:'eclipse',q:'ECLIPSE is to MOON AND SUN as RIVALRY is to ___.',a:'two champions',ch:['two champions','the sky','one winner','a trophy'],hint:'An eclipse involves one body overshadowing another; so does a rivalry'},
+  {type:'analogy',word:'evolve',q:'EVOLVE is to GRADUAL as EXPLODE is to ___.',a:'sudden',ch:['sudden','slow','steady','quiet'],hint:'Evolving is slow and gradual; exploding is sudden and fast'},
+  {type:'analogy',word:'tentative',q:'TENTATIVE is to PLAN as DRAFT is to ___.',a:'document',ch:['document','sculpture','building','sculpture'],hint:'A tentative plan is like a draft — not yet final'},
+  {type:'analogy',word:'antic',q:'ANTICS are to CLOWN as DEFT STROKES are to ___.',a:'artist',ch:['artist','musician','teacher','athlete'],hint:'Clowns perform antics; artists perform deft strokes'},
+  {type:'analogy',word:'innate',q:'INNATE is to WANG YANI as ACQUIRED is to ___.',a:'a student learning piano',ch:['a student learning piano','a prodigy at birth','a natural talent','an inherited gift'],hint:'Yani\'s talent was innate; a student\'s piano skill is acquired through practice'},
+  {type:'analogy',word:'posture',q:'POSTURE is to SPINE as FOUNDATION is to ___.',a:'building',ch:['building','painting','poem','song'],hint:'Posture supports the body like a foundation supports a building'},
+  {type:'analogy',word:'tranquil',q:'TRANQUIL is to STILL WATER as TURBULENT is to ___.',a:'rapids',ch:['rapids','pond','lake','mirror'],hint:'Still water is tranquil; rapids are turbulent'},
+  {type:'analogy',word:'captivate',q:'CAPTIVATE is to SPELL as INSPIRE is to ___.',a:'action',ch:['action','boredom','stillness','sleep'],hint:'A spell captivates; inspiration drives action'},
+  {type:'analogy',word:'attire',q:'ATTIRE is to FASHION as INSCRIPTION is to ___.',a:'literature',ch:['literature','science','math','music'],hint:'Fashion is about attire; literature uses inscribed words'},
+  {type:'analogy',word:'deft',q:'DEFT is to FINGERS as SHARP is to ___.',a:'eyes',ch:['eyes','ears','nose','throat'],hint:'Deft fingers move skillfully; sharp eyes see precisely'},
+  {type:'analogy',word:'diligent',q:'DILIGENT is to ACHIEVEMENT as NEGLIGENT is to ___.',a:'failure',ch:['failure','success','triumph','praise'],hint:'Diligence leads to achievement; negligence leads to failure'},
+  {type:'analogy',word:'evolve',q:'EVOLVE is to BUTTERFLY as MATURE is to ___.',a:'adult',ch:['adult','egg','larva','cocoon'],hint:'A caterpillar evolves into a butterfly; a child matures into an adult'},
+  {type:'analogy',word:'versatile',q:'VERSATILE is to PAINTER as MULTILINGUAL is to ___.',a:'speaker',ch:['speaker','listener','reader','writer'],hint:'A versatile painter works in many styles; a multilingual speaker uses many languages'},
+
+  // ── SIMILES (35) ─────────────────────────────────────────────────────────
+  {type:'simile',word:'captivate',q:'Which simile best shows what it means to CAPTIVATE an audience?',a:'like a magnet pulling every eye toward the stage',ch:['like a magnet pulling every eye toward the stage','like a fog sending everyone home','like a closed door keeping visitors out','like a quiet room with nothing to see'],hint:'Captivating holds attention the way a magnet holds metal'},
+  {type:'simile',word:'deft',q:'Wang Yani\'s DEFT brushstrokes were like ___.',a:'a calligrapher writing each word with perfect precision',ch:['a calligrapher writing each word with perfect precision','a child scribbling without looking','a hand shaking in the cold','a brush dragged carelessly across wet paper'],hint:'Deft means skillful and exact — like a calligrapher'},
+  {type:'simile',word:'diligent',q:'A DILIGENT student is like ___.',a:'a river that never stops moving toward the sea',ch:['a river that never stops moving toward the sea','a stagnant pond going nowhere','a stone that never moves','a cloud that dissolves without rain'],hint:'A diligent worker keeps going steadily without stopping'},
+  {type:'simile',word:'eclipse',q:'Wang Yani\'s fame ECLIPSING her father\'s was like ___.',a:'a bright moon blocking the sun from view',ch:['a bright moon blocking the sun from view','a dim candle beside a bonfire','a shadow fading at noon','a river drying in summer'],hint:'Eclipsing means one outshines and overshadows the other'},
+  {type:'simile',word:'evolve',q:'Yani\'s style EVOLVING over years was like ___.',a:'a seed slowly becoming a towering tree',ch:['a seed slowly becoming a towering tree','a sculpture never changing','a painting left in a drawer','a sketch erased before it is finished'],hint:'Evolving is slow, gradual, upward growth'},
+  {type:'simile',word:'innate',q:'Yani\'s INNATE talent was like ___.',a:'a spring that flows without anyone having to dig the well',ch:['a spring that flows without anyone having to dig the well','a reservoir that must be filled by hand','a pond dug over many years','a well drilled through solid rock'],hint:'Innate talent comes naturally — no digging required'},
+  {type:'simile',word:'inscribe',q:'Wang Yani INSCRIBING characters on her paintings was like ___.',a:'a poet leaving a signature in stone',ch:['a poet leaving a signature in stone','a child drawing in the sand at the beach','someone writing in pencil on a whiteboard','a teacher erasing a lesson at day\'s end'],hint:'Inscribing is permanent — like carving into stone'},
+  {type:'simile',word:'posture',q:'The 112 monkeys in different POSTURES were like ___.',a:'a dance company frozen mid-performance',ch:['a dance company frozen mid-performance','a crowd sleeping in the same direction','a row of identical statues','a group of people looking the same way'],hint:'Each monkey in a different posture = each dancer in a different pose'},
+  {type:'simile',word:'shroud',q:'The mist SHROUDING the Guilin mountains was like ___.',a:'a silk curtain draped around a secret',ch:['a silk curtain draped around a secret','a spotlight shining on the peak','a clean glass revealing the inside','a window thrown open to the sun'],hint:'A shroud hides and covers — like a curtain around a secret'},
+  {type:'simile',word:'stifle',q:'Forcing a child to follow rigid rules STIFLES creativity like ___.',a:'a lid pressed onto a boiling pot',ch:['a lid pressed onto a boiling pot','an open window in summer','a faucet left running freely','a garden left untended'],hint:'Stifling traps and suppresses what wants to flow freely'},
+  {type:'simile',word:'tentative',q:'Yani\'s first TENTATIVE brushstrokes were like ___.',a:'a child\'s first steps — uncertain but full of promise',ch:['a child\'s first steps — uncertain but full of promise','a marathon runner sprinting at the finish','a surgeon making a confident cut','a master completing a final stroke'],hint:'Tentative means hesitant and not yet fully committed'},
+  {type:'simile',word:'tranquil',q:'The TRANQUIL mountains in Yani\'s paintings are like ___.',a:'a held breath on a perfectly still morning',ch:['a held breath on a perfectly still morning','a crowd roaring at a football game','a drum beating faster and faster','a market on its busiest holiday'],hint:'Tranquil means perfectly calm — like a breath held in stillness'},
+  {type:'simile',word:'versatile',q:'A VERSATILE artist like Yani is like ___.',a:'a Swiss Army knife — always the right tool for the moment',ch:['a Swiss Army knife — always the right tool for the moment','a hammer that only drives nails','a brush that only paints one color','a pencil that only draws straight lines'],hint:'Versatile means useful in many different situations'},
+  {type:'simile',word:'antic',q:'The monkeys\' ANTICS at the zoo were like ___.',a:'a comedy show no one had to write',ch:['a comedy show no one had to write','a still life with nothing moving','a quiet library at midnight','a solemn ceremony with no humor'],hint:'Antics are naturally funny without needing a script'},
+  {type:'simile',word:'attire',q:'Yani appeared at the Smithsonian in casual ATTIRE, like ___.',a:'a genius who needs no costume to shine',ch:['a genius who needs no costume to shine','a queen dressed in royal robes','a performer hidden behind a mask','an actor in full theatrical makeup'],hint:'Her talent spoke for itself — no formal dress needed'},
+  {type:'simile',word:'captivate',q:'An artist who CAPTIVATES an audience is like ___.',a:'a lighthouse that draws ships toward the shore',ch:['a lighthouse that draws ships toward the shore','a fog horn warning ships away','a locked harbor with no lanterns','a rocky coast with no lighthouse'],hint:'Captivating draws people in the way a lighthouse draws ships'},
+  {type:'simile',word:'deft',q:'A DEFT surgeon\'s hands are like ___.',a:'two perfect instruments tuned to a millimeter',ch:['two perfect instruments tuned to a millimeter','two hammers swung without care','two feet shuffling on a dance floor','two gloves left empty on a shelf'],hint:'Deft means precise, quick, and perfectly controlled'},
+  {type:'simile',word:'diligent',q:'A DILIGENT artist who practices for hours daily is like ___.',a:'an athlete who never skips a training session',ch:['an athlete who never skips a training session','a student who copies answers','a painter who finishes only when forced','a worker who leaves early every day'],hint:'Diligence means showing up and working hard, every time'},
+  {type:'simile',word:'evolve',q:'A writing style that EVOLVES over a career is like ___.',a:'a river that carves deeper channels over centuries',ch:['a river that carves deeper channels over centuries','a pond that never gains or loses water','a road that never changes its path','a wall that stands exactly as it was built'],hint:'Evolving changes its shape and depth over time, like a river'},
+  {type:'simile',word:'innate',q:'A child with INNATE musical ability is like ___.',a:'a flower that blooms without being taught how',ch:['a flower that blooms without being taught how','a tree that needs years of grafting','a seed that only grows with fertilizer','a garden that must be replanted every season'],hint:'Innate means it comes naturally — without instruction'},
+  {type:'simile',word:'inscribe',q:'Chinese characters INSCRIBED on a painting are like ___.',a:'a signature woven into the art itself',ch:['a signature woven into the art itself','a label stuck to the back of a frame','a note written in pencil that can be rubbed out','a title placed on a separate card beside the painting'],hint:'An inscription is part of the work — permanent and inseparable'},
+  {type:'simile',word:'posture',q:'A dancer\'s POSTURE on stage is like ___.',a:'punctuation in a sentence — it shapes the meaning',ch:['punctuation in a sentence — it shapes the meaning','a random word placed anywhere','a blank space with no message','a page left without margins'],hint:'Posture communicates meaning, like punctuation shapes a sentence'},
+  {type:'simile',word:'shroud',q:'Ignorance SHROUDS the truth like ___.',a:'a heavy curtain blocking the light',ch:['a heavy curtain blocking the light','a clear window in a bright room','a mirror turned toward the sun','an open door on a summer morning'],hint:'Shrouding blocks what should be seen, like a curtain blocks light'},
+  {type:'simile',word:'stifle',q:'An overly strict teacher who STIFLES questions is like ___.',a:'a cork jammed into a bottle of ideas',ch:['a cork jammed into a bottle of ideas','a door left wide open for all visitors','a window letting in the morning air','a teacher who invites every question'],hint:'Stifling blocks what should naturally flow out'},
+  {type:'simile',word:'tentative',q:'A TENTATIVE first sketch is like ___.',a:'a question mark instead of a full stop',ch:['a question mark instead of a full stop','a declaration carved in stone','a final answer written in ink','a decision announced to the world'],hint:'A tentative thing is uncertain — like a question, not a statement'},
+  {type:'simile',word:'tranquil',q:'Yani\'s paintings of the misty mountains feel TRANQUIL like ___.',a:'a whisper in an empty room',ch:['a whisper in an empty room','a shout above a waterfall','a trumpet at a parade','a crowd at a championship game'],hint:'Tranquil is quiet and undisturbed — like a whisper in silence'},
+  {type:'simile',word:'versatile',q:'Yani\'s VERSATILITY as an artist is like ___.',a:'a musician who can play by ear in any key',ch:['a musician who can play by ear in any key','a pianist who plays only one song','a guitarist who knows three chords','a drummer who plays only in 4/4 time'],hint:'Versatile means not limited to one style, key, or subject'},
+  {type:'simile',word:'captivate',q:'The Smithsonian exhibit CAPTIVATED hundreds of thousands, like ___.',a:'a story so good no one could put it down',ch:['a story so good no one could put it down','a book shelved and never opened','a performance that emptied the theater','a gallery that turned away visitors'],hint:'Captivating holds attention so completely you cannot leave'},
+  {type:'simile',word:'eclipse',q:'A young athlete who ECLIPSES a champion is like ___.',a:'a new star rising while the old one fades',ch:['a new star rising while the old one fades','two equals sharing the same light','a moon that stays behind the clouds','a sun that never rises above the horizon'],hint:'Eclipsing means one rises as the other is obscured'},
+  {type:'simile',word:'evolve',q:'Language EVOLVES over centuries like ___.',a:'a river that slowly changes its course',ch:['a river that slowly changes its course','a stone wall that stands forever unchanged','a cliff face that never erodes','a pond that fills and empties on schedule'],hint:'Evolving means gradual change over a long time'},
+  {type:'simile',word:'diligent',q:'Yani working DILIGENTLY from age two is like ___.',a:'a musician who begins before she can walk',ch:['a musician who begins before she can walk','a student who starts practicing at retirement','an athlete who trains for only one week','a chef who learns to cook in a single lesson'],hint:'Diligence that begins early and never stops'},
+  {type:'simile',word:'attire',q:'Wedding ATTIRE is like ___.',a:'a costume that marks the beginning of a new story',ch:['a costume that marks the beginning of a new story','everyday clothes with no special meaning','a uniform worn every day of the year','a disguise designed to hide who you are'],hint:'Wedding attire is special clothing for a special occasion — it marks a change'},
+  {type:'simile',word:'innate',q:'An INNATE sense of rhythm is like ___.',a:'a clock inside the body that no one wound',ch:['a clock inside the body that no one wound','a skill built up through years of lessons','a certificate earned through hard study','a trophy awarded for achievement'],hint:'Innate = built in from the start, without being set by anyone'},
+  {type:'simile',word:'deft',q:'The way Yani handles a brush — DEFTLY and surely — is like ___.',a:'a pianist whose fingers find each key without looking',ch:['a pianist whose fingers find each key without looking','a beginner reading the notes one at a time','a painter who has to measure every stroke','a writer who looks up every word in the dictionary'],hint:'Deft means the skill is so deep it seems effortless'},
+  {type:'simile',word:'stifle',q:'A lack of creative freedom STIFLES an artist like ___.',a:'a hand placed over a flame before it can grow',ch:['a hand placed over a flame before it can grow','a bellows blowing air onto a fire','a fan cooling a warm afternoon','an open window on a spring day'],hint:'Stifling stops something from growing, like covering a flame'},
+
+  // ── METAPHORS (35) ─────────────────────────────────────────────────────────
+  {type:'metaphor',word:'captivate',q:'Complete the METAPHOR: Wang Yani\'s art was ___ that pulled audiences in from around the world.',a:'a magnet',ch:['a magnet','a wall','a warning','a fence'],hint:'A magnet draws things irresistibly — like captivating art draws audiences'},
+  {type:'metaphor',word:'deft',q:'Complete the METAPHOR: Yani\'s brush was ___ that spoke without hesitation.',a:'a dancer\'s foot',ch:['a dancer\'s foot','a stone','a hammer','a closed fist'],hint:'Deft movement is fluid and precise — like a dancer\'s foot'},
+  {type:'metaphor',word:'diligent',q:'Complete the METAPHOR: Yani\'s ten years of diligent work were ___ she could never lose.',a:'a treasure',ch:['a treasure','a burden','a mistake','a regret'],hint:'Diligent effort builds something of lasting value — a treasure'},
+  {type:'metaphor',word:'eclipse',q:'Complete the METAPHOR: The daughter\'s fame was ___ that left the father\'s in shadow.',a:'a sun',ch:['a sun','a candle','a lantern','a match'],hint:'A sun eclipses all lesser lights — just as great fame eclipses lesser fame'},
+  {type:'metaphor',word:'evolve',q:'Complete the METAPHOR: Yani\'s art was ___ that never stopped growing.',a:'a living thing',ch:['a living thing','a frozen moment','a sealed vault','a completed puzzle'],hint:'Evolving things are alive — they change, grow, and develop'},
+  {type:'metaphor',word:'innate',q:'Complete the METAPHOR: Yani\'s talent was ___ she was born already knowing how to play.',a:'a song inside her',ch:['a song inside her','a lesson waiting to be given','a trophy waiting to be earned','a certificate waiting to be handed out'],hint:'Innate talent is already there at birth — like a song inside you'},
+  {type:'metaphor',word:'inscribe',q:'Complete the METAPHOR: Each inscription on a painting is ___ the artist leaves behind.',a:'a fingerprint',ch:['a fingerprint','an eraser','a blank space','a question'],hint:'An inscription is personal and permanent — like a fingerprint'},
+  {type:'metaphor',word:'posture',q:'Complete the METAPHOR: Posture is ___ of how a person sees themselves.',a:'the outward frame',ch:['the outward frame','the inner voice','the hidden thought','the silent dream'],hint:'Posture shows on the outside what confidence (or lack of it) feels inside'},
+  {type:'metaphor',word:'shroud',q:'Complete the METAPHOR: The mountains shrouded in mist were ___ hiding their faces.',a:'giants',ch:['giants','pebbles','mirrors','windows'],hint:'Huge and ancient, the mountains hide in mist like people turning away'},
+  {type:'metaphor',word:'stifle',q:'Complete the METAPHOR: Rigid rules are ___ that slow down the creative fire.',a:'a wet blanket',ch:['a wet blanket','a spark','a bellows','an open door'],hint:'A wet blanket smothers a fire — just as rigid rules stifle creativity'},
+  {type:'metaphor',word:'tentative',q:'Complete the METAPHOR: Yani\'s first brushstrokes are ___ asking the paper what it wants.',a:'questions',ch:['questions','commands','declarations','orders'],hint:'Tentative moves are uncertain, like questions rather than statements'},
+  {type:'metaphor',word:'tranquil',q:'Complete the METAPHOR: The tranquility of the mountains in Yani\'s paintings is ___ in a noisy world.',a:'an island of calm',ch:['an island of calm','a storm without end','a city at rush hour','a drum that never stops'],hint:'Tranquility is an island of peace surrounded by the chaos of the world'},
+  {type:'metaphor',word:'versatile',q:'Complete the METAPHOR: A versatile artist is ___ that can build anything from any material.',a:'a master builder',ch:['a master builder','a single nail','a lone hammer','a board with no purpose'],hint:'A master builder works with anything — just like a versatile artist'},
+  {type:'metaphor',word:'antic',q:'The monkeys\' antics in the zoo were ___ Yani could not stop watching.',a:'a free comedy',ch:['a free comedy','a solemn play','a silent film','a closed book'],hint:'Antics are naturally entertaining — like a comedy you did not have to pay for'},
+  {type:'metaphor',word:'attire',q:'Yani\'s simple attire at the Smithsonian was ___ that the art alone was enough.',a:'a statement',ch:['a statement','a disguise','a mistake','an apology'],hint:'Her casual clothes made a statement: talent needs no costume'},
+  {type:'metaphor',word:'captivate',q:'The painting that CAPTIVATED the audience was ___ no one could look away from.',a:'a mirror',ch:['a mirror','a wall','a window nailed shut','a locked door'],hint:'A captivating painting reflects something in us — we cannot stop looking'},
+  {type:'metaphor',word:'deft',q:'A DEFT painter\'s hand is ___ that knows exactly where to land.',a:'a bird',ch:['a bird','a stone','a log','a hammer'],hint:'A bird\'s landing is swift, precise, and effortless — like deft hands'},
+  {type:'metaphor',word:'diligent',q:'Yani\'s diligent practice from age two was ___ that took over a decade to fully bloom.',a:'a seed planted early',ch:['a seed planted early','a stone thrown into a pond','a clock that ran out of time','a map with no destination'],hint:'Diligence planted early grows into extraordinary achievement over time'},
+  {type:'metaphor',word:'eclipse',q:'A breakthrough novel that ECLIPSES the author\'s earlier work is ___ among her books.',a:'the brightest star',ch:['the brightest star','the dimmest light','the forgotten page','the closed chapter'],hint:'To eclipse is to outshine — to be the brightest in the collection'},
+  {type:'metaphor',word:'evolve',q:'As Yani\'s art EVOLVED, her style became ___ with each passing year.',a:'a richer language',ch:['a richer language','a simpler sentence','a shorter word','a quieter voice'],hint:'Evolving deepens and enriches — like a language gaining new words'},
+  {type:'metaphor',word:'innate',q:'Wang Yani\'s innate ability was ___ already burning when she was born.',a:'a fire',ch:['a fire','a candle bought later','a match struck at school','a torch lit by her teacher'],hint:'Innate = built in, already burning from the start'},
+  {type:'metaphor',word:'inscribe',q:'The Chinese inscription on a painting is ___ written in the artist\'s own hand.',a:'a poem',ch:['a poem','a receipt','a warning label','a price tag'],hint:'Inscriptions on Chinese paintings are often poetic verses'},
+  {type:'metaphor',word:'posture',q:'Good posture is ___ that holds confidence upright for the world to see.',a:'a spine for the soul',ch:['a spine for the soul','a mask over the face','a wall hiding the truth','a silence louder than words'],hint:'Posture is how confidence (or its absence) shows in the body'},
+  {type:'metaphor',word:'shroud',q:'The fog that SHROUDED the harbor was ___ the city had pulled over itself.',a:'a cloak',ch:['a cloak','a spotlight','a banner','a mirror'],hint:'A cloak hides — fog shrouds like a cloak wrapped around the city'},
+  {type:'metaphor',word:'stifle',q:'Without freedom to experiment, an artist\'s creativity is ___ waiting for air.',a:'a flame without oxygen',ch:['a flame without oxygen','a river in full flood','a garden in spring rain','a seed in perfect soil'],hint:'Stifled creativity is like a flame deprived of what it needs to grow'},
+  {type:'metaphor',word:'tentative',q:'The TENTATIVE opening of a story is ___ before the voice finds its confidence.',a:'a clearing of the throat',ch:['a clearing of the throat','a final declaration','a closing statement','a confirmed announcement'],hint:'Tentative = uncertain first attempt, like clearing your throat before speaking'},
+  {type:'metaphor',word:'tranquil',q:'The tranquil sea in Yani\'s painting was ___ before the storm arrived.',a:'a held breath',ch:['a held breath','a crashing wave','a roaring wind','a churning current'],hint:'Tranquil calm before a storm is like a breath held in anticipation'},
+  {type:'metaphor',word:'versatile',q:'Wang Yani\'s versatility made her art ___ that no one genre could contain.',a:'a river',ch:['a river','a pond','a puddle','a well'],hint:'A river moves freely and finds its own path — like versatile art'},
+  {type:'metaphor',word:'diligent',q:'Yani\'s years of diligent painting were ___ that held up every exhibition she ever gave.',a:'a foundation',ch:['a foundation','a ceiling','a decoration','a roof'],hint:'Foundations support everything built above them — as diligence supports achievement'},
+  {type:'metaphor',word:'evolve',q:'When Yani evolved from painting monkeys to landscapes, she was ___ of her art.',a:'expanding the map',ch:['expanding the map','closing the book','erasing the canvas','finishing the sentence'],hint:'Evolving expands what is possible — like adding new territory to a map'},
+  {type:'metaphor',word:'eclipse',q:'Yani\'s talent was ___ that blocked out all that came before her.',a:'an eclipse',ch:['an eclipse','a shadow','a fog','a cloud'],hint:'Her extraordinary gift overshadowed everything like a solar eclipse'},
+  {type:'metaphor',word:'innate',q:'An artist\'s innate sense of color is ___ no teacher could have given.',a:'a gift',ch:['a gift','a grade','a certificate','a diploma'],hint:'Innate = given at birth, not earned or awarded'},
+  {type:'metaphor',word:'shroud',q:'A shroud of mystery surrounding a famous painting makes it ___ the art world keeps trying to solve.',a:'a riddle',ch:['a riddle','a fact','a headline','a certificate'],hint:'A mystery wrapped in a shroud becomes a puzzle — a riddle'},
+  {type:'metaphor',word:'stifle',q:'Criticism that STIFLES a young artist\'s confidence is ___ that never fully heals.',a:'a wound',ch:['a wound','a badge','a trophy','a reward'],hint:'Stifling does damage — it wounds what it touches'},
+  {type:'metaphor',word:'captivate',q:'Yani\'s painting of the Guilin mountains was ___ the audience stepped into and could not leave.',a:'a world',ch:['a world','a wall','a door','a box'],hint:'Great art is a world — captivating means you live inside it for a moment'}
+];
+
+var quiz={questions:[],index:0,score:0,streak:0,answers:[],answered:false};
+var fcIndex=0,fcFlipped=false;
+
+function shuffle(arr){var a=arr.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+
+function showStart(){show('screen-start');hide('screen-quiz');hide('screen-results');hide('screen-flash');}
+function showQuiz(){hide('screen-start');show('screen-quiz');hide('screen-results');hide('screen-flash');}
+function showResults(){hide('screen-start');hide('screen-quiz');show('screen-results');hide('screen-flash');}
+function showFlashcards(){hide('screen-start');hide('screen-quiz');hide('screen-results');show('screen-flash');fcIndex=0;fcFlipped=false;renderFlashcard();}
+
+function startQuiz(){
+  var pool=shuffle(QUESTIONS).slice(0,20);
+  quiz.questions=pool;quiz.index=0;quiz.score=0;quiz.streak=0;quiz.answers=[];quiz.answered=false;
+  showQuiz();renderQuestion();
+}
+
+function renderQuestion(){
+  var q=quiz.questions[quiz.index];
+  var pct=Math.round((quiz.index/20)*100);
+  $('prog-bar').style.width=pct+'%';
+  $('q-counter').textContent='Question '+(quiz.index+1)+' of 20';
+  var sb=$('streak-badge');
+  if(quiz.streak>=3){sb.classList.remove('hidden');sb.textContent='🔥 '+quiz.streak+' streak';}else{sb.classList.add('hidden');}
+  var ts=TYPE_STYLES[q.type];
+  var badge=$('type-badge');
+  badge.textContent=ts.label;badge.style.color=ts.color;badge.style.background=ts.bg;badge.style.border='1px solid '+ts.color;
+  $('q-text').textContent=q.q;
+  var choiceBox=$('choices');clearEl(choiceBox);
+  var shuffled=shuffle(q.ch);
+  shuffled.forEach(function(c){
+    var btn=document.createElement('button');
+    btn.className='choice-btn';btn.textContent=c;
+    btn.addEventListener('click',function(){selectAnswer(c,btn,q);});
+    choiceBox.appendChild(btn);
+  });
+  $('hint-text').textContent='';
+  quiz.answered=false;
+}
+
+function selectAnswer(choice,btn,q){
+  if(quiz.answered)return;
+  quiz.answered=true;
+  var correct=choice===q.a;
+  var allBtns=$('choices').querySelectorAll('.choice-btn');
+  allBtns.forEach(function(b){
+    b.disabled=true;
+    if(b.textContent===q.a)b.classList.add('correct');
+    else if(b===btn&&!correct)b.classList.add('wrong');
+  });
+  if(correct){
+    quiz.score++;quiz.streak++;
+    burst(btn.getBoundingClientRect().left+btn.offsetWidth/2,btn.getBoundingClientRect().top,'#f472b6',22);
+    if(quiz.streak>0&&quiz.streak%3===0)confettiBurst();
+  }else{
+    quiz.streak=0;
+    $('hint-text').textContent='💡 '+q.hint;
+    burst(btn.getBoundingClientRect().left+btn.offsetWidth/2,btn.getBoundingClientRect().top,'#ef4444',14);
+  }
+  quiz.answers.push({q:q,chosen:choice,correct:correct});
+  setTimeout(function(){
+    quiz.index++;
+    if(quiz.index<quiz.questions.length){renderQuestion();}else{buildResults();}
+  },1100);
+}
+
+function buildResults(){
+  showResults();
+  var pct=Math.round((quiz.score/20)*100);
+  var ring=$('score-ring');clearEl(ring);
+  var span=mk('span','',quiz.score+'/20');ring.appendChild(span);
+  ring.style.borderColor=pct>=80?'#34d399':pct>=60?'#fbbf24':'#ef4444';
+  var title=$('results-title');
+  if(pct===100)title.textContent='Perfect! Master of the Brush! 🏆';
+  else if(pct>=80)title.textContent='Excellent Work! Keep Creating! ⭐';
+  else if(pct>=60)title.textContent='Good Effort! Keep Studying! 📚';
+  else title.textContent='Keep Practicing — You\'ll Captivate! 💪';
+  $('results-msg').textContent='You scored '+quiz.score+' out of 20 ('+pct+'%)';
+  var bd=$('breakdown');clearEl(bd);
+  var counts={synonym:0,antonym:0,analogy:0,simile:0,metaphor:0};
+  var totals={synonym:0,antonym:0,analogy:0,simile:0,metaphor:0};
+  quiz.answers.forEach(function(a){totals[a.q.type]++;if(a.correct)counts[a.q.type]++;});
+  Object.keys(counts).forEach(function(t){
+    if(totals[t]===0)return;
+    var ts=TYPE_STYLES[t];var chip=mk('span','bd-chip',ts.label+': '+counts[t]+'/'+totals[t]);
+    chip.style.color=ts.color;chip.style.background=ts.bg;chip.style.border='1px solid '+ts.color;
+    bd.appendChild(chip);
+  });
+  var rl=$('review-list');clearEl(rl);
+  var wrong=quiz.answers.filter(function(a){return!a.correct;});
+  if(wrong.length===0){var p=mk('p','','✨ Perfect score — no missed questions!');p.style.color='#34d399';p.style.textAlign='center';rl.appendChild(p);}
+  else{wrong.forEach(function(a){var div=mk('div','review-item');div.appendChild(mk('div','ri-q',a.q.q));div.appendChild(mk('div','ri-a','✓ Correct: '+a.q.a));div.appendChild(mk('div','ri-yours','✗ Your answer: '+a.chosen));rl.appendChild(div);});}
+}
+
+function renderFlashcard(){
+  var w=WORDS[fcIndex];fcFlipped=false;
+  $('fc-card').classList.remove('flipped');
+  $('fc-word').textContent=w.word;$('fc-pos').textContent=w.pos;$('fc-def').textContent=w.def;$('fc-example').textContent=w.ex;
+  $('fc-count').textContent='Card '+(fcIndex+1)+' of '+WORDS.length;
+  $('fc-nav-label').textContent=(fcIndex+1)+' / '+WORDS.length;
+  $('fc-prog').style.width=(((fcIndex+1)/WORDS.length)*100)+'%';
+}
+
+function flipCard(){fcFlipped=!fcFlipped;if(fcFlipped)$('fc-card').classList.add('flipped');else $('fc-card').classList.remove('flipped');}
+function fcNav(dir){fcIndex=(fcIndex+dir+WORDS.length)%WORDS.length;renderFlashcard();}
+
+$('btn-start').addEventListener('click',startQuiz);
+$('btn-flash-start').addEventListener('click',showFlashcards);
+$('btn-retry').addEventListener('click',startQuiz);
+$('btn-flash-results').addEventListener('click',showFlashcards);
+$('btn-fc-back').addEventListener('click',showStart);
+$('fc-scene').addEventListener('click',flipCard);
+$('fc-prev').addEventListener('click',function(){fcNav(-1);});
+$('fc-next').addEventListener('click',function(){fcNav(1);});
+
+})();
+</script>
+</body>
+</html>
