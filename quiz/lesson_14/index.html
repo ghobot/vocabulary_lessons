@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wordly Wise Lesson 14 — Vocabulary Quest</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.0/dist/confetti.browser.min.js"></script>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --gold:#f0c040;--gold2:#e8a820;--teal:#1fcfb0;--teal2:#0fa890;
+    --navy:#0d1b2a;--navy2:#152436;--navy3:#1e3450;
+    --correct:#22c97a;--wrong:#e84040;--white:#f0f4ff;--muted:#7a9ab8;
+  }
+  body{
+    font-family:'Nunito',sans-serif;background:var(--navy);
+    color:var(--white);min-height:100vh;overflow-x:hidden;
+    display:flex;flex-direction:column;align-items:center;
+  }
+  canvas#bg{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+
+  #app{position:relative;z-index:1;width:100%;max-width:680px;padding:1.5rem 1rem 3rem;min-height:100vh;display:flex;flex-direction:column}
+
+  /* Header */
+  #header{text-align:center;margin-bottom:1.5rem}
+  #header h1{font-family:'Cinzel',serif;font-size:1.5rem;color:var(--gold);letter-spacing:.06em;text-shadow:0 0 20px rgba(240,192,64,.4)}
+  #header p{font-size:.8rem;color:var(--muted);margin-top:.25rem;letter-spacing:.08em;text-transform:uppercase}
+
+  /* Score bar */
+  #scorebar{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;padding:.6rem 1rem;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px}
+  .sb-item{text-align:center}
+  .sb-label{font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+  .sb-val{font-size:1.1rem;font-weight:800;color:var(--white)}
+  .sb-val.gold{color:var(--gold)}
+  .sb-val.teal{color:var(--teal)}
+
+  /* Progress */
+  #progress-wrap{margin-bottom:1.25rem}
+  #progress-bar-bg{height:6px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden}
+  #progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--teal2),var(--teal));border-radius:4px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+  #progress-label{font-size:.7rem;color:var(--muted);text-align:right;margin-top:.3rem}
+
+  /* Type badge */
+  #type-badge{display:inline-flex;align-items:center;gap:.4rem;padding:.3rem .8rem;border-radius:20px;font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:.9rem;border:1px solid currentColor;opacity:.9}
+
+  /* Question card */
+  #q-card{
+    background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+    border-radius:18px;padding:1.5rem;margin-bottom:1rem;
+    backdrop-filter:blur(10px);
+    transition:transform .15s,box-shadow .15s;
+    position:relative;overflow:hidden;
+  }
+  #q-card::before{content:'';position:absolute;inset:0;border-radius:18px;background:linear-gradient(135deg,rgba(255,255,255,.04) 0%,transparent 60%);pointer-events:none}
+  #q-text{font-size:1.1rem;font-weight:700;line-height:1.55;white-space:pre-line;color:var(--white)}
+
+  /* Hint */
+  #hint-box{margin-top:.9rem;padding:.6rem .9rem;background:rgba(240,192,64,.08);border:1px solid rgba(240,192,64,.2);border-radius:10px;font-size:.8rem;color:var(--gold);line-height:1.5;display:none}
+  #hint-box.show{display:block;animation:fadeIn .2s ease}
+
+  /* Choices */
+  #choices{display:grid;gap:.6rem;margin-bottom:1rem}
+  .choice{
+    width:100%;padding:.85rem 1.1rem;background:rgba(255,255,255,.05);
+    border:1.5px solid rgba(255,255,255,.12);border-radius:12px;
+    font-family:'Nunito',sans-serif;font-size:.95rem;font-weight:600;
+    color:var(--white);cursor:pointer;text-align:left;
+    display:flex;justify-content:space-between;align-items:center;
+    transition:background .15s,border-color .15s,transform .1s;
+    position:relative;overflow:hidden;
+  }
+  .choice:hover:not(:disabled){background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.25);transform:translateX(3px)}
+  .choice:disabled{cursor:default}
+  .choice.correct{background:rgba(34,201,122,.15);border-color:var(--correct);color:var(--correct)}
+  .choice.wrong{background:rgba(232,64,64,.12);border-color:var(--wrong);color:var(--wrong)}
+  .choice.dim{opacity:.4}
+  .choice-icon{font-size:1.1rem;flex-shrink:0;margin-left:.5rem}
+
+  /* Bottom actions */
+  #actions{display:flex;justify-content:space-between;align-items:center;min-height:42px}
+  #hint-btn{background:transparent;border:1px solid rgba(240,192,64,.3);color:var(--gold);border-radius:20px;padding:.4rem .9rem;font-family:'Nunito',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;transition:background .15s,border-color .15s;letter-spacing:.04em}
+  #hint-btn:hover{background:rgba(240,192,64,.1);border-color:var(--gold)}
+  #feedback-text{font-size:.95rem;font-weight:800}
+  #next-btn{display:none;background:var(--teal2);border:none;color:#fff;border-radius:22px;padding:.55rem 1.4rem;font-family:'Nunito',sans-serif;font-size:.9rem;font-weight:800;cursor:pointer;transition:background .15s,transform .1s;letter-spacing:.03em}
+  #next-btn:hover{background:var(--teal);transform:translateX(2px)}
+
+  /* Results screen */
+  #results{display:none;flex-direction:column;align-items:center;text-align:center;animation:fadeIn .4s ease}
+  #results.show{display:flex}
+  #results-score{font-family:'Cinzel',serif;font-size:4rem;font-weight:900;line-height:1;margin:.5rem 0}
+  #results-grade{font-size:1.2rem;font-weight:800;margin-bottom:.3rem}
+  #results-sub{font-size:.8rem;color:var(--muted);margin-bottom:1.5rem}
+  #type-breakdown{display:grid;grid-template-columns:repeat(5,1fr);gap:.5rem;width:100%;margin-bottom:1.5rem}
+  .tb-cell{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:.6rem .3rem;text-align:center}
+  .tb-type{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.2rem}
+  .tb-score{font-size:1.1rem;font-weight:800}
+  #review-list{width:100%;text-align:left;margin-bottom:1.5rem}
+  .review-item{display:flex;gap:.7rem;padding:.6rem .8rem;border-bottom:1px solid rgba(255,255,255,.05);font-size:.8rem;align-items:flex-start}
+  .review-item:last-child{border-bottom:none}
+  .ri-icon{font-size:1rem;flex-shrink:0;margin-top:.05rem}
+  .ri-wrong-ans{color:var(--wrong);font-size:.75rem;margin-top:.2rem}
+  .ri-meta{color:var(--muted);font-size:.72rem}
+  #retry-btn{background:var(--gold2);border:none;color:var(--navy);border-radius:24px;padding:.7rem 2rem;font-family:'Cinzel',serif;font-size:.95rem;font-weight:700;cursor:pointer;letter-spacing:.05em;transition:background .15s,transform .1s}
+  #retry-btn:hover{background:var(--gold);transform:scale(1.03)}
+
+  /* Shake animation */
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+  .shake{animation:shake .35s ease}
+  @keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.04)}100%{transform:scale(1)}}
+  .pop{animation:pop .25s ease}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+  /* Start screen */
+  #start-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;text-align:center;animation:fadeIn .4s ease}
+  #start-screen h2{font-family:'Cinzel',serif;font-size:2rem;color:var(--gold);margin-bottom:.5rem;text-shadow:0 0 30px rgba(240,192,64,.3)}
+  #start-screen p{color:var(--muted);max-width:380px;line-height:1.6;margin-bottom:.4rem;font-size:.9rem}
+  .pill-grid{display:flex;flex-wrap:wrap;gap:.4rem;justify-content:center;margin:1rem 0 1.5rem}
+  .pill{padding:.3rem .8rem;border-radius:20px;font-size:.72rem;font-weight:700;letter-spacing:.05em;border:1px solid currentColor;text-transform:uppercase}
+  #start-btn{background:var(--gold2);border:none;color:var(--navy);border-radius:24px;padding:.8rem 2.4rem;font-family:'Cinzel',serif;font-size:1rem;font-weight:700;cursor:pointer;letter-spacing:.06em;transition:background .15s,transform .1s;box-shadow:0 0 30px rgba(240,192,64,.2)}
+  #start-btn:hover{background:var(--gold);transform:scale(1.04)}
+
+  /* Quiz container hidden initially */
+  #quiz{display:none;flex-direction:column;width:100%;animation:fadeIn .3s ease}
+  #quiz.show{display:flex}
+
+  /* Canvas particle overlay */
+  #particle-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:2;pointer-events:none}
+</style>
+</head>
+<body>
+
+<canvas id="bg"></canvas>
+<canvas id="particle-canvas"></canvas>
+
+<div id="app">
+
+  <!-- START SCREEN -->
+  <div id="start-screen">
+    <div id="header" style="margin-bottom:1rem">
+      <h1>Vocabulary Quest</h1>
+      <p>Wordly Wise 3000 · Book 6 · Lesson 14</p>
+    </div>
+    <h2>⚔️ The Marco Polo Challenge</h2>
+    <p>Master all 15 words through 50 questions. Each round draws 20 at random — can you score a perfect 20?</p>
+    <div class="pill-grid">
+      <span class="pill" style="color:#1fcfb0;border-color:#1fcfb0">20 Synonyms</span>
+      <span class="pill" style="color:#4ea6f0;border-color:#4ea6f0">15 Antonyms</span>
+      <span class="pill" style="color:#f0c040;border-color:#f0c040">11 Analogies</span>
+      <span class="pill" style="color:#e870a0;border-color:#e870a0">8 Similes</span>
+      <span class="pill" style="color:#a878f0;border-color:#a878f0">8 Metaphors</span>
+    </div>
+    <p style="font-size:.75rem;color:var(--muted)">20 questions per round · Hint available · Streak tracking</p>
+    <br>
+    <button id="start-btn" onclick="startQuiz()">Begin the Quest →</button>
+  </div>
+
+  <!-- QUIZ -->
+  <div id="quiz">
+    <div id="header">
+      <h1>Vocabulary Quest</h1>
+      <p>Wordly Wise 3000 · Book 6 · Lesson 14</p>
+    </div>
+
+    <div id="scorebar">
+      <div class="sb-item"><div class="sb-label">Score</div><div class="sb-val gold" id="sb-score">0</div></div>
+      <div class="sb-item"><div class="sb-label">Question</div><div class="sb-val" id="sb-q">1 / 20</div></div>
+      <div class="sb-item"><div class="sb-label">Streak</div><div class="sb-val teal" id="sb-streak">0 🔥</div></div>
+    </div>
+
+    <div id="progress-wrap">
+      <div id="progress-bar-bg"><div id="progress-bar-fill" style="width:0%"></div></div>
+      <div id="progress-label">0 of 20 complete</div>
+    </div>
+
+    <div id="type-badge">—</div>
+
+    <div id="q-card">
+      <div id="q-text">Loading...</div>
+      <div id="hint-box">💡 <span id="hint-text"></span></div>
+    </div>
+
+    <div id="choices"></div>
+
+    <div id="actions">
+      <button id="hint-btn" onclick="toggleHint()">💡 Show Hint</button>
+      <div id="feedback-text"></div>
+      <button id="next-btn" onclick="nextQuestion()">Next →</button>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results">
+    <div id="header" style="margin-bottom:.5rem">
+      <h1>Vocabulary Quest</h1>
+      <p>Wordly Wise 3000 · Book 6 · Lesson 14</p>
+    </div>
+    <div id="results-score" class="gold"></div>
+    <div id="results-grade"></div>
+    <div id="results-sub"></div>
+    <div id="type-breakdown"></div>
+    <div id="review-list"></div>
+    <button id="retry-btn" onclick="startQuiz()">⚔️ Play Again</button>
+  </div>
+
+</div>
+
+<script>
+// ─── STARFIELD BACKGROUND ─────────────────────────────────────────────────────
+(function(){
+  const c=document.getElementById('bg');
+  const ctx=c.getContext('2d');
+  let W,H,stars=[];
+  function resize(){W=c.width=window.innerWidth;H=c.height=window.innerHeight;initStars();}
+  function initStars(){
+    stars=[];
+    for(let i=0;i<180;i++){
+      stars.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.4+.2,spd:Math.random()*.3+.05,alpha:Math.random()*.8+.2,tw:Math.random()*Math.PI*2});
+    }
+  }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle='#0d1b2a';ctx.fillRect(0,0,W,H);
+    const t=Date.now()/1000;
+    // subtle nebula
+    const g=ctx.createRadialGradient(W*.3,H*.2,0,W*.3,H*.2,W*.55);
+    g.addColorStop(0,'rgba(31,207,176,.04)');g.addColorStop(1,'transparent');
+    ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    const g2=ctx.createRadialGradient(W*.75,H*.7,0,W*.75,H*.7,W*.45);
+    g2.addColorStop(0,'rgba(168,120,240,.04)');g2.addColorStop(1,'transparent');
+    ctx.fillStyle=g2;ctx.fillRect(0,0,W,H);
+    // stars
+    stars.forEach(s=>{
+      const twinkle=.5+.5*Math.sin(t*1.5+s.tw);
+      ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(240,244,255,${s.alpha*twinkle})`;ctx.fill();
+      s.y+=s.spd;if(s.y>H){s.y=0;s.x=Math.random()*W;}
+    });
+    requestAnimationFrame(draw);
+  }
+  window.addEventListener('resize',resize);
+  resize();draw();
+})();
+
+// ─── PARTICLE SYSTEM ──────────────────────────────────────────────────────────
+const pc=document.getElementById('particle-canvas');
+const pctx=pc.getContext('2d');
+let particles=[];
+function resizePC(){pc.width=window.innerWidth;pc.height=window.innerHeight;}
+window.addEventListener('resize',resizePC);resizePC();
+
+function spawnParticles(x,y,color,count=24){
+  for(let i=0;i<count;i++){
+    const angle=Math.random()*Math.PI*2;
+    const speed=Math.random()*6+2;
+    particles.push({x,y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed-3,r:Math.random()*5+2,color,alpha:1,decay:Math.random()*.025+.015});
+  }
+}
+function animateParticles(){
+  pctx.clearRect(0,0,pc.width,pc.height);
+  particles=particles.filter(p=>p.alpha>0);
+  particles.forEach(p=>{
+    p.x+=p.vx;p.y+=p.vy;p.vy+=.2;p.alpha-=p.decay;
+    pctx.beginPath();pctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+    pctx.fillStyle=p.color.replace('1)',`${p.alpha})`);
+    pctx.fill();
+  });
+  requestAnimationFrame(animateParticles);
+}
+animateParticles();
+
+// ─── QUESTION DATA ────────────────────────────────────────────────────────────
+const QUESTIONS=[
+  // SYNONYMS (20)
+  {type:"synonym",word:"benevolent",q:"Which word is closest in meaning to BENEVOLENT?",a:"kind",ch:["kind","cruel","distant","confused"],hint:"A benevolent person wants to do good for others."},
+  {type:"synonym",word:"consent",q:"Which word means the same as CONSENT (verb)?",a:"agree",ch:["agree","refuse","demand","ignore"],hint:"The judges consented to hear the case."},
+  {type:"synonym",word:"discreet",q:"Which word best matches DISCREET?",a:"tactful",ch:["tactful","careless","loud","hasty"],hint:"Discreet means showing care in what you say or do."},
+  {type:"synonym",word:"engross",q:"Which word means the same as ENGROSS?",a:"absorb",ch:["absorb","bore","release","confuse"],hint:"The puzzle so engrossed me I lost track of time."},
+  {type:"synonym",word:"esteem",q:"Which word is closest in meaning to ESTEEM (verb)?",a:"respect",ch:["respect","despise","ignore","fear"],hint:"Historians esteem Eleanor Roosevelt for her work."},
+  {type:"synonym",word:"exaggerate",q:"Which word means the same as EXAGGERATE?",a:"overstate",ch:["overstate","minimize","describe","hide"],hint:"Exaggerate = describe as larger than it really is."},
+  {type:"synonym",word:"extensive",q:"Which word best matches EXTENSIVE?",a:"vast",ch:["vast","tiny","shallow","brief"],hint:"Central Park is an extensive green expanse."},
+  {type:"synonym",word:"fantastic",q:"Which word means the same as FANTASTIC?",a:"unbelievable",ch:["unbelievable","ordinary","expected","typical"],hint:"Fantastic means almost unbelievable or extraordinary."},
+  {type:"synonym",word:"intrigue",q:"Which word means the same as INTRIGUE (verb)?",a:"fascinate",ch:["fascinate","bore","repel","confuse"],hint:"The way stage magicians do tricks intrigues me."},
+  {type:"synonym",word:"marvel",q:"Which word best matches MARVEL (noun)?",a:"wonder",ch:["wonder","problem","mistake","disaster"],hint:"The Amazon River is one of the great marvels of nature."},
+  {type:"synonym",word:"mission",q:"Which word means the same as MISSION?",a:"assignment",ch:["assignment","vacation","holiday","distraction"],hint:"The ambassador's mission was to arrange a meeting."},
+  {type:"synonym",word:"opportunity",q:"Which word best matches OPPORTUNITY?",a:"chance",ch:["chance","obstacle","barrier","threat"],hint:"Isabella was waiting for the opportunity to talk."},
+  {type:"synonym",word:"relinquish",q:"Which word means the same as RELINQUISH?",a:"surrender",ch:["surrender","seize","keep","demand"],hint:"The boy didn't want to relinquish the puppy he found."},
+  {type:"synonym",word:"tyrant",q:"Which word best matches TYRANT?",a:"dictator",ch:["dictator","servant","helper","ambassador"],hint:"A tyrant uses complete power in cruel or unjust ways."},
+  {type:"synonym",word:"vanquish",q:"Which word means the same as VANQUISH?",a:"conquer",ch:["conquer","lose","retreat","yield"],hint:"Success quickly vanquishes fear."},
+  {type:"synonym",word:"esteem",q:"Which word best matches ESTEEM (noun)?",a:"regard",ch:["regard","hatred","doubt","envy"],hint:"The players credit their success to the great esteem they feel for their coach."},
+  {type:"synonym",word:"consent",q:"Which word means the same as CONSENT (noun)?",a:"permission",ch:["permission","refusal","command","threat"],hint:"Students need a parent's consent to go on the field trip."},
+  {type:"synonym",word:"tyrant",q:"Another word for TYRANT is ___",a:"oppressor",ch:["oppressor","protector","guide","helper"],hint:"A tyrant rules through cruelty and unjust power."},
+  {type:"synonym",word:"extensive",q:"Which word also means EXTENSIVE?",a:"far-reaching",ch:["far-reaching","shallow","narrow","brief"],hint:"Extensive can mean ambitious and wide-ranging."},
+  {type:"synonym",word:"relinquish",q:"Which word also means RELINQUISH?",a:"release",ch:["release","grasp","demand","acquire"],hint:"To relinquish is to let something go."},
+  // ANTONYMS (15)
+  {type:"antonym",word:"benevolent",q:"Which word is the OPPOSITE of BENEVOLENT?",a:"malicious",ch:["malicious","generous","helpful","warm"],hint:"Benevolent means wanting to do good — what's the opposite?"},
+  {type:"antonym",word:"consent",q:"Which word is the OPPOSITE of CONSENT?",a:"refuse",ch:["refuse","permit","allow","support"],hint:"Consent means to agree or give permission."},
+  {type:"antonym",word:"discreet",q:"Which word is the OPPOSITE of DISCREET?",a:"reckless",ch:["reckless","careful","wise","quiet"],hint:"A discreet person handles situations wisely and carefully."},
+  {type:"antonym",word:"engross",q:"Which word is the OPPOSITE of ENGROSS?",a:"bore",ch:["bore","captivate","fascinate","engage"],hint:"To engross is to take up one's complete attention."},
+  {type:"antonym",word:"esteem",q:"Which word is the OPPOSITE of ESTEEM?",a:"scorn",ch:["scorn","admire","honor","value"],hint:"Esteem means to think highly of someone."},
+  {type:"antonym",word:"exaggerate",q:"Which word is the OPPOSITE of EXAGGERATE?",a:"understate",ch:["understate","embellish","inflate","stretch"],hint:"To exaggerate is to make something seem bigger than it is."},
+  {type:"antonym",word:"extensive",q:"Which word is the OPPOSITE of EXTENSIVE?",a:"limited",ch:["limited","wide","broad","thorough"],hint:"Extensive means covering a large area."},
+  {type:"antonym",word:"fantastic",q:"Which word is the OPPOSITE of FANTASTIC?",a:"ordinary",ch:["ordinary","strange","unusual","odd"],hint:"Fantastic means almost unbelievable or extraordinary."},
+  {type:"antonym",word:"intrigue",q:"Which word is the OPPOSITE of INTRIGUE (verb)?",a:"bore",ch:["bore","captivate","interest","attract"],hint:"To intrigue is to fascinate someone."},
+  {type:"antonym",word:"opportunity",q:"Which word is the OPPOSITE of OPPORTUNITY?",a:"obstacle",ch:["obstacle","opening","possibility","chance"],hint:"An opportunity is the right time for doing something."},
+  {type:"antonym",word:"relinquish",q:"Which word is the OPPOSITE of RELINQUISH?",a:"retain",ch:["retain","release","yield","abandon"],hint:"To relinquish is to let go or give up."},
+  {type:"antonym",word:"vanquish",q:"Which word is the OPPOSITE of VANQUISH?",a:"surrender",ch:["surrender","conquer","defeat","overcome"],hint:"To vanquish is to defeat utterly and completely."},
+  {type:"antonym",word:"tyrant",q:"Which word is most OPPOSITE to TYRANT in spirit?",a:"servant",ch:["servant","dictator","ruler","oppressor"],hint:"A tyrant takes power — the opposite serves others."},
+  {type:"antonym",word:"marvel",q:"Which word is the OPPOSITE of MARVEL (verb)?",a:"ignore",ch:["ignore","admire","wonder","appreciate"],hint:"To marvel is to be filled with wonder and amazement."},
+  {type:"antonym",word:"discreet",q:"Which word means the OPPOSITE of DISCREET?",a:"indiscreet",ch:["indiscreet","careful","tactful","considerate"],hint:"Discreet means showing wisdom in what you say or do."},
+  // ANALOGIES (11)
+  {type:"analogy",word:"analogy",q:"BENEVOLENT is to KIND as TYRANT is to ___",a:"cruel",ch:["cruel","generous","helpful","quiet"],hint:"Think about what each word means — they're opposite in nature!"},
+  {type:"analogy",word:"analogy",q:"CONSENT is to AGREE as RELINQUISH is to ___",a:"give up",ch:["give up","hold on","take over","demand"],hint:"Each pair shares the same synonym relationship."},
+  {type:"analogy",word:"analogy",q:"ENGROSS is to ATTENTION as INTRIGUE is to ___",a:"interest",ch:["interest","boredom","confusion","fear"],hint:"What does intrigue capture, just as engross captures attention?"},
+  {type:"analogy",word:"analogy",q:"MISSION is to TASK as OPPORTUNITY is to ___",a:"chance",ch:["chance","barrier","result","problem"],hint:"Both pairs are synonyms!"},
+  {type:"analogy",word:"analogy",q:"TYRANT is to VANQUISH as FEAR is to ___",a:"overcome",ch:["overcome","spread","grow","hide"],hint:"What do you do to a tyrant — and what do you do to fear?"},
+  {type:"analogy",word:"analogy",q:"ESTEEM is to RESPECT as EXAGGERATE is to ___",a:"overstate",ch:["overstate","minimize","ignore","hide"],hint:"Both pairs are synonyms — esteem means respect, so exaggerate means...?"},
+  {type:"analogy",word:"analogy",q:"DISCREET is to RECKLESS as BENEVOLENT is to ___",a:"malicious",ch:["malicious","kind","generous","caring"],hint:"Each pair contains opposites (antonyms)."},
+  {type:"analogy",word:"analogy",q:"VANQUISH is to DEFEAT as ENGROSS is to ___",a:"absorb",ch:["absorb","release","bore","distract"],hint:"Both pairs are synonyms."},
+  {type:"analogy",word:"analogy",q:"TYRANT is to TYRANNY as DISCREET is to ___",a:"discretion",ch:["discretion","discreetly","discreetness","disorder"],hint:"Both pairs go from adjective/noun to related noun form."},
+  {type:"analogy",word:"analogy",q:"OPPORTUNITY is to OBSTACLE as ESTEEM is to ___",a:"scorn",ch:["scorn","respect","admire","value"],hint:"Each pair contains antonyms — opposites."},
+  {type:"analogy",word:"analogy",q:"MARVEL is to WONDERFUL as TYRANT is to ___",a:"cruel",ch:["cruel","powerful","famous","feared"],hint:"Both pairs link a noun to the quality it represents."},
+  // SIMILES (8)
+  {type:"simile",word:"simile",q:"Complete the simile:\n\"The explorer's drive was like a _____, always pulling him toward new lands.\"",a:"mission",ch:["mission","tyrant","exaggeration","consent"],hint:"Which word means an important task or assignment?"},
+  {type:"simile",word:"simile",q:"Complete the simile:\n\"The story was as _____ as a trip to another planet.\"",a:"fantastic",ch:["fantastic","discreet","extensive","benevolent"],hint:"Which word means almost unbelievable?"},
+  {type:"simile",word:"simile",q:"Complete the simile:\n\"The spy moved as _____ as a shadow, revealing nothing.\"",a:"discreet",ch:["discreet","extensive","fantastic","marvelous"],hint:"Which word means showing care in what you say or do?"},
+  {type:"simile",word:"simile",q:"Complete the simile:\n\"Like a spider releasing its web, she finally _____ control.\"",a:"relinquished",ch:["relinquished","vanquished","esteemed","consented"],hint:"Which word means to let go or give up?"},
+  {type:"simile",word:"simile",q:"Complete the simile:\n\"His fish story grew like a _____ — bigger every time he told it.\"",a:"exaggeration",ch:["exaggeration","mission","marvel","opportunity"],hint:"Which word means something described as bigger than it really is?"},
+  {type:"simile",word:"simile",q:"Complete the simile:\n\"The rainforest was as _____ as an ocean — it seemed to stretch forever.\"",a:"extensive",ch:["extensive","discreet","fantastic","benevolent"],hint:"Which word means covering a large area?"},
+  {type:"simile",word:"simile",q:"Complete the simile:\n\"Like a champion boxer, courage can _____ any fear.\"",a:"vanquish",ch:["vanquish","esteem","intrigue","consent"],hint:"Which word means to defeat utterly and completely?"},
+  {type:"simile",word:"simile",q:"Complete the simile:\n\"The discovery was like a true _____ of science — nobody had seen anything like it.\"",a:"marvel",ch:["marvel","tyrant","mission","consent"],hint:"Which word means a wonderful or amazing thing?"},
+  // METAPHORS (8)
+  {type:"metaphor",word:"metaphor",q:"Complete the metaphor:\n\"The new novel was a black hole — it completely _____ her.\"",a:"engrossed",ch:["engrossed","intrigued","marveled","esteemed"],hint:"Which word means to take up one's complete attention?"},
+  {type:"metaphor",word:"metaphor",q:"Complete the metaphor:\n\"Her kindness was a warm sunbeam — she was truly _____.\"",a:"benevolent",ch:["benevolent","engrossing","discreet","tyrannical"],hint:"Which word means wanting to do good and being kind?"},
+  {type:"metaphor",word:"metaphor",q:"Complete the metaphor:\n\"That once-in-a-lifetime offer was a golden _____ he could not ignore.\"",a:"opportunity",ch:["opportunity","mission","tyranny","marvel"],hint:"Which word means a chance or the right time for something?"},
+  {type:"metaphor",word:"metaphor",q:"Complete the metaphor:\n\"The boring lecture was a _____ — it robbed every student of their focus.\"",a:"tyrant",ch:["tyrant","marvel","mission","opportunity"],hint:"Which word means a cruel ruler who takes complete control?"},
+  {type:"metaphor",word:"metaphor",q:"Complete the metaphor:\n\"The detective's casebook was a _____ web of clues stretching across two countries.\"",a:"extensive",ch:["extensive","discreet","fantastic","benevolent"],hint:"Which word means covering a large or far-reaching area?"},
+  {type:"metaphor",word:"metaphor",q:"Complete the metaphor:\n\"His grudge was a trophy he refused to _____.\"",a:"relinquish",ch:["relinquish","vanquish","esteem","intrigue"],hint:"Which word means to let go or give up?"},
+  {type:"metaphor",word:"metaphor",q:"Complete the metaphor:\n\"The magician's tricks were a puzzle that never stopped _____ the crowd.\"",a:"intriguing",ch:["intriguing","vanquishing","esteemed","consenting"],hint:"Which word means to fascinate someone?"},
+  {type:"metaphor",word:"metaphor",q:"Complete the metaphor:\n\"The crocodile was a living _____ — something Marco Polo's readers could barely believe.\"",a:"marvel",ch:["marvel","tyrant","mission","consent"],hint:"Which word means a wonderful or amazing thing?"},
+];
+
+const TYPE_STYLES={
+  synonym:{label:"Synonym",color:"#1fcfb0",bg:"rgba(31,207,176,.12)"},
+  antonym:{label:"Antonym",color:"#4ea6f0",bg:"rgba(78,166,240,.12)"},
+  analogy:{label:"Analogy",color:"#f0c040",bg:"rgba(240,192,64,.12)"},
+  simile:{label:"Simile",color:"#e870a0",bg:"rgba(232,112,160,.12)"},
+  metaphor:{label:"Metaphor",color:"#a878f0",bg:"rgba(168,120,240,.12)"},
+};
+
+// ─── QUIZ STATE ───────────────────────────────────────────────────────────────
+let questions=[],current=0,score=0,streak=0,bestStreak=0,answered=false,hintShown=false,results=[];
+const TOTAL=20;
+
+function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function startQuiz(){
+  questions=shuffle(QUESTIONS).slice(0,TOTAL).map(q=>({...q,ch:shuffle(q.ch)}));
+  current=0;score=0;streak=0;bestStreak=0;answered=false;hintShown=false;results=[];
+  document.getElementById('start-screen').style.display='none';
+  document.getElementById('results').classList.remove('show');
+  document.getElementById('quiz').classList.add('show');
+  renderQuestion();
+}
+
+function renderQuestion(){
+  const q=questions[current];
+  const ts=TYPE_STYLES[q.type];
+  answered=false;hintShown=false;
+
+  // Update scorebar
+  document.getElementById('sb-score').textContent=score;
+  document.getElementById('sb-q').textContent=(current+1)+' / '+TOTAL;
+  document.getElementById('sb-streak').textContent=streak+(streak>=3?' 🔥':'');
+
+  // Progress
+  const pct=(current/TOTAL)*100;
+  document.getElementById('progress-bar-fill').style.width=pct+'%';
+  document.getElementById('progress-label').textContent=current+' of '+TOTAL+' complete';
+
+  // Type badge
+  const badge=document.getElementById('type-badge');
+  badge.textContent=ts.label.toUpperCase();
+  badge.style.color=ts.color;
+  badge.style.background=ts.bg;
+  badge.style.borderColor=ts.color;
+
+  // Question
+  document.getElementById('q-text').textContent=q.q;
+  document.getElementById('hint-box').classList.remove('show');
+  document.getElementById('hint-text').textContent=q.hint;
+
+  // Choices
+  const choicesEl=document.getElementById('choices');
+  choicesEl.innerHTML='';
+  q.ch.forEach(c=>{
+    const btn=document.createElement('button');
+    btn.className='choice';btn.textContent=c;
+    btn.innerHTML=`<span>${c}</span><span class="choice-icon"></span>`;
+    btn.onclick=()=>selectAnswer(c,btn,q);
+    choicesEl.appendChild(btn);
+  });
+
+  // Actions reset
+  document.getElementById('hint-btn').style.display='block';
+  document.getElementById('hint-btn').textContent='💡 Show Hint';
+  document.getElementById('feedback-text').textContent='';
+  document.getElementById('feedback-text').style.color='';
+  document.getElementById('next-btn').style.display='none';
+
+  // Card animation
+  const card=document.getElementById('q-card');
+  card.style.animation='none';void card.offsetWidth;
+  card.style.animation='fadeIn .3s ease';
+}
+
+function selectAnswer(choice,btn,q){
+  if(answered)return;
+  answered=true;
+  const correct=choice===q.a;
+
+  // Disable all buttons
+  document.querySelectorAll('.choice').forEach(b=>{
+    b.disabled=true;
+    const span=b.querySelector('span:first-child');
+    if(span&&span.textContent===q.a){
+      b.classList.add('correct');b.querySelector('.choice-icon').textContent='✓';
+    } else if(b===btn&&!correct){
+      b.classList.add('wrong');b.querySelector('.choice-icon').textContent='✗';
+    } else {
+      b.classList.add('dim');
+    }
+  });
+
+  const card=document.getElementById('q-card');
+
+  if(correct){
+    score++;streak++;if(streak>bestStreak)bestStreak=streak;
+    document.getElementById('sb-score').textContent=score;
+    document.getElementById('sb-streak').textContent=streak+(streak>=3?' 🔥':'');
+    document.getElementById('feedback-text').textContent=streak>=3?'🔥 On fire! +1':'✓ Correct!';
+    document.getElementById('feedback-text').style.color='#22c97a';
+    card.classList.add('pop');setTimeout(()=>card.classList.remove('pop'),300);
+    // Particles
+    const rect=btn.getBoundingClientRect();
+    spawnParticles(rect.left+rect.width/2,rect.top+rect.height/2,'rgba(34,201,122,',28);
+    if(streak>=5){
+      confetti({particleCount:60,spread:70,origin:{y:.6},colors:['#f0c040','#1fcfb0','#a878f0']});
+    }
+  } else {
+    streak=0;document.getElementById('sb-streak').textContent='0';
+    document.getElementById('feedback-text').textContent='✗ Answer: '+q.a;
+    document.getElementById('feedback-text').style.color='#e84040';
+    card.classList.add('shake');setTimeout(()=>card.classList.remove('shake'),400);
+    const rect=btn.getBoundingClientRect();
+    spawnParticles(rect.left+rect.width/2,rect.top+rect.height/2,'rgba(232,64,64,',16);
+  }
+
+  results.push({q:q.q,type:q.type,word:q.word,correct,chosen:choice,answer:q.a});
+  document.getElementById('hint-btn').style.display='none';
+  document.getElementById('next-btn').style.display='block';
+  document.getElementById('next-btn').textContent=(current+1>=TOTAL)?'See Results →':'Next →';
+}
+
+function nextQuestion(){
+  current++;
+  if(current>=TOTAL){showResults();return;}
+  renderQuestion();
+}
+
+function toggleHint(){
+  hintShown=!hintShown;
+  const hb=document.getElementById('hint-box');
+  if(hintShown){hb.classList.add('show');document.getElementById('hint-btn').textContent='💡 Hide Hint';}
+  else{hb.classList.remove('show');document.getElementById('hint-btn').textContent='💡 Show Hint';}
+}
+
+function showResults(){
+  // Big confetti
+  confetti({particleCount:120,spread:100,origin:{y:.5},colors:['#f0c040','#1fcfb0','#a878f0','#e870a0']});
+  setTimeout(()=>confetti({particleCount:80,spread:80,angle:60,origin:{x:0,y:.6},colors:['#f0c040','#22c97a']}),400);
+  setTimeout(()=>confetti({particleCount:80,spread:80,angle:120,origin:{x:1,y:.6},colors:['#4ea6f0','#a878f0']}),700);
+
+  document.getElementById('quiz').classList.remove('show');
+  const res=document.getElementById('results');
+  res.classList.add('show');
+
+  const pct=Math.round((score/TOTAL)*100);
+  const grade=pct>=95?'🏆 Perfect Explorer!':pct>=80?'⚔️ Champion Adventurer':pct>=65?'🧭 Skilled Navigator':'📚 Keep Practicing!';
+  const gc=pct>=80?'#f0c040':pct>=65?'#1fcfb0':'#4ea6f0';
+
+  document.getElementById('results-score').textContent=score+'/'+TOTAL;
+  document.getElementById('results-score').style.color=gc;
+  document.getElementById('results-grade').textContent=grade;
+  document.getElementById('results-grade').style.color=gc;
+  document.getElementById('results-sub').textContent=pct+'% correct · Best streak: '+bestStreak;
+
+  // Type breakdown
+  const tb=document.getElementById('type-breakdown');tb.innerHTML='';
+  Object.entries(TYPE_STYLES).forEach(([type,ts])=>{
+    const typeR=results.filter(r=>r.type===type);
+    if(!typeR.length)return;
+    const c=typeR.filter(r=>r.correct).length;
+    const cell=document.createElement('div');cell.className='tb-cell';
+    cell.innerHTML=`<div class="tb-type" style="color:${ts.color}">${ts.label}</div><div class="tb-score">${c}/${typeR.length}</div>`;
+    tb.appendChild(cell);
+  });
+
+  // Review list
+  const rl=document.getElementById('review-list');rl.innerHTML='';
+  results.forEach(r=>{
+    const div=document.createElement('div');div.className='review-item';
+    div.innerHTML=`
+      <span class="ri-icon">${r.correct?'✅':'❌'}</span>
+      <div>
+        <div class="ri-meta">${TYPE_STYLES[r.type].label} — <strong style="color:#f0f4ff">${r.word}</strong></div>
+        <div>${r.q.replace(/\n/g,' ')}</div>
+        ${!r.correct?`<div class="ri-wrong-ans">You chose: ${r.chosen} · Correct: ${r.answer}</div>`:''}
+      </div>`;
+    rl.appendChild(div);
+  });
+}
+</script>
+</body>
+</html>
