@@ -126,9 +126,6 @@ h1{font-size:1.6rem;font-weight:700;text-align:center;margin-bottom:4px;backgrou
     <div id="badges-row"></div>
     <div class="q-word" id="q-word"></div>
     <div class="q-text" id="q-text"></div>
-    <div class="hint-row">
-      <button class="hint-btn" id="hint-btn">&#128161; Hint</button>
-    </div>
     <div class="hint-box" id="hint-box"></div>
     <div class="choices" id="choices"></div>
     <div class="feedback" id="feedback"></div>
@@ -3015,7 +3012,7 @@ function startQuiz(){
   wrongAnswers=[];lessonTally={};typeTally={};
   document.getElementById('start-screen').style.display='none';
   document.getElementById('result-section').style.display='none';
-  document.getElementById('quiz-section').style.display='';
+  document.getElementById('quiz-section').style.display='block';
   showQuestion();
 }
 
@@ -3044,7 +3041,7 @@ function showQuestion(){
   txt(document.getElementById('q-word'),q.w.toUpperCase());
   txt(document.getElementById('q-text'),q.q);
   var hb=document.getElementById('hint-box');
-  hb.style.display='none';txt(hb,q.h);
+  hb.style.display='none';if(q.h)txt(hb,'💡 '+q.h);
   var cc=document.getElementById('choices');
   clearEl(cc);
   shuffle(q.ch).forEach(function(opt){
@@ -3062,11 +3059,6 @@ function hexToRgba(hex,a){
   return r+','+g+','+b+','+a;
 }
 
-document.getElementById('hint-btn').addEventListener('click',function(){
-  var hb=document.getElementById('hint-box');
-  hb.style.display=hb.style.display==='none'?'block':'none';
-});
-
 function selectAnswer(btn,opt,q){
   if(answered)return;
   answered=true;
@@ -3082,6 +3074,7 @@ function selectAnswer(btn,opt,q){
   } else {
     btn.classList.add('wrong');streak=0;
     txt(fb,'Incorrect. The answer is: '+q.a);fb.className='feedback no';
+    document.getElementById('hint-box').style.display='block';
     spawnBurst(cx,cy,'#a78bfa',12);
     document.getElementById('choices').querySelectorAll('.choice-btn').forEach(function(b){if(b.textContent===q.a)b.classList.add('correct');});
     wrongAnswers.push({word:q.w,yourAns:opt,correct:q.a,lesson:q.l,story:q.s,type:q.t});
@@ -3138,23 +3131,19 @@ function showResult(){
   // Wrong answers review
   var rs=document.getElementById('review-section');
   clearEl(rs);
-  if(wrongAnswers.length>0){
-    txt(mk('div','review-title').also=function(){rs.appendChild(this);return this;}(),'Missed Words');
-    rs.firstChild&&rs.firstChild.nodeType;
+    if(wrongAnswers.length>0){
     var title=mk('div','review-title');txt(title,'Missed Words');rs.appendChild(title);
     wrongAnswers.forEach(function(w){
       var row=mk('div','review-item');
-      txt(mk('span','review-icon').also=function(){row.appendChild(this);return this;}(),'✗');
+      var icon=mk('span','review-icon');txt(icon,'\u2717');row.appendChild(icon);
       var info=mk('div');
-      var wrd=txt(mk('div','review-word'),w.word);
-      var wrong=txt(mk('div','review-wrong'),'You answered: "'+w.yourAns+'" → Correct: "'+w.correct+'"');
-      var ll=txt(mk('div','review-lesson'),'Lesson '+w.lesson+' · '+w.story+' · '+w.type);
-      info.appendChild(wrd);info.appendChild(wrong);info.appendChild(ll);
-      row.appendChild(txt(mk('span','review-icon'),'\u2717'));
+      info.appendChild(txt(mk('div','review-word'),w.word));
+      info.appendChild(txt(mk('div','review-wrong'),'You answered: "'+w.yourAns+'" \u2192 Correct: "'+w.correct+'"'));
+      info.appendChild(txt(mk('div','review-lesson'),'Lesson '+w.lesson+' \u00b7 '+w.story+' \u00b7 '+w.type));
       row.appendChild(info);
       rs.appendChild(row);
     });
-  }
+  }  }
 }
 </script>
 </body>

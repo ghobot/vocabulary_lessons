@@ -186,7 +186,6 @@
     </div>
     <div id="choices"></div>
     <div id="actions">
-      <button id="hint-btn" onclick="toggleHint()">&#128161; Show Hint</button>
       <div id="feedback-text"></div>
       <button id="next-btn" onclick="nextQuestion()">Next →</button>
     </div>
@@ -502,8 +501,7 @@ function renderQuestion(){
     btn.addEventListener('click',function(){selectAnswer(c,btn,q);});
     choicesEl.appendChild(btn);
   });
-  document.getElementById('hint-btn').style.display='block';
-  document.getElementById('hint-btn').textContent='💡 Show Hint';
+  document.getElementById('hint-box').classList.remove('show');
   document.getElementById('feedback-text').textContent='';
   document.getElementById('feedback-text').style.color='';
   document.getElementById('next-btn').style.display='none';
@@ -536,23 +534,17 @@ function selectAnswer(choice,btn,q){
     streak=0;document.getElementById('sb-streak').textContent='0';
     document.getElementById('feedback-text').textContent='✗ Answer: '+q.a;
     document.getElementById('feedback-text').style.color='#e84040';
+    document.getElementById('hint-box').classList.add('show');
     card.classList.add('shake');setTimeout(function(){card.classList.remove('shake');},400);
     var r2=btn.getBoundingClientRect();spawnParticles(r2.left+r2.width/2,r2.top+r2.height/2,'rgba(232,64,64,',16);
   }
   results.push({q:q.q,type:q.type,word:q.word,correct:correct,chosen:choice,answer:q.a});
-  document.getElementById('hint-btn').style.display='none';
   document.getElementById('next-btn').style.display='block';
   document.getElementById('next-btn').textContent=(current+1>=TOTAL)?'See Results →':'Next →';
 }
 
 function nextQuestion(){current++;if(current>=TOTAL){showResults();return;}renderQuestion();}
 
-function toggleHint(){
-  hintShown=!hintShown;
-  var hb=document.getElementById('hint-box');
-  if(hintShown){hb.classList.add('show');document.getElementById('hint-btn').textContent='💡 Hide Hint';}
-  else{hb.classList.remove('show');document.getElementById('hint-btn').textContent='💡 Show Hint';}
-}
 
 function showResults(){
   confetti({particleCount:120,spread:100,origin:{y:.5},colors:['#f0c040','#1fcfb0','#a878f0','#e870a0']});
