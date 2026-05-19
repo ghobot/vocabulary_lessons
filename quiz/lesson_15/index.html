@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wordly Wise &mdash; Lesson 15: Our Place in the Cosmos</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#030a1c;color:#e8e8f0;min-height:100vh;overflow-x:hidden}
+canvas#stars{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.screen{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+.screen.hidden{display:none}
+#home-link{position:fixed;top:14px;left:18px;z-index:100;color:#d946ef;text-decoration:none;font-size:14px;background:rgba(217,70,239,.12);padding:6px 14px;border-radius:20px;border:1px solid #a21caf;transition:background .2s}
+#home-link:hover{background:rgba(217,70,239,.28)}
+.start-card{background:rgba(3,8,22,.88);border:1px solid #a21caf;border-radius:24px;padding:48px 40px;max-width:540px;width:100%;text-align:center;box-shadow:0 0 60px rgba(217,70,239,.22)}
+.start-card h1{font-size:2.4rem;font-weight:800;background:linear-gradient(135deg,#d946ef,#818cf8,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+.start-card .subtitle{color:#94a3b8;margin-bottom:28px;font-size:1rem}
+.start-card p{color:#cbd5e1;line-height:1.7;margin-bottom:32px;font-size:.97rem}
+.btn{display:inline-block;padding:13px 34px;border-radius:50px;border:none;cursor:pointer;font-size:1rem;font-weight:700;transition:transform .15s,box-shadow .15s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.btn-primary{background:linear-gradient(135deg,#a21caf,#d946ef);color:#fff;box-shadow:0 4px 18px rgba(217,70,239,.4)}
+.btn-secondary{background:rgba(217,70,239,.08);color:#d946ef;border:1px solid #a21caf;margin-top:14px}
+.btn-sm{padding:8px 20px;font-size:.85rem}
+.quiz-wrap{max-width:680px;width:100%}
+.progress-bar-outer{background:rgba(255,255,255,.08);border-radius:10px;height:8px;margin-bottom:20px;overflow:hidden}
+.progress-bar-inner{height:100%;border-radius:10px;background:linear-gradient(90deg,#a21caf,#d946ef);transition:width .4s}
+.q-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.q-counter{color:#94a3b8;font-size:.9rem}
+.streak-badge{background:rgba(251,191,36,.15);border:1px solid #f59e0b;color:#fbbf24;border-radius:20px;padding:4px 12px;font-size:.8rem;font-weight:700}
+.type-badge{border-radius:20px;padding:4px 14px;font-size:.78rem;font-weight:700;display:inline-block;margin-bottom:14px}
+.q-text{font-size:1.2rem;font-weight:600;color:#e2e8f0;line-height:1.6;margin-bottom:24px}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.choice-btn{background:rgba(217,70,239,.06);border:1.5px solid rgba(217,70,239,.2);border-radius:14px;padding:14px 18px;color:#e2e8f0;font-size:.95rem;cursor:pointer;transition:all .15s;text-align:left}
+.choice-btn:hover:not(:disabled){background:rgba(217,70,239,.18);border-color:#d946ef}
+.choice-btn.correct{background:rgba(16,185,129,.2);border-color:#10b981;color:#6ee7b7}
+.choice-btn.wrong{background:rgba(239,68,68,.2);border-color:#ef4444;color:#fca5a5}
+.results-card{background:rgba(3,8,22,.88);border:1px solid #a21caf;border-radius:24px;padding:40px 36px;max-width:620px;width:100%;text-align:center}
+.score-ring{width:120px;height:120px;border-radius:50%;margin:0 auto 20px;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:800;border:4px solid #d946ef;background:rgba(217,70,239,.1)}
+.breakdown{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:20px 0}
+.bd-chip{border-radius:20px;padding:5px 14px;font-size:.8rem;font-weight:600}
+.review-list{margin-top:24px;text-align:left;max-height:280px;overflow-y:auto}
+.review-item{background:rgba(255,255,255,.05);border-radius:10px;padding:10px 14px;margin-bottom:8px;font-size:.85rem;line-height:1.5}
+.review-item .ri-q{color:#94a3b8}
+.review-item .ri-a{color:#6ee7b7;font-weight:600}
+.review-item .ri-yours{color:#fca5a5}
+.results-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:24px}
+.fc-wrap{max-width:540px;width:100%;display:flex;flex-direction:column;align-items:center}
+.fc-wrap h2{font-size:1.5rem;font-weight:700;color:#d946ef;margin-bottom:6px}
+.fc-count{color:#64748b;font-size:.85rem;margin-bottom:24px}
+.fc-scene{width:100%;max-width:420px;height:260px;perspective:1000px;cursor:pointer;margin-bottom:20px}
+.fc-card{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.4,0,.2,1)}
+.fc-card.flipped{transform:rotateY(180deg)}
+.fc-face{position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center}
+.fc-front{background:linear-gradient(135deg,rgba(217,70,239,.22),rgba(217,70,239,.1));border:1.5px solid #a21caf}
+.fc-back{background:linear-gradient(135deg,rgba(88,28,135,.4),rgba(168,85,247,.15));border:1.5px solid #a855f7;transform:rotateY(180deg)}
+#fc-word{font-size:2rem;font-weight:800;color:#e2e8f0}
+#fc-pos{font-size:.85rem;color:#d946ef;margin-top:6px}
+#fc-flip-hint{font-size:.75rem;color:#64748b;margin-top:14px}
+#fc-def{font-size:.95rem;color:#f5d0fe;line-height:1.6}
+#fc-example{font-size:.82rem;color:#e879f9;font-style:italic;margin-top:10px}
+.fc-nav{display:flex;align-items:center;gap:18px}
+.fc-nav button{background:rgba(217,70,239,.15);border:1.5px solid #a21caf;color:#d946ef;border-radius:50%;width:42px;height:42px;font-size:1.2rem;cursor:pointer;transition:background .15s}
+.fc-nav button:hover{background:rgba(217,70,239,.32)}
+.fc-nav span{color:#94a3b8;font-size:.9rem;min-width:70px;text-align:center}
+.fc-progress{width:100%;background:rgba(255,255,255,.08);border-radius:10px;height:6px;margin-top:18px;overflow:hidden}
+.fc-progress-inner{height:100%;background:linear-gradient(90deg,#a21caf,#a855f7);transition:width .35s;border-radius:10px}
+.hint-text{color:#94a3b8;font-size:.85rem;font-style:italic;margin-top:8px;min-height:20px}
+#particle-canvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:200}
+@media(max-width:500px){.choices{grid-template-columns:1fr}.start-card h1{font-size:1.8rem}}
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+<canvas id="particle-canvas"></canvas>
+<a href="../index.html" id="home-link">&#8592; Home</a>
+
+<div id="screen-start" class="screen">
+  <div class="start-card">
+    <div style="font-size:3rem;margin-bottom:10px">&#x1FA90;</div>
+    <h1>Our Place in the Cosmos</h1>
+    <div class="subtitle">Wordly Wise &middot; Lesson 15</div>
+    <p>Our solar system revolves on a scale so extraordinary that even a trace of its true size can envelop the imagination. From the velocity of light to the way stars fuse and exist, these 15 words will help you analyze — and compose — your understanding of the universe.</p>
+    <div><button class="btn btn-primary" id="btn-start">Begin the Challenge &#8594;</button></div>
+    <div><button class="btn btn-secondary" id="btn-flash-start">&#x1F4DA; Study Flashcards</button></div>
+  </div>
+</div>
+
+<div id="screen-quiz" class="screen hidden">
+  <div class="quiz-wrap">
+    <div class="progress-bar-outer"><div class="progress-bar-inner" id="prog-bar" style="width:0%"></div></div>
+    <div class="q-header">
+      <span class="q-counter" id="q-counter">Question 1 of 20</span>
+      <span class="streak-badge hidden" id="streak-badge">&#x1F525; 0 streak</span>
+    </div>
+    <div id="type-badge" class="type-badge"></div>
+    <div class="q-text" id="q-text"></div>
+    <div class="choices" id="choices"></div>
+    <div class="hint-text" id="hint-text"></div>
+  </div>
+</div>
+
+<div id="screen-results" class="screen hidden">
+  <div class="results-card">
+    <div class="score-ring" id="score-ring"></div>
+    <h2 id="results-title" style="margin-bottom:6px;color:#e2e8f0"></h2>
+    <p id="results-msg" style="color:#94a3b8;margin-bottom:4px"></p>
+    <div class="breakdown" id="breakdown"></div>
+    <div class="review-list" id="review-list"></div>
+    <div class="results-btns">
+      <button class="btn btn-primary btn-sm" id="btn-retry">Try Again</button>
+      <button class="btn btn-secondary btn-sm" id="btn-flash-results">&#x1F4DA; Review Flashcards</button>
+    </div>
+  </div>
+</div>
+
+<div id="screen-flash" class="screen hidden">
+  <div class="fc-wrap">
+    <h2>&#x1F4DA; Lesson 15 Flashcards</h2>
+    <div class="fc-count" id="fc-count">Card 1 of 15</div>
+    <div class="fc-scene" id="fc-scene">
+      <div class="fc-card" id="fc-card">
+        <div class="fc-face fc-front">
+          <div id="fc-word"></div>
+          <div id="fc-pos"></div>
+          <div id="fc-flip-hint">tap to reveal &#8594;</div>
+        </div>
+        <div class="fc-face fc-back">
+          <div id="fc-def"></div>
+          <div id="fc-example"></div>
+        </div>
+      </div>
+    </div>
+    <div class="fc-nav">
+      <button id="fc-prev">&#8249;</button>
+      <span id="fc-nav-label">1 / 15</span>
+      <button id="fc-next">&#8250;</button>
+    </div>
+    <div class="fc-progress"><div class="fc-progress-inner" id="fc-prog" style="width:6.67%"></div></div>
+    <button class="btn btn-secondary btn-sm" id="btn-fc-back" style="margin-top:22px">&#8592; Back</button>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+var sc=document.getElementById('stars'),ctx=sc.getContext('2d'),W,H,stars=[];
+function initStars(){W=sc.width=window.innerWidth;H=sc.height=window.innerHeight;stars=[];for(var i=0;i<220;i++)stars.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.4+.3,s:Math.random()*.4+.1,b:Math.random()});}
+function drawStars(){ctx.clearRect(0,0,W,H);var g=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,W*.7);g.addColorStop(0,'rgba(217,70,239,.12)');g.addColorStop(.5,'rgba(217,70,239,.05)');g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);stars.forEach(function(s){s.b+=s.s*.016;var a=.4+.55*Math.abs(Math.sin(s.b));ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle='rgba(217,70,239,'+a+')';ctx.fill();});requestAnimationFrame(drawStars);}
+window.addEventListener('resize',initStars);initStars();drawStars();
+
+var pc=document.getElementById('particle-canvas'),pctx=pc.getContext('2d'),particles=[];
+function resizePC(){pc.width=window.innerWidth;pc.height=window.innerHeight;}resizePC();window.addEventListener('resize',resizePC);
+function burst(x,y,color,count){for(var i=0;i<count;i++)particles.push({x:x,y:y,vx:(Math.random()-0.5)*7,vy:(Math.random()-2.5)*6,r:Math.random()*5+2,color:color,life:1,dec:Math.random()*.025+.015});}
+function confettiBurst(){var cols=['#d946ef','#818cf8','#f472b6','#34d399','#fbbf24'];for(var i=0;i<90;i++){var c=cols[Math.floor(Math.random()*cols.length)];particles.push({x:Math.random()*pc.width,y:-10,vx:(Math.random()-0.5)*4,vy:Math.random()*4+2,r:Math.random()*6+2,color:c,life:1,dec:Math.random()*.012+.008});}}
+function animParticles(){pctx.clearRect(0,0,pc.width,pc.height);particles=particles.filter(function(p){p.x+=p.vx;p.y+=p.vy;p.vy+=0.12;p.life-=p.dec;if(p.life<=0)return false;pctx.globalAlpha=p.life;pctx.beginPath();pctx.arc(p.x,p.y,p.r,0,Math.PI*2);pctx.fillStyle=p.color;pctx.fill();return true;});pctx.globalAlpha=1;requestAnimationFrame(animParticles);}animParticles();
+
+function clearEl(el){while(el.firstChild)el.removeChild(el.firstChild);}
+function mk(tag,cls,txt){var el=document.createElement(tag);if(cls)el.className=cls;if(txt!==undefined)el.textContent=txt;return el;}
+function show(id){document.getElementById(id).classList.remove('hidden');}
+function hide(id){document.getElementById(id).classList.add('hidden');}
+function $(id){return document.getElementById(id);}
+
+var WORDS=[
+  {word:'analyze',pos:'v.',def:'To break down into separate parts in order to study; to examine carefully.',ex:'"Scientists analyze starlight to determine which elements a distant star contains."'},
+  {word:'apprehensive',pos:'adj.',def:'Worried or uneasy about what might happen; fearful about the future.',ex:'"She was apprehensive about the rocket launch, even though everything had been carefully checked."'},
+  {word:'coincide',pos:'v.',def:'1. To be in the same place or occur at the same time. 2. To be the same; to agree. n. coincidence: Something that occurs by chance at the same time as another event.',ex:'"The solar eclipse happened to coincide with the school astronomy festival, thrilling everyone."'},
+  {word:'compose',pos:'v.',def:'1. To make by combining parts. 2. To create or write, as a poem or song. 3. To quiet or calm oneself.',ex:'"She took a deep breath to compose herself before delivering her speech about space exploration."'},
+  {word:'disk',pos:'n.',def:'Any thin, flat, circular object.',ex:'"When viewed from far away, the spinning galaxy resembles a glowing disk in the darkness of space."'},
+  {word:'envelop',pos:'v.',def:'To hide or cover on all sides; to wrap or surround completely.',ex:'"A thick atmosphere can envelop a planet, protecting it from harmful radiation."'},
+  {word:'exist',pos:'v.',def:'1. To be real; to have actual being. 2. To be found; to occur. 3. To stay alive.',ex:'"Scientists have long wondered whether conditions for life exist on planets beyond our solar system."'},
+  {word:'extraordinary',pos:'adj.',def:'Very unusual; remarkable; beyond what is ordinary.',ex:'"The astronauts had an extraordinary view of Earth from the space station window."'},
+  {word:'fuse',pos:'v.',def:'To join by or as if by melting; to blend or unite. n. fusion: A joining together.',ex:'"The extreme heat at the center of a star causes hydrogen atoms to fuse into helium."'},
+  {word:'mere',pos:'adj.',def:'Nothing more than; only; no more than.',ex:'"Our entire solar system is a mere dot in the vast expanse of the Milky Way galaxy."'},
+  {word:'revolve',pos:'v.',def:'To go around something in a circle; to orbit; to rotate around a central point.',ex:'"Earth takes approximately 365 days to revolve once around the sun."'},
+  {word:'scale',pos:'v./n.',def:'(v.) To climb or climb over. (n.) 1. Thin plates covering fish or reptiles. 2. A series of musical notes. 3. A device for measuring weight. 4. Proportional size on a map or model. 5. A series of steps or degrees.',ex:'"The scale of the universe — from the tiniest atom to the largest galaxy — is almost impossible to imagine."'},
+  {word:'solar',pos:'adj.',def:'Of or having to do with the sun.',ex:'"Solar panels on the roof of the school convert sunlight into electricity for the building."'},
+  {word:'trace',pos:'v./n.',def:'(v.) 1. To follow the trail or tracks of; to locate. 2. To copy by drawing over lines through thin paper. (n.) 1. A very small amount. 2. A mark or sign left behind by someone or something.',ex:'"By studying ancient rocks, scientists can trace the history of Earth\'s atmosphere billions of years into the past."'},
+  {word:'velocity',pos:'n.',def:'Rate of movement; speed.',ex:'"A rocket must reach a velocity of at least 25,000 miles per hour to escape Earth\'s gravity."'}
+];
+
+var TYPE_STYLES={
+  synonym:{label:'Synonym',color:'#60a5fa',bg:'rgba(96,165,250,.15)'},
+  antonym:{label:'Antonym',color:'#f472b6',bg:'rgba(244,114,182,.15)'},
+  analogy:{label:'Analogy',color:'#a78bfa',bg:'rgba(167,139,250,.15)'},
+  simile:{label:'Simile',color:'#34d399',bg:'rgba(52,211,153,.15)'},
+  metaphor:{label:'Metaphor',color:'#fbbf24',bg:'rgba(251,191,36,.15)'}
+};
+
+var QUESTIONS=[
+// ── SYNONYMS (50) ──────────────────────────────────────────────────────────
+{type:'synonym',word:'analyze',q:'ANALYZE most nearly means:',a:'examine',ch:['examine','combine','ignore','guess'],hint:'To analyze something is to look at it carefully and break it into parts — like examining every detail'},
+{type:'synonym',word:'analyze',q:'Which word is a synonym for ANALYZE?',a:'investigate',ch:['investigate','overlook','dismiss','combine'],hint:'To investigate is to study carefully — just like to analyze'},
+{type:'synonym',word:'analyze',q:'ANALYZE is closest in meaning to:',a:'evaluate',ch:['evaluate','ignore','overlook','miss'],hint:'To evaluate something is to carefully study and assess it — just like analyzing'},
+{type:'synonym',word:'analyze',q:'A scientist who ANALYZES data is _____ it.',a:'studying carefully',ch:['studying carefully','ignoring','guessing about','combining'],hint:'Analysis means careful study of separate parts — the opposite of guessing or ignoring'},
+{type:'synonym',word:'apprehensive',q:'APPREHENSIVE most nearly means:',a:'anxious',ch:['anxious','confident','joyful','calm'],hint:'An apprehensive person feels anxious or worried about what might happen'},
+{type:'synonym',word:'apprehensive',q:'Which word is a synonym for APPREHENSIVE?',a:'uneasy',ch:['uneasy','confident','relaxed','certain'],hint:'Uneasy means not comfortable or at ease — like apprehensive, which is worried about what\'s coming'},
+{type:'synonym',word:'apprehensive',q:'APPREHENSIVE is closest in meaning to:',a:'worried',ch:['worried','cheerful','fearless','assured'],hint:'To be worried about what might happen is exactly what apprehensive means'},
+{type:'synonym',word:'apprehensive',q:'A person who is APPREHENSIVE feels _____ about what might happen.',a:'nervous',ch:['nervous','confident','pleased','excited'],hint:'Nervousness and apprehension both involve unease and worry about the future'},
+{type:'synonym',word:'coincide',q:'COINCIDE most nearly means:',a:'overlap',ch:['overlap','clash','separate','differ'],hint:'To coincide is to occur at the same time or place — like two events that overlap'},
+{type:'synonym',word:'coincide',q:'Which word is a synonym for COINCIDE?',a:'correspond',ch:['correspond','clash','diverge','oppose'],hint:'To correspond means to match or agree — like events or opinions that coincide'},
+{type:'synonym',word:'coincide',q:'When two opinions COINCIDE, they _____.',a:'agree',ch:['agree','clash','differ','oppose'],hint:'To coincide means to be the same or to agree — both in time and in meaning'},
+{type:'synonym',word:'compose',q:'COMPOSE (to create) most nearly means:',a:'create',ch:['create','destroy','scatter','separate'],hint:'To compose a song or poem is to create or write it — composing IS creating'},
+{type:'synonym',word:'compose',q:'Which word is a synonym for COMPOSE (to write)?',a:'write',ch:['write','erase','destroy','ignore'],hint:'Compose means to write or create something like music or poetry'},
+{type:'synonym',word:'compose',q:'COMPOSE (to calm) is closest in meaning to:',a:'settle',ch:['settle','agitate','disturb','unsettle'],hint:'To compose yourself means to settle down and become calm — to quiet your emotions'},
+{type:'synonym',word:'compose',q:'To COMPOSE yourself is to _____ yourself.',a:'calm',ch:['calm','excite','disturb','anger'],hint:'When you compose yourself, you quiet your emotions and find inner calm'},
+{type:'synonym',word:'disk',q:'DISK most nearly means:',a:'flat circular object',ch:['flat circular object','hollow sphere','sharp cube','pointed cone'],hint:'A disk is any thin, flat, circular shape — like a coin, a planet seen edge-on, or a galaxy from far away'},
+{type:'synonym',word:'disk',q:'Which description best matches a DISK?',a:'thin and round',ch:['thin and round','tall and pointed','hollow and curved','wide and square'],hint:'A disk is defined by being flat and circular — thin and round'},
+{type:'synonym',word:'envelop',q:'ENVELOP most nearly means:',a:'surround',ch:['surround','expose','reveal','uncover'],hint:'To envelop is to cover or hide something on all sides — like surrounding it completely'},
+{type:'synonym',word:'envelop',q:'Which word is a synonym for ENVELOP?',a:'engulf',ch:['engulf','expose','uncover','display'],hint:'To engulf means to swallow up or surround completely — just like envelop'},
+{type:'synonym',word:'envelop',q:'ENVELOP is closest in meaning to:',a:'shroud',ch:['shroud','reveal','expose','display'],hint:'To shroud something is to cover it completely — like a fog that envelops a city'},
+{type:'synonym',word:'exist',q:'EXIST most nearly means:',a:'be real',ch:['be real','vanish','disappear','cease'],hint:'To exist means to have real being — it is the opposite of not being there at all'},
+{type:'synonym',word:'exist',q:'Which word is a synonym for EXIST?',a:'occur',ch:['occur','vanish','fade','disappear'],hint:'To occur means to happen or be found — like how conditions for life exist or occur on a planet'},
+{type:'synonym',word:'exist',q:'EXIST is closest in meaning to:',a:'subsist',ch:['subsist','vanish','cease','stop'],hint:'To subsist means to continue living or being — like a creature that exists in a harsh environment'},
+{type:'synonym',word:'extraordinary',q:'EXTRAORDINARY most nearly means:',a:'remarkable',ch:['remarkable','ordinary','common','plain'],hint:'Extraordinary goes beyond the ordinary — something remarkable stands out in an unusual way'},
+{type:'synonym',word:'extraordinary',q:'Which word is a synonym for EXTRAORDINARY?',a:'exceptional',ch:['exceptional','typical','average','usual'],hint:'Exceptional means going beyond what is normal — just like extraordinary'},
+{type:'synonym',word:'extraordinary',q:'EXTRAORDINARY is closest in meaning to:',a:'remarkable',ch:['remarkable','boring','ordinary','unimpressive'],hint:'A remarkable thing draws your attention because it is far beyond ordinary — like extraordinary'},
+{type:'synonym',word:'extraordinary',q:'An EXTRAORDINARY discovery is one that is _____.',a:'very unusual',ch:['very unusual','perfectly normal','quite typical','entirely predictable'],hint:'Extraordinary literally means beyond the ordinary — very unusual and far outside the normal range'},
+{type:'synonym',word:'fuse',q:'FUSE most nearly means:',a:'merge',ch:['merge','separate','divide','split'],hint:'To fuse is to join things together — like merging two materials into one'},
+{type:'synonym',word:'fuse',q:'Which word is a synonym for FUSE?',a:'combine',ch:['combine','disconnect','separate','split'],hint:'To combine is to bring things together into one — just like fusing them'},
+{type:'synonym',word:'fuse',q:'FUSE is closest in meaning to:',a:'blend',ch:['blend','divide','split','separate'],hint:'When materials fuse, they blend into one — their individual boundaries disappear'},
+{type:'synonym',word:'mere',q:'MERE most nearly means:',a:'only',ch:['only','significant','major','important'],hint:'Mere means nothing more than — as in only, and nothing else beyond that'},
+{type:'synonym',word:'mere',q:'Which word is a synonym for MERE?',a:'simple',ch:['simple','complex','great','extraordinary'],hint:'Mere suggests something small or simple — nothing beyond what is described'},
+{type:'synonym',word:'mere',q:'MERE is closest in meaning to:',a:'just',ch:['just','significant','vast','considerable'],hint:'Mere and just both mean nothing more than — nothing to add, nothing greater behind it'},
+{type:'synonym',word:'revolve',q:'REVOLVE most nearly means:',a:'orbit',ch:['orbit','stop','halt','freeze'],hint:'To revolve is to go in a circle around something — like orbiting a center point'},
+{type:'synonym',word:'revolve',q:'Which word is a synonym for REVOLVE?',a:'rotate',ch:['rotate','stay still','stop','stand'],hint:'To rotate means to spin or turn in a circle — like revolving around a central point'},
+{type:'synonym',word:'revolve',q:'REVOLVE is closest in meaning to:',a:'spin around',ch:['spin around','remain still','stop moving','stand in place'],hint:'Revolving means moving in a circular path — spinning around a fixed central point'},
+{type:'synonym',word:'scale',q:'SCALE (v.) most nearly means:',a:'climb',ch:['climb','descend','fall','drop'],hint:'To scale a mountain or wall means to climb up it — working your way to the top'},
+{type:'synonym',word:'scale',q:'Which word is a synonym for SCALE (v.)?',a:'ascend',ch:['ascend','fall','descend','slip'],hint:'To ascend is to go up — just like scaling something means climbing it'},
+{type:'synonym',word:'scale',q:'SCALE (n., measurement) is closest in meaning to:',a:'proportion',ch:['proportion','color','texture','material'],hint:'Scale as size on a map is about proportion — how the model\'s size compares to the real thing'},
+{type:'synonym',word:'scale',q:'A map drawn to SCALE shows the correct _____.',a:'proportions',ch:['proportions','colors','textures','angles'],hint:'Scale on a map means size relationships are correct — proportions match reality'},
+{type:'synonym',word:'solar',q:'SOLAR most nearly means:',a:'of the sun',ch:['of the sun','of the moon','of the earth','of the stars'],hint:'Solar comes from the Latin "sol" meaning sun — anything solar relates to the sun'},
+{type:'synonym',word:'solar',q:'Which description is closest in meaning to SOLAR?',a:'sun-powered',ch:['sun-powered','moon-powered','wind-powered','water-powered'],hint:'Solar energy is energy from the sun — solar means sun-related'},
+{type:'synonym',word:'solar',q:'SOLAR is closest in meaning to:',a:'sun-related',ch:['sun-related','moon-related','star-related','earth-related'],hint:'The solar system is the system of planets around the sun — solar = sun'},
+{type:'synonym',word:'trace',q:'TRACE (v.) most nearly means:',a:'track',ch:['track','lose','ignore','miss'],hint:'To trace someone is to track or follow their trail until you find them'},
+{type:'synonym',word:'trace',q:'Which word is a synonym for TRACE (n., a small amount)?',a:'hint',ch:['hint','abundance','flood','wealth'],hint:'A trace is the smallest amount — just a hint of something remaining'},
+{type:'synonym',word:'trace',q:'TRACE (v.) is closest in meaning to:',a:'follow',ch:['follow','abandon','lose','ignore'],hint:'To trace a path is to follow it — step by step through where it has been'},
+{type:'synonym',word:'trace',q:'A detective who TRACES a suspect is _____ them.',a:'tracking down',ch:['tracking down','ignoring','losing sight of','misidentifying'],hint:'Tracing means following evidence to locate someone — like a detective methodically tracking'},
+{type:'synonym',word:'velocity',q:'VELOCITY most nearly means:',a:'speed',ch:['speed','stillness','rest','pause'],hint:'Velocity is the rate of movement — how fast something is going, i.e., its speed'},
+{type:'synonym',word:'velocity',q:'Which word is a synonym for VELOCITY?',a:'swiftness',ch:['swiftness','stillness','rest','halt'],hint:'Swiftness describes how fast something moves — another word for velocity'},
+{type:'synonym',word:'velocity',q:'VELOCITY is closest in meaning to:',a:'pace',ch:['pace','stillness','rest','immobility'],hint:'Pace refers to the rate of movement — another way of saying velocity or speed'},
+// ── ANTONYMS (35) ──────────────────────────────────────────────────────────
+{type:'antonym',word:'analyze',q:'Which word is the OPPOSITE of ANALYZE?',a:'overlook',ch:['overlook','examine','study','investigate'],hint:'To analyze is to study carefully — the opposite fails to look at something at all'},
+{type:'antonym',word:'analyze',q:'ANALYZE is most nearly OPPOSITE in meaning to:',a:'ignore',ch:['ignore','dissect','evaluate','examine'],hint:'To ignore is to pay no attention — the opposite of analyzing every detail carefully'},
+{type:'antonym',word:'analyze',q:'Which word is most nearly OPPOSITE to ANALYZE?',a:'neglect',ch:['neglect','examine','study','dissect'],hint:'To neglect something is to fail to give it attention — the opposite of analyzing it'},
+{type:'antonym',word:'apprehensive',q:'Which word is the OPPOSITE of APPREHENSIVE?',a:'confident',ch:['confident','anxious','nervous','worried'],hint:'Apprehensive means worried about the future — confident means having no such worry'},
+{type:'antonym',word:'apprehensive',q:'APPREHENSIVE is most nearly OPPOSITE in meaning to:',a:'assured',ch:['assured','uneasy','fearful','nervous'],hint:'Assured means certain and free of worry — the opposite of apprehensive'},
+{type:'antonym',word:'apprehensive',q:'An APPREHENSIVE person is the opposite of a _____ person.',a:'fearless',ch:['fearless','worried','nervous','uneasy'],hint:'Fearless means having no fear or dread — the complete opposite of apprehensive'},
+{type:'antonym',word:'coincide',q:'Which word is the OPPOSITE of COINCIDE?',a:'differ',ch:['differ','match','agree','overlap'],hint:'To coincide means to match or agree — differ is the opposite'},
+{type:'antonym',word:'coincide',q:'COINCIDE is most nearly OPPOSITE in meaning to:',a:'clash',ch:['clash','align','correspond','agree'],hint:'To clash is to conflict or disagree — the opposite of coinciding or matching'},
+{type:'antonym',word:'compose',q:'Which word is the OPPOSITE of COMPOSE (to calm)?',a:'agitate',ch:['agitate','settle','soothe','calm'],hint:'To compose yourself is to find calm — agitate means to make someone more upset or unsettled'},
+{type:'antonym',word:'compose',q:'COMPOSE (to calm) is most nearly OPPOSITE in meaning to:',a:'disturb',ch:['disturb','settle','quiet','soothe'],hint:'To compose means to quiet down — to disturb means to unsettle or upset'},
+{type:'antonym',word:'compose',q:'Which word is most nearly OPPOSITE to COMPOSE (to create)?',a:'destroy',ch:['destroy','create','build','form'],hint:'To compose is to build or create something — to destroy is the opposite'},
+{type:'antonym',word:'envelop',q:'Which word is the OPPOSITE of ENVELOP?',a:'expose',ch:['expose','cover','surround','shroud'],hint:'To envelop is to cover on all sides — expose means to uncover something'},
+{type:'antonym',word:'envelop',q:'ENVELOP is most nearly OPPOSITE in meaning to:',a:'reveal',ch:['reveal','wrap','engulf','surround'],hint:'To envelop is to hide or cover — to reveal is the opposite: showing something clearly'},
+{type:'antonym',word:'envelop',q:'To ENVELOP something is to hide it; to _____ it is the opposite.',a:'uncover',ch:['uncover','surround','cover','wrap'],hint:'To uncover means to remove what was hiding something — the opposite of enveloping it'},
+{type:'antonym',word:'exist',q:'Which word is the OPPOSITE of EXIST?',a:'vanish',ch:['vanish','occur','subsist','be'],hint:'To exist is to be real and present — to vanish means to cease to exist'},
+{type:'antonym',word:'exist',q:'EXIST is most nearly OPPOSITE in meaning to:',a:'cease',ch:['cease','subsist','occur','appear'],hint:'To cease is to stop being — the opposite of existing or continuing to be'},
+{type:'antonym',word:'exist',q:'Something that EXISTS is real; the opposite is something that has _____.',a:'ceased to be',ch:['ceased to be','appeared','begun','grown'],hint:'Ceased to be means stopped existing — the opposite of being real and present'},
+{type:'antonym',word:'extraordinary',q:'Which word is the OPPOSITE of EXTRAORDINARY?',a:'ordinary',ch:['ordinary','remarkable','exceptional','amazing'],hint:'Extraordinary means far beyond normal — ordinary is exactly the normal, everyday thing'},
+{type:'antonym',word:'extraordinary',q:'EXTRAORDINARY is most nearly OPPOSITE in meaning to:',a:'mundane',ch:['mundane','remarkable','exceptional','astonishing'],hint:'Mundane means everyday and unexciting — the opposite of extraordinary'},
+{type:'antonym',word:'extraordinary',q:'Which word is most nearly OPPOSITE to EXTRAORDINARY?',a:'unremarkable',ch:['unremarkable','incredible','astounding','rare'],hint:'Something unremarkable draws no attention — the opposite of extraordinary'},
+{type:'antonym',word:'extraordinary',q:'An EXTRAORDINARY achievement is the opposite of _____.',a:'a routine one',ch:['a routine one','a surprising one','an impressive one','a rare one'],hint:'Extraordinary goes far beyond normal — a routine achievement is the opposite: expected and ordinary'},
+{type:'antonym',word:'fuse',q:'Which word is the OPPOSITE of FUSE?',a:'separate',ch:['separate','merge','combine','blend'],hint:'To fuse is to join — to separate is to pull apart what was joined'},
+{type:'antonym',word:'fuse',q:'FUSE is most nearly OPPOSITE in meaning to:',a:'divide',ch:['divide','merge','unite','blend'],hint:'To divide splits things apart — the opposite of fusing which joins them'},
+{type:'antonym',word:'fuse',q:'Which word is most nearly OPPOSITE to FUSE?',a:'disconnect',ch:['disconnect','join','unite','merge'],hint:'To disconnect is to break apart what was joined — the opposite of fusing'},
+{type:'antonym',word:'mere',q:'Which word is the OPPOSITE of MERE?',a:'significant',ch:['significant','only','simple','plain'],hint:'Mere means nothing more than — significant means much more than ordinary'},
+{type:'antonym',word:'mere',q:'MERE is most nearly OPPOSITE in meaning to:',a:'considerable',ch:['considerable','just','only','simple'],hint:'Considerable means large in amount or degree — the opposite of mere'},
+{type:'antonym',word:'revolve',q:'Which word is the OPPOSITE of REVOLVE?',a:'stop',ch:['stop','spin','orbit','circle'],hint:'To revolve means to keep moving in a circle — stopping means the revolution ends'},
+{type:'antonym',word:'revolve',q:'REVOLVE is most nearly OPPOSITE in meaning to:',a:'stay still',ch:['stay still','orbit','rotate','spin'],hint:'Revolving is constant motion in a circle — staying still is the complete opposite'},
+{type:'antonym',word:'solar',q:'Which word is the OPPOSITE of SOLAR?',a:'lunar',ch:['lunar','sunny','radiant','bright'],hint:'Solar means of the sun; lunar means of the moon — sun and moon are natural opposites in astronomy'},
+{type:'antonym',word:'solar',q:'SOLAR is most nearly OPPOSITE in meaning to:',a:'nocturnal',ch:['nocturnal','sunlit','bright','warm'],hint:'Nocturnal means of the night — the opposite of solar which is of the sun and daylight'},
+{type:'antonym',word:'trace',q:'Which word is the OPPOSITE of TRACE (to track)?',a:'lose',ch:['lose','follow','track','pursue'],hint:'To trace is to follow a trail successfully — to lose means you can no longer follow it'},
+{type:'antonym',word:'trace',q:'TRACE (a small amount) is most nearly OPPOSITE in meaning to:',a:'abundance',ch:['abundance','hint','bit','remnant'],hint:'A trace is the smallest possible amount — an abundance is a large quantity, the opposite extreme'},
+{type:'antonym',word:'trace',q:'A TRACE of something is a tiny amount; the opposite would be _____.',a:'an overwhelming amount',ch:['an overwhelming amount','a small hint','a remnant','a mark'],hint:'A trace is barely detectable — an overwhelming amount is the opposite extreme'},
+{type:'antonym',word:'velocity',q:'Which word is the OPPOSITE of VELOCITY?',a:'stillness',ch:['stillness','speed','swiftness','pace'],hint:'Velocity is the rate of movement — stillness is the complete absence of movement'},
+{type:'antonym',word:'velocity',q:'VELOCITY is most nearly OPPOSITE in meaning to:',a:'rest',ch:['rest','motion','pace','rate'],hint:'Rest means no movement — the opposite of high velocity which means fast movement'},
+// ── ANALOGIES (40) ──────────────────────────────────────────────────────────
+{type:'analogy',word:'analyze',q:'ANALYZE is to UNDERSTAND as TRACE is to _____',a:'locate',ch:['locate','lose','ignore','forget'],hint:'Both pairs describe how a method leads to a result — you analyze to understand, you trace to...'},
+{type:'analogy',word:'velocity',q:'VELOCITY is to SPEED as ANALYSIS is to _____',a:'examination',ch:['examination','guessing','ignoring','combining'],hint:'Both pairs are synonyms — velocity means speed, and analysis means...'},
+{type:'analogy',word:'revolve',q:'REVOLVE is to ORBIT as SPIN is to _____',a:'rotate',ch:['rotate','stop','freeze','halt'],hint:'Both pairs are synonyms — to revolve is to orbit, to spin is to...'},
+{type:'analogy',word:'extraordinary',q:'EXTRAORDINARY is to ORDINARY as REMARKABLE is to _____',a:'typical',ch:['typical','rare','unusual','exceptional'],hint:'Both pairs contain antonyms — extraordinary is the opposite of ordinary, remarkable is the opposite of...'},
+{type:'analogy',word:'apprehensive',q:'APPREHENSIVE is to CALM as ANXIOUS is to _____',a:'confident',ch:['confident','nervous','worried','uneasy'],hint:'Both pairs contain antonyms — apprehensive is the opposite of calm, so anxious is the opposite of...'},
+{type:'analogy',word:'fuse',q:'FUSE is to SEPARATE as COMBINE is to _____',a:'divide',ch:['divide','blend','join','merge'],hint:'Both pairs contain antonyms — fuse is the opposite of separate, so combine is the opposite of...'},
+{type:'analogy',word:'envelop',q:'ENVELOP is to EXPOSE as COVER is to _____',a:'reveal',ch:['reveal','hide','shroud','wrap'],hint:'Both pairs contain antonyms — envelop is the opposite of expose, so cover is the opposite of...'},
+{type:'analogy',word:'exist',q:'EXIST is to VANISH as APPEAR is to _____',a:'disappear',ch:['disappear','arrive','emerge','begin'],hint:'Both pairs contain antonyms — exist is the opposite of vanish, so appear is the opposite of...'},
+{type:'analogy',word:'solar',q:'SOLAR is to SUN as LUNAR is to _____',a:'moon',ch:['moon','star','earth','planet'],hint:'Solar describes something related to the sun — lunar describes something related to the...'},
+{type:'analogy',word:'compose',q:'COMPOSE is to MUSIC as SCULPT is to _____',a:'statue',ch:['statue','song','poem','painting'],hint:'You compose music and you sculpt a...'},
+{type:'analogy',word:'mere',q:'MERE is to SIGNIFICANT as TINY is to _____',a:'enormous',ch:['enormous','small','minimal','slight'],hint:'Both pairs contain antonyms — mere suggests smallness, significant suggests largeness, just as tiny is the opposite of...'},
+{type:'analogy',word:'scale',q:'SCALE is to WEIGHT as RULER is to _____',a:'length',ch:['length','mass','volume','temperature'],hint:'A scale measures weight — a ruler measures...'},
+{type:'analogy',word:'trace',q:'TRACE is to DETECTIVE as ANALYZE is to _____',a:'scientist',ch:['scientist','teacher','artist','athlete'],hint:'A detective traces evidence — a scientist...'},
+{type:'analogy',word:'coincide',q:'COINCIDE is to OVERLAP as DIVERGE is to _____',a:'separate',ch:['separate','match','agree','align'],hint:'To coincide means to overlap; to diverge means to...'},
+{type:'analogy',word:'disk',q:'DISK is to FLAT as SPHERE is to _____',a:'round',ch:['round','thin','small','sharp'],hint:'A disk is defined by being flat — a sphere is defined by being...'},
+{type:'analogy',word:'velocity',q:'VELOCITY is to FAST as STILLNESS is to _____',a:'motionless',ch:['motionless','slow','moderate','rapid'],hint:'Velocity describes fast movement — stillness describes being...'},
+{type:'analogy',word:'analyze',q:'ANALYZE is to PARTS as SYNTHESIZE is to _____',a:'whole',ch:['whole','detail','fragment','portion'],hint:'To analyze is to break something into parts — to synthesize is to build a...'},
+{type:'analogy',word:'fuse',q:'FUSE is to FUSION as REVOLVE is to _____',a:'revolution',ch:['revolution','rotation','orbit','circle'],hint:'Fusion is the noun form of fuse — what is the noun form of revolve?'},
+{type:'analogy',word:'apprehensive',q:'APPREHENSIVE is to DREAD as ELATED is to _____',a:'joy',ch:['joy','worry','fear','sadness'],hint:'Apprehension is a form of dread — elation is a form of...'},
+{type:'analogy',word:'extraordinary',q:'EXTRAORDINARY is to ONCE-IN-A-LIFETIME as ORDINARY is to _____',a:'everyday',ch:['everyday','spectacular','remarkable','rare'],hint:'Extraordinary things happen rarely — ordinary things happen...'},
+{type:'analogy',word:'solar',q:'SOLAR is to PLANETS as GRAVITATIONAL is to _____',a:'orbits',ch:['orbits','suns','moons','stars'],hint:'The solar force affects planets — gravitational forces affect...'},
+{type:'analogy',word:'compose',q:'COMPOSE is to CREATE as DECOMPOSE is to _____',a:'break down',ch:['break down','build up','join together','assemble'],hint:'To compose is to build something up — to decompose is to...'},
+{type:'analogy',word:'trace',q:'TRACE is to TRACK as FOLLOW is to _____',a:'pursue',ch:['pursue','lose','miss','abandon'],hint:'Both pairs are synonyms — trace means track, and follow means...'},
+{type:'analogy',word:'velocity',q:'VELOCITY is to ROCKET as CRAWL is to _____',a:'snail',ch:['snail','car','jet','train'],hint:'A rocket has extremely high velocity — a snail has a very slow...'},
+{type:'analogy',word:'revolve',q:'REVOLVE is to EARTH as ORBIT is to _____',a:'satellite',ch:['satellite','sun','star','planet'],hint:'The Earth revolves — a satellite...'},
+{type:'analogy',word:'disk',q:'DISK is to CIRCLE as CUBE is to _____',a:'square',ch:['square','triangle','oval','spiral'],hint:'A disk has a circular face — a cube has a square face'},
+{type:'analogy',word:'analyze',q:'ANALYZE is to SCIENTIST as COMPOSE is to _____',a:'composer',ch:['composer','athlete','builder','painter'],hint:'A scientist analyzes data — a composer is someone who...'},
+{type:'analogy',word:'coincide',q:'COINCIDE is to AGREEMENT as CLASH is to _____',a:'conflict',ch:['conflict','harmony','match','agreement'],hint:'To coincide produces agreement — to clash produces...'},
+{type:'analogy',word:'mere',q:'MERE is to TRIVIAL as EXTRAORDINARY is to _____',a:'significant',ch:['significant','ordinary','plain','simple'],hint:'Both pairs are synonyms — mere means trivial, and extraordinary means...'},
+{type:'analogy',word:'exist',q:'EXIST is to LIFE as CEASE is to _____',a:'death',ch:['death','birth','growth','health'],hint:'To exist is associated with being alive — to cease is associated with...'},
+{type:'analogy',word:'apprehensive',q:'APPREHENSIVE is to BRAVE as TIMID is to _____',a:'bold',ch:['bold','anxious','fearful','nervous'],hint:'Apprehensive and brave are opposites — timid and bold are also...'},
+{type:'analogy',word:'scale',q:'SCALE is to MOUNTAIN as NAVIGATE is to _____',a:'ocean',ch:['ocean','peak','summit','cliff'],hint:'You scale a mountain — you navigate an...'},
+{type:'analogy',word:'extraordinary',q:'EXTRAORDINARY is to AWE as ORDINARY is to _____',a:'indifference',ch:['indifference','wonder','amazement','awe'],hint:'Extraordinary things produce awe — ordinary things produce...'},
+{type:'analogy',word:'trace',q:'TRACE is to REMNANT as FLOOD is to _____',a:'abundance',ch:['abundance','trace','hint','bit'],hint:'A trace is the smallest amount left behind — a flood is an enormous...'},
+{type:'analogy',word:'velocity',q:'VELOCITY is to PHYSICS as TEMPO is to _____',a:'music',ch:['music','painting','sculpture','dance'],hint:'Velocity is a term used in physics — tempo is a similar rate concept used in...'},
+{type:'analogy',word:'solar',q:'SOLAR is to SUNLIGHT as LUNAR is to _____',a:'moonlight',ch:['moonlight','starlight','firelight','twilight'],hint:'Solar refers to sunlight — lunar refers to...'},
+{type:'analogy',word:'compose',q:'COMPOSE is to SYMPHONY as AUTHOR is to _____',a:'novel',ch:['novel','paint','instrument','film'],hint:'A composer creates a symphony — an author creates a...'},
+{type:'analogy',word:'fuse',q:'FUSE is to MATERIALS as UNITE is to _____',a:'people',ch:['people','heat','metals','atoms'],hint:'Materials can be fused together — people can be...'},
+{type:'analogy',word:'envelop',q:'ENVELOP is to FOG as ENCIRCLE is to _____',a:'fence',ch:['fence','cloud','mist','vapor'],hint:'Fog envelops by covering on all sides — a fence encircles by going around the outside'},
+{type:'analogy',word:'mere',q:'MERE is to SPECK as VAST is to _____',a:'expanse',ch:['expanse','trace','hint','remnant'],hint:'A mere speck is the smallest possible thing — a vast expanse is the largest possible...'},
+// ── SIMILES (35) ──────────────────────────────────────────────────────────
+{type:'simile',word:'analyze',q:'Complete the simile: The scientist analyzed the data like ___',a:'a surgeon examining an x-ray — not looking at the surface but through it, reading what only training could see',ch:['a surgeon examining an x-ray — not looking at the surface but through it, reading what only training could see','a tourist glancing at a landmark — taking a quick photo before moving on','someone skimming a menu — reading just enough to make a choice','a passer-by who notices the building without stopping to study its architecture'],hint:'Think: analyzing = seeing through surface to structure, using trained eyes — like a surgeon who reads what others cannot see'},
+{type:'simile',word:'analyze',q:'Complete the simile: Her ability to analyze complex problems was like ___',a:'a compass that worked in fog — she always found north when no one else could see past the weather',ch:['a compass that worked in fog — she always found north when no one else could see past the weather','a map drawn before the territory existed, pointing toward places that hadn\'t yet appeared','a direction given so confidently that everyone followed it without checking','a guess made so quickly that there was no time to confirm it before acting'],hint:'Think: the power to analyze = being able to orient yourself when conditions are confusing — like a compass in fog'},
+{type:'simile',word:'analyze',q:'Complete the simile: He analyzed his mistakes like ___',a:'a navigator correcting course mid-ocean — not punishing the compass, just noting where it had pulled slightly wrong and adjusting',ch:['a navigator correcting course mid-ocean — not punishing the compass, just noting where it had pulled slightly wrong and adjusting','someone who preferred not to examine the route taken because the destination had been reached','a traveler who moved forward without looking back because backward was already gone','a pilot who confirmed the landing was complete and moved on without reviewing the approach'],hint:'Think: analyzing mistakes carefully = correcting course with information, not with blame — like a navigator using error data to improve the heading'},
+{type:'simile',word:'apprehensive',q:'Complete the simile: She waited for the results as apprehensive as ___',a:'a navigator checking the weather an hour before launch — the sky still clear, but the clouds already building at the edge',ch:['a navigator checking the weather an hour before launch — the sky still clear, but the clouds already building at the edge','a sailor who has checked the forecast three times and confirmed no storm is possible','someone who has done this so many times that the waiting feels like breathing — easy and automatic','a captain who has already decided the outcome and is simply waiting for the moment to confirm it'],hint:'Think: apprehension = awareness of what might be coming before it arrives — like watching distant clouds build before the launch window closes'},
+{type:'simile',word:'apprehensive',q:'Complete the simile: The first-time astronaut felt as apprehensive as ___',a:'someone standing at the edge of a cliff they chose — knowing the jump was decided, still feeling the height',ch:['someone standing at the edge of a cliff they chose — knowing the jump was decided, still feeling the height','a diver who has jumped the same cliff a hundred times and no longer feels the distance','an experienced climber descending a familiar route in automatic routine','someone who agreed to something confidently and has since stopped thinking about what it involves'],hint:'Think: apprehensive before a chosen commitment = aware of the height despite having decided — the fear stays even after the decision is made'},
+{type:'simile',word:'coincide',q:'Complete the simile: The moment our ideas coincided felt like ___',a:'two rivers meeting — neither had planned it, but the water knew exactly what to do',ch:['two rivers meeting — neither had planned it, but the water knew exactly what to do','two rivers that had been engineered to meet at a precise point decades before the water arrived','a canal whose channels had been designed so that the meeting was inevitable','a reservoir built on the understanding that both sources would someday arrive'],hint:'Think: coincidence = two independent things meeting without planning — like rivers finding each other by terrain, not intention'},
+{type:'simile',word:'coincide',q:'Complete the simile: Their schedules happened to coincide like ___',a:'two clocks set in different cities that had been wound at different times and still showed the same hour',ch:['two clocks set in different cities that had been wound at different times and still showed the same hour','two clocks synchronized by the same technician who checked them both before leaving','clocks that were always identical because they had never been in different places','two timepieces designed to match and confirmed to do so on the first day they were set'],hint:'Think: coincidence in schedules = independent timing that lands on the same moment without coordination — like clocks that match without being set together'},
+{type:'simile',word:'compose',q:'Complete the simile: She composed herself before the presentation like ___',a:'a musician tuning before the concert — nothing ready to perform yet, but everything being brought into agreement',ch:['a musician tuning before the concert — nothing ready to perform yet, but everything being brought into agreement','a performer who needs no preparation because the music is already inside them','someone who walks on stage already settled, the preparation so complete it left no trace','an instrument already in tune, placed on stage without being touched, ready the moment it was needed'],hint:'Think: composing yourself = tuning your inner state before the performance begins — bringing all parts into alignment'},
+{type:'simile',word:'compose',q:'Complete the simile: Composing the symphony took him years, like ___',a:'a cathedral being built stone by stone — each decision permanent, the whole visible only at the end',ch:['a cathedral being built stone by stone — each decision permanent, the whole visible only at the end','a building assembled from prefabricated parts — each section finished elsewhere and placed quickly','a structure designed in one afternoon and constructed without revision','a project completed in a weekend because all the pieces had been prepared in advance'],hint:'Think: composing a great work = a long construction where every piece is permanent — like a cathedral whose whole only reveals itself at the end'},
+{type:'simile',word:'disk',q:'Complete the simile: The solar disk at sunset looked like ___',a:'a coin the horizon was quietly pocketing — there one moment, then held in the seam between sky and earth',ch:['a coin the horizon was quietly pocketing — there one moment, then held in the seam between sky and earth','a light switch flipped off all at once, the sky going from full brightness to none','a circle cut cleanly from the sky and replaced with a hole of equal size','a light that had been on for hours, turned off by a hand that didn\'t announce itself'],hint:'Think: the sun setting as a disk = something round disappearing into a seam — like a coin taken by the edge of the world'},
+{type:'simile',word:'envelop',q:'Complete the simile: The darkness of space enveloped the spacecraft like ___',a:'a silence that wasn\'t empty — full of distance in every direction, waiting to be acknowledged',ch:['a silence that wasn\'t empty — full of distance in every direction, waiting to be acknowledged','a quiet room with no surfaces — sound simply not entering, nothing to reflect off of','a noise-canceling environment designed specifically to eliminate distraction','a room that had been soundproofed so completely that no frequency could find its way in'],hint:'Think: the enveloping darkness of space = not empty but full of something — like a silence that is dense rather than absent'},
+{type:'simile',word:'envelop',q:'Complete the simile: The nebula enveloped the young stars like ___',a:'a parent\'s arms around something fragile — not grasping, just present, creating the conditions for whatever comes next',ch:['a parent\'s arms around something fragile — not grasping, just present, creating the conditions for whatever comes next','a cage built to keep what\'s inside from going anywhere outside it','an enclosure designed to contain rather than protect — the star inside having no say in the matter','a grip that would hold the young star until it had forgotten what open space felt like'],hint:'Think: the nebula enveloping a forming star = surrounding without trapping, nurturing through presence — like arms that create a safe environment'},
+{type:'simile',word:'exist',q:'Complete the simile: The possibility of life beyond Earth exists like ___',a:'a question that has already been asked — present in the air, answerable, still waiting for the right instrument',ch:['a question that has already been asked — present in the air, answerable, still waiting for the right instrument','a question nobody has thought to ask because the answer is already assumed to be known','a problem so well understood that the instruments needed to solve it are already in use','a certainty so clear that no further investigation is needed'],hint:'Think: a possibility that exists but is unconfirmed = a question already in the world, real and waiting — not proven, but undeniably present'},
+{type:'simile',word:'exist',q:'Complete the simile: Dark matter exists like ___',a:'a word known only by its effect on the words around it — never directly visible, but changing everything nearby',ch:['a word known only by its effect on the words around it — never directly visible, but changing everything nearby','an obvious presence that announces itself clearly to any instrument pointed in its direction','a force that has been directly photographed under normal conditions on multiple occasions','a well-lit phenomenon that is difficult only in the sense of being very far away'],hint:'Think: dark matter exists without being directly detected — like a word you know only through the way it changes everything around it'},
+{type:'simile',word:'extraordinary',q:'Complete the simile: The astronaut\'s view from orbit was as extraordinary as ___',a:'reading a sentence you had memorized since childhood and finally understanding what it said',ch:['reading a sentence you had memorized since childhood and finally understanding what it said','looking at something familiar and confirming that it looks exactly as you expected','seeing something you had studied so thoroughly that the actual view added nothing','a confirmation of what you already knew — no surprise, no additional information, no revision'],hint:'Think: the extraordinary = understanding finally arriving — like a sentence that has always been there, but now the meaning lands for the first time'},
+{type:'simile',word:'extraordinary',q:'Complete the simile: Her performance was as extraordinary as ___',a:'a thunderstorm that arrived without a cloud in the forecast — sudden, total, impossible to account for',ch:['a thunderstorm that arrived without a cloud in the forecast — sudden, total, impossible to account for','a light rain predicted to the hour that arrived exactly on schedule','a weather event anticipated three days out and confirmed at every interval','a light that had been on all day and went off exactly when the timer said it would'],hint:'Think: extraordinary = appearing without warning and filling everything — like a storm the forecast never mentioned'},
+{type:'simile',word:'fuse',q:'Complete the simile: The two musical traditions fused together like ___',a:'rivers reaching a delta — no longer one or the other, having become something the map would have to redraw',ch:['rivers reaching a delta — no longer one or the other, having become something the map would have to redraw','two lanes of traffic merging smoothly without either one changing speed or direction','a pipe junction where two streams are channeled together without interaction','two channels that run parallel all the way to the sea without touching'],hint:'Think: fusion of two traditions = reaching a point where neither exists separately anymore — like rivers becoming a delta'},
+{type:'simile',word:'fuse',q:'Complete the simile: Heat fused the metals together like ___',a:'an argument that ends in a handshake — the disagreement not erased, but the two sides joined in a new way',ch:['an argument that ends in a handshake — the disagreement not erased, but the two sides joined in a new way','a conversation that ends without resolution — each party leaving as they arrived, unchanged','a negotiation that ends with each side exactly as they began, no terms modified','a discussion that was productive while it lasted but changed nothing when it concluded'],hint:'Think: fusion through heat = a joining that preserves what was different while making it one — like a handshake that doesn\'t forget the argument'},
+{type:'simile',word:'mere',q:'Complete the simile: The spacecraft seemed like a mere ___',a:'speck — the universe so large that the engineers who built it couldn\'t build it large enough to matter',ch:['speck — the universe so large that the engineers who built it couldn\'t build it large enough to matter','center of attention — everything in the solar system arranged around it by design','landmark — so visible from a distance that astronomers used it to calibrate their instruments','monument — its size a deliberate statement about what the species that built it intended'],hint:'Think: mere in relation to scale = even a spacecraft becomes mere in the context of the universe — too small to change anything'},
+{type:'simile',word:'mere',q:'Complete the simile: A single astronaut floating above Earth looks like a mere ___',a:'comma in a sentence the size of the solar system — present, necessary, almost invisible',ch:['comma in a sentence the size of the solar system — present, necessary, almost invisible','headline that commands attention across every scale it is seen at','main subject of the largest possible paragraph — the point around which everything else arranges itself','period that ends the sentence — definitive, final, impossible to miss'],hint:'Think: a human in space = the smallest punctuation in the largest possible sentence — mere but still necessary'},
+{type:'simile',word:'revolve',q:'Complete the simile: The planets revolve around the sun like ___',a:'thoughts circling a question too important to answer quickly — drawn back, released, drawn back again',ch:['thoughts circling a question too important to answer quickly — drawn back, released, drawn back again','a decision made once and completed, the mind moving on immediately after','a conclusion reached after a single pass — clean, final, needing no further consideration','a problem solved on the first attempt and filed away before the next one arrived'],hint:'Think: revolving = being drawn back repeatedly to the same center — like thinking that cannot leave the question alone'},
+{type:'simile',word:'revolve',q:'Complete the simile: Earth revolves around the sun like ___',a:'a promise that renews itself every year — returning not because it was asked to, but because that is what it is',ch:['a promise that renews itself every year — returning not because it was asked to, but because that is what it is','a contract that was signed once and never revisited — its terms stable, its renewal unmentioned','a commitment made under conditions that no longer apply but that continues out of habit','a routine that someone follows without remembering why they began it'],hint:'Think: Earth\'s revolution = a return that happens naturally — like a promise that doesn\'t need to be renewed because it is always already being kept'},
+{type:'simile',word:'scale',q:'Complete the simile: Scaling the mountain was like ___',a:'reading a long book backward — each page completed revealing how far the beginning still was',ch:['reading a long book backward — each page completed revealing how far the beginning still was','finishing the last chapter and knowing exactly where you started because the journey was short','completing each section and finding the end reliably closer than it was before','turning each page and watching the remaining stack shrink at the exact rate you expected'],hint:'Think: scaling something high = progress that changes your understanding of the distance — each step completed reveals more of what remains'},
+{type:'simile',word:'scale',q:'Complete the simile: The scale of the solar system was like ___',a:'a number spoken aloud that the mind hears clearly but cannot hold — it arrives as sound, but will not stay as image',ch:['a number spoken aloud that the mind hears clearly but cannot hold — it arrives as sound, but will not stay as image','a measurement confirmed by instrument and confirmed again by a second instrument — precise and verifiable','a distance that the body could walk in a weekend if the weather cooperated','a fact absorbed in school and retained without difficulty because it matched the size of things already known'],hint:'Think: the scale of space = something the intellect can state but the imagination cannot contain — like a number that makes sound but not sense'},
+{type:'simile',word:'solar',q:'Complete the simile: Solar energy arrives like ___',a:'mail delivered to every address on the planet simultaneously — the sender not waiting to see if anyone is home',ch:['mail delivered to every address on the planet simultaneously — the sender not waiting to see if anyone is home','a package that requires a signature and cannot be left unless someone is there to receive it','a delivery that only reaches certain neighborhoods depending on the route the carrier takes that day','an item sent to a specific recipient that cannot be redirected once the address is set'],hint:'Think: solar energy = arriving everywhere, unaddressed, not waiting for acknowledgment — like mail that delivers itself regardless of whether you\'re home'},
+{type:'simile',word:'solar',q:'Complete the simile: The solar wind moves through space like ___',a:'a current no swimmer could feel — present, directional, reshaping everything it touches without the touch being noticed',ch:['a current no swimmer could feel — present, directional, reshaping everything it touches without the touch being noticed','a storm visible on radar and audible at the window before it arrives','a wave breaking clearly on a shore where everyone can see the water advance','a force so obvious that every instrument pointed at the sky can measure it without calibration'],hint:'Think: the solar wind = constant and shaping but unfelt — like a current that does its work without announcing itself to the objects it moves'},
+{type:'simile',word:'trace',q:'Complete the simile: The spacecraft left only a trace of itself behind — like ___',a:'a word erased from a sentence that still changes the meaning by being gone',ch:['a word erased from a sentence that still changes the meaning by being gone','a sentence added to a paragraph that anyone reading it would notice immediately','a word that was never in the text and whose absence has never changed anything','a phrase so clearly present that removing it would leave an obvious gap everyone could name'],hint:'Think: a trace = the smallest possible remainder — like a removed word that changes meaning without being there'},
+{type:'simile',word:'trace',q:'Complete the simile: Scientists traced the origins of the universe like ___',a:'historians reading a building backward — each layer of brick a sentence about what came before',ch:['historians reading a building backward — each layer of brick a sentence about what came before','readers following a story forward from its first page, with each chapter coming naturally after the last','someone following a path laid clearly before them, with no need to interpret the markers','a guide walking a tour they had given so many times the route required no thought'],hint:'Think: tracing origins = reading time backward through evidence — like reading history encoded in a building\'s walls from newest layer to oldest'},
+{type:'simile',word:'velocity',q:'Complete the simile: At its escape velocity, the rocket moved like ___',a:'a decision made and already gone — the moment of leaving indistinguishable from the fact of having left',ch:['a decision made and already gone — the moment of leaving indistinguishable from the fact of having left','a plan executed slowly enough that every stage could be observed and reconsidered','a choice made deliberately, in stages, with time to confirm each part before continuing','a process carried out at a pace that allowed observers to track every transition'],hint:'Think: escape velocity = the moment of leaving and the fact of having left happening simultaneously — the decision already complete as it is being made'},
+{type:'simile',word:'velocity',q:'Complete the simile: The velocity of the comet through the solar system was like ___',a:'a thought you can\'t catch — there the instant before you look, gone the instant you look directly',ch:['a thought you can\'t catch — there the instant before you look, gone the instant you look directly','a slow-moving object tracked at leisure from a comfortable position, direction confirmed and predictable','something whose path could be watched from start to finish without any difficulty keeping up','a movement so gradual that nothing changed from one hour to the next'],hint:'Think: extreme velocity = the thing that can only be seen in the space just before you look directly — observed, already gone'},
+{type:'simile',word:'extraordinary',q:'Complete the simile: The first image of a black hole was as extraordinary as ___',a:'a proof that what everyone knew to be true could finally be shown to someone who didn\'t believe it',ch:['a proof that what everyone knew to be true could finally be shown to someone who didn\'t believe it','a confirmation of what had already been thoroughly documented in ways no one had doubted','a result so predictable that the scientists barely noticed when the data came back','an outcome that required no revision of any theory because nothing unexpected appeared'],hint:'Think: the extraordinary = confirming what seemed impossible to confirm — giving shape to something that had only existed as mathematics'},
+{type:'simile',word:'coincide',q:'Complete the simile: The eclipse happened to coincide with the festival like ___',a:'punctuation arriving at the right moment in a sentence the city had been writing for years',ch:['punctuation arriving at the right moment in a sentence the city had been writing for years','a word inserted into the sentence by an editor who knew exactly where it was missing','a period placed where the sentence had always been designed to end','a pause added deliberately by a writer who planned it before the draft began'],hint:'Think: a coincidence that feels meaningful = punctuation that arrives without having been written — it fits perfectly but was never placed intentionally'},
+{type:'simile',word:'exist',q:'Complete the simile: Black holes exist like ___',a:'a debt the universe owes to the law of gravity — never seen directly, but felt in everything around them',ch:['a debt the universe owes to the law of gravity — never seen directly, but felt in everything around them','an obvious presence that announces itself clearly to any instrument pointed in its direction','a force that has been directly photographed under normal conditions on multiple occasions','a well-lit phenomenon that is difficult only in the sense of being very far away'],hint:'Think: a black hole exists without being directly visible — like a debt you can\'t see but whose effects are felt in everything else'},
+{type:'simile',word:'fuse',q:'Complete the simile: The languages had fused over centuries like ___',a:'paths worn into the same meadow from opposite sides — no single walker made it, but it was definitely there',ch:['paths worn into the same meadow from opposite sides — no single walker made it, but it was definitely there','a road built by engineers who planned the route and confirmed the destination in advance','a trail that was designed, marked, and opened officially before anyone walked it','a paved street whose construction was documented at every stage and completed on schedule'],hint:'Think: language fusion over time = a path created by accumulated use from both directions — no one planned it, but both sides walked toward each other'},
+{type:'simile',word:'velocity',q:'Complete the simile: The comet\'s velocity across the night sky was like ___',a:'a thought interrupted mid-sentence — there, and then not, and the sky pretending nothing had happened',ch:['a thought interrupted mid-sentence — there, and then not, and the sky pretending nothing had happened','a bus arriving exactly on schedule and waiting patiently for anyone who needed more time','a car pulling slowly into a driveway, easy to follow with the eyes from start to finish','a cloud moving at the usual pace of clouds, unremarkable and easily tracked'],hint:'Think: extreme velocity across the sky = presence that ends before the mind finishes registering it — like a thought cut off mid-word'},
+// ── METAPHORS (35) ──────────────────────────────────────────────────────────
+{type:'metaphor',word:'analyze',q:'Which sentence is a metaphor using ANALYZE?',a:'To analyze is not to dissect — it is to learn to read the code the world already wrote.',ch:['To analyze is not to dissect — it is to learn to read the code the world already wrote.','To analyze something is like dissecting it — separating its parts to understand the whole.','Like a dissection that reveals the system beneath, to analyze is to open a thing and read it.','Analyzing something functions the way dissection does — breaking it into parts reveals how it worked.'],hint:'Think: calling analysis directly reading a code — the world has already written it, and analysis IS the act of reading, not of cutting'},
+{type:'metaphor',word:'analyze',q:'Which sentence is a metaphor using ANALYZE?',a:'Every good question is already half an analysis — it knows which piece is out of place before the investigation begins.',ch:['Every good question is already half an analysis — it knows which piece is out of place before the investigation begins.','Every good question is like a half-completed analysis — it starts the examination before the method is applied.','Like an analysis already underway, a good question knows where the problem lives before the study begins.','A good question functions as a starting point for analysis — it directs the investigation without completing it.'],hint:'Think: calling a question directly half an analysis — the question IS the first act of breaking down, the answer IS the second half'},
+{type:'metaphor',word:'apprehensive',q:'Which sentence is a metaphor using APPREHENSIVE?',a:'Apprehension is not fear — it is the shadow cast by a future that hasn\'t arrived yet but is already blocking the light.',ch:['Apprehension is not fear — it is the shadow cast by a future that hasn\'t arrived yet but is already blocking the light.','Apprehension is like a shadow cast by something coming — present before the thing itself arrives.','Like a shadow of a future event, apprehension falls across the present before the thing it warns of has come.','Apprehension functions like a shadow — it arrives before the thing that casts it and changes the quality of the present.'],hint:'Think: calling apprehension directly a shadow — it IS the cast darkness from something still coming, not from anything already here'},
+{type:'metaphor',word:'apprehensive',q:'Which sentence is a metaphor using APPREHENSIVE?',a:'The night before a launch, every astronaut is apprehension — not containing it, but made of it, temporarily.',ch:['The night before a launch, every astronaut is apprehension — not containing it, but made of it, temporarily.','The night before a launch, every astronaut is like a container of apprehension — full of worry, not yet relieved.','Like someone made of apprehension, an astronaut the night before launch has become their own anxiety.','An astronaut the night before launch is apprehensive in the way that someone can be made of what they feel.'],hint:'Think: calling the astronaut directly apprehension — they ARE it temporarily, not holding it; the key is becoming an emotion vs. containing it'},
+{type:'metaphor',word:'coincide',q:'Which sentence is a metaphor using COINCIDE?',a:'When our conclusions coincided, it was not agreement — it was the same mountain seen from two different valleys.',ch:['When our conclusions coincided, it was not agreement — it was the same mountain seen from two different valleys.','When our conclusions coincided, it was like seeing the same mountain from two different valleys — different paths to the same view.','Like two valleys that both face the same mountain, our conclusions coincided by approaching the same truth differently.','Our coinciding conclusions worked the way two different valleys do — both face the same peak, but from different sides.'],hint:'Think: calling coincidence directly the same mountain seen from two valleys — it IS the shared object of perception, not the agreement between perceivers'},
+{type:'metaphor',word:'coincide',q:'Which sentence is a metaphor using COINCIDE?',a:'Every coincidence is not luck — it is a pattern too large for us to have the height to see.',ch:['Every coincidence is not luck — it is a pattern too large for us to have the height to see.','Every coincidence is like a pattern seen from far above — we only notice it from the right angle.','Like a pattern visible from great height that looks like chance from below, every coincidence may be structure.','Coincidences work the way patterns seen from too low do — they look random to someone without the right altitude.'],hint:'Think: calling every coincidence directly a pattern too large to see — it IS the structure, and our inability to see it IS not luck but a problem of scale'},
+{type:'metaphor',word:'compose',q:'Which sentence is a metaphor using COMPOSE?',a:'To compose is to find the silence between notes and decide which ones to keep.',ch:['To compose is to find the silence between notes and decide which ones to keep.','To compose is like finding silence between notes — the space matters as much as the sound.','Like someone deciding which silences to keep between notes, a composer finds music in the spaces.','Composing functions the way editing silence does — you keep what matters and let the rest fall away.'],hint:'Think: calling composition directly the act of keeping silences — it IS the curation of what is absent, not just the selection of what is there'},
+{type:'metaphor',word:'compose',q:'Which sentence is a metaphor using COMPOSE?',a:'A well-composed mind is not one without storms — it is a harbor that has learned to hold them.',ch:['A well-composed mind is not one without storms — it is a harbor that has learned to hold them.','A well-composed mind is like a harbor — it contains storms without being destroyed by them.','Like a harbor that holds ships even in rough weather, a composed mind contains what enters without breaking.','A composed mind functions the way a harbor does — holding what comes in without letting it scatter.'],hint:'Think: calling a composed mind directly a harbor — it IS the container for storms, and composure IS learning to hold rather than avoid them'},
+{type:'metaphor',word:'disk',q:'Which sentence is a metaphor using DISK?',a:'The Milky Way is a disk of light writing its own history — each arm a sentence started millions of years ago and still being finished.',ch:['The Milky Way is a disk of light writing its own history — each arm a sentence started millions of years ago and still being finished.','The Milky Way is like a disk of light — circular, flat, and visible as a band across the night sky.','Like a disk of light with history written in its structure, the Milky Way records time in the arrangement of its stars.','The Milky Way functions like a glowing disk — flat, circular, and ancient.'],hint:'Think: calling the Milky Way directly a disk writing its own history — it IS the record, each arm IS a sentence in progress, not completed'},
+{type:'metaphor',word:'disk',q:'Which sentence is a metaphor using DISK?',a:'A planet is a disk of possibility edge-on — what you see depends entirely on where you are standing.',ch:['A planet is a disk of possibility edge-on — what you see depends entirely on where you are standing.','A planet is like a disk of possibility — its potential depends on the angle from which it is studied.','Like a disk turned edge-on so only part of its surface is visible, a planet\'s possibility depends on perspective.','A planet functions like a disk of possibility — its circular nature means different faces point in different directions.'],hint:'Think: calling a planet directly a disk of possibility edge-on — it IS the shape whose meaning changes with angle, and understanding IS the matter of position'},
+{type:'metaphor',word:'envelop',q:'Which sentence is a metaphor using ENVELOP?',a:'Space does not envelop the stars — it is the condition they exist inside of, the way grammar is the condition that words exist inside of.',ch:['Space does not envelop the stars — it is the condition they exist inside of, the way grammar is the condition that words exist inside of.','Space envelops the stars like a vast container — they float inside it, surrounded by its emptiness.','Like a grammar that holds words in relation to each other, space envelops stars by giving them the context of distance.','Space functions like an envelope around the stars — they exist within it, held in by its structure.'],hint:'Think: calling space not an envelope but the condition of existence — it IS grammar, and stars ARE words, and enveloping IS being the context rather than the container'},
+{type:'metaphor',word:'envelop',q:'Which sentence is a metaphor using ENVELOP?',a:'To be enveloped in wonder is not to be surrounded by it — it is to have forgotten there is anything outside of it.',ch:['To be enveloped in wonder is not to be surrounded by it — it is to have forgotten there is anything outside of it.','To be enveloped in wonder is like being surrounded by it — present on all sides, leaving no room for other feelings.','Like being surrounded so completely that no other direction is available, being enveloped in wonder leaves no outside.','Being enveloped in wonder functions the way being surrounded does — every direction you look, there it is.'],hint:'Think: calling envelopment directly the forgetting of an outside — it IS the erasure of periphery, not just the presence of the thing on all sides'},
+{type:'metaphor',word:'exist',q:'Which sentence is a metaphor using EXIST?',a:'To exist is not a given — it is a decision the universe keeps making, every second, about everything that is still here.',ch:['To exist is not a given — it is a decision the universe keeps making, every second, about everything that is still here.','To exist is like receiving a decision in your favor every second — the universe has chosen to keep you.','Like a decision remade each second by something vast, existence is not guaranteed but continuously renewed.','Existence functions like a decision — something is making it continuously, and the things that exist are the result.'],hint:'Think: calling existence directly a decision the universe keeps making — it IS the ongoing choice, and everything that exists IS what has been continuously chosen'},
+{type:'metaphor',word:'exist',q:'Which sentence is a metaphor using EXIST?',a:'Stars exist on borrowed time — each one a fire that the universe has agreed to maintain until the fuel runs out.',ch:['Stars exist on borrowed time — each one a fire that the universe has agreed to maintain until the fuel runs out.','Stars exist like fires — burning for as long as fuel is available, then going dark.','Like fires maintained by the universe until their fuel is exhausted, stars exist by grace of what powers them.','Stars function the way fires do — they exist for as long as fuel supports them.'],hint:'Think: calling stars directly fires on borrowed time — existence IS the maintenance agreement, and dying IS the end of the fuel, not of the star itself'},
+{type:'metaphor',word:'extraordinary',q:'Which sentence is a metaphor using EXTRAORDINARY?',a:'An extraordinary mind is not one that knows more — it is one that has made more room for not knowing.',ch:['An extraordinary mind is not one that knows more — it is one that has made more room for not knowing.','An extraordinary mind is like a room with more space — it holds more than average and arranges it better.','Like a room made extraordinary by what it can contain, an extraordinary mind holds more than usual.','An extraordinary mind functions like a large room — it has more space for ideas than an ordinary one.'],hint:'Think: calling an extraordinary mind directly a room for not knowing — it IS the capacity for uncertainty, and exceptionality IS measured by space for the unknown'},
+{type:'metaphor',word:'extraordinary',q:'Which sentence is a metaphor using EXTRAORDINARY?',a:'The ordinary is the extraordinary not yet noticed — the difference is only attention.',ch:['The ordinary is the extraordinary not yet noticed — the difference is only attention.','The ordinary is like extraordinary without attention paid to it — what seems plain has not been looked at carefully.','Like the extraordinary revealed by closer attention, the ordinary is waiting to be noticed for what it already is.','The ordinary functions like the extraordinary — both are the same phenomenon seen with different degrees of attention.'],hint:'Think: calling the ordinary directly the extraordinary not yet noticed — the distinction IS attention, and the extraordinary IS what the ordinary already is'},
+{type:'metaphor',word:'fuse',q:'Which sentence is a metaphor using FUSE?',a:'Science and art were never separate — they were always the same question, fused at the root, with two branches grown to reach different kinds of light.',ch:['Science and art were never separate — they were always the same question, fused at the root, with two branches grown to reach different kinds of light.','Science and art are like fused branches — joined at a common origin but reaching in different directions.','Like two branches fused at the root, science and art share a common question even as they diverge.','Science and art function like fused branches — they share a foundation even though they develop independently.'],hint:'Think: calling science and art directly fused at the root — they ARE one question already joined, and the separation IS only the branches, not the trunk'},
+{type:'metaphor',word:'fuse',q:'Which sentence is a metaphor using FUSE?',a:'Every great collaboration is a fusion — two minds become an alloy stronger than either element alone.',ch:['Every great collaboration is a fusion — two minds become an alloy stronger than either element alone.','Every great collaboration is like a fusion — the combination is stronger than the individuals.','Like a fusion that produces an alloy, great collaborations combine two minds into something neither could be alone.','Great collaboration functions like fusion — the result is a compound more powerful than the elements.'],hint:'Think: calling collaboration directly a fusion that produces alloy — it IS the metallurgical process, and the combined mind IS the new material with new properties'},
+{type:'metaphor',word:'mere',q:'Which sentence is a metaphor using MERE?',a:'We are mere passengers on a planet that has been driving itself for four billion years and has never once asked where we\'d like to go.',ch:['We are mere passengers on a planet that has been driving itself for four billion years and has never once asked where we\'d like to go.','We are like mere passengers on a planet that drives itself — along for the journey without control.','Like passengers on a vehicle that has been self-driving for billions of years, we are along for the ride, not in control.','We function like mere passengers — the planet moves independently, and our presence doesn\'t change its direction.'],hint:'Think: calling humans directly mere passengers — we ARE the ones not driving, and the planet IS the vehicle that has never consulted its occupants'},
+{type:'metaphor',word:'mere',q:'Which sentence is a metaphor using MERE?',a:'A single human lifetime is not a story — it is a mere footnote in the margin of the universe\'s page.',ch:['A single human lifetime is not a story — it is a mere footnote in the margin of the universe\'s page.','A single human lifetime is like a footnote — small, brief, existing at the margin of something vast.','Like a footnote in the margin of a large text, a single human lifetime is a small detail in a larger story.','A human lifetime functions like a footnote — it carries meaning but exists at the edge of something much larger.'],hint:'Think: calling a lifetime directly a footnote — it IS the marginal annotation, not the text, and its merest quality IS its relationship to the scale of what it comments on'},
+{type:'metaphor',word:'revolve',q:'Which sentence is a metaphor using REVOLVE?',a:'Grief revolves — it is not a wound that heals but an orbit that brings you back to the same point, closer each time.',ch:['Grief revolves — it is not a wound that heals but an orbit that brings you back to the same point, closer each time.','Grief is like a revolving orbit — it brings you back to the same pain, though perhaps from a slightly different angle.','Like an orbit that returns to the same point repeatedly, grief keeps bringing you back to what you\'ve lost.','Grief functions like a revolving orbit — you keep returning to the loss, each time slightly changed.'],hint:'Think: calling grief directly a revolving orbit — it IS the return, and healing IS not the end of orbit but the changing of the angle on return'},
+{type:'metaphor',word:'revolve',q:'Which sentence is a metaphor using REVOLVE?',a:'A good idea doesn\'t arrive — it revolves into view, having been out of sight for exactly as long as it needed to be.',ch:['A good idea doesn\'t arrive — it revolves into view, having been out of sight for exactly as long as it needed to be.','A good idea is like something revolving — it comes into view at the right moment.','Like something revolving that becomes visible at the right angle, a good idea appears when its orbit brings it to view.','A good idea functions the way a revolving object does — it comes into sight after spending time out of view.'],hint:'Think: calling the arrival of a good idea revolving into view — it IS the orbital moment, and the previous absence IS the necessary other side of the orbit'},
+{type:'metaphor',word:'scale',q:'Which sentence is a metaphor using SCALE?',a:'The solar system is not large — it is a scale model of something we haven\'t found the original of yet.',ch:['The solar system is not large — it is a scale model of something we haven\'t found the original of yet.','The solar system is like a scale model — proportional in its arrangement, but smaller than what it represents.','Like a scale model whose original hasn\'t been located, the solar system gives us proportions without the full reality.','The solar system functions like a scale model — its elements are arranged in the right proportions, but something larger may exist.'],hint:'Think: calling the solar system directly a scale model of an unfound original — it IS the reduced representation, and what we haven\'t found IS the real thing the model was made from'},
+{type:'metaphor',word:'scale',q:'Which sentence is a metaphor using SCALE?',a:'To scale a mountain is not to conquer it — it is to receive permission from a surface that doesn\'t grant it often.',ch:['To scale a mountain is not to conquer it — it is to receive permission from a surface that doesn\'t grant it often.','To scale a mountain is like asking permission — the mountain isn\'t always willing to allow it.','Like receiving permission from something that rarely grants it, scaling a mountain depends on the mountain\'s conditions.','Scaling a mountain functions like a permission request — the mountain decides whether to allow you to the top.'],hint:'Think: calling scaling directly receiving permission — it IS the mountain granting access, and the summit IS not a conquest but a rare allowance'},
+{type:'metaphor',word:'solar',q:'Which sentence is a metaphor using SOLAR?',a:'The sun is not a source — it is the original sentence, and everything in the solar system is a word it keeps writing.',ch:['The sun is not a source — it is the original sentence, and everything in the solar system is a word it keeps writing.','The sun is like a source that writes — everything it illuminates is a kind of text it has produced.','Like a sentence whose words are the planets and moons, the sun produces everything in the solar system.','The sun functions like an original text — the solar system is its content, and everything orbiting it is something it wrote.'],hint:'Think: calling the sun directly the original sentence — it IS the language, and every planetary object IS a word being written, not just illuminated'},
+{type:'metaphor',word:'solar',q:'Which sentence is a metaphor using SOLAR?',a:'Solar energy is not a resource — it is an inheritance we have been too distracted to collect.',ch:['Solar energy is not a resource — it is an inheritance we have been too distracted to collect.','Solar energy is like an inheritance — available, ours, but requiring us to claim it.','Like an inheritance that has been waiting to be collected, solar energy has always been there for the taking.','Solar energy functions like an inheritance — it was left for us, and we only need to claim it.'],hint:'Think: calling solar energy directly an inheritance — it IS the legacy already owed, and inaction IS not ignoring a resource but failing to collect what is already yours'},
+{type:'metaphor',word:'trace',q:'Which sentence is a metaphor using TRACE?',a:'Memory is not a record — it is a trace, and the faintest ones are often the truest.',ch:['Memory is not a record — it is a trace, and the faintest ones are often the truest.','Memory is like a trace — imprecise, fragmentary, carrying more feeling than fact.','Like a trace that captures the shape of something without its full weight, memory holds the form of experience lightly.','Memory functions the way a trace does — it preserves just enough to reconstruct something without being the thing itself.'],hint:'Think: calling memory directly a trace — it IS the faint impression, not the record, and the faintest ones ARE the most authentic marks'},
+{type:'metaphor',word:'trace',q:'Which sentence is a metaphor using TRACE?',a:'Every civilization leaves a trace — the question is whether you have the instruments sensitive enough to read it.',ch:['Every civilization leaves a trace — the question is whether you have the instruments sensitive enough to read it.','Every civilization is like a trace — it leaves evidence that careful study can uncover.','Like a trace that requires sensitive instruments to detect, every civilization\'s legacy is there if you look carefully enough.','Every civilization functions like a trace — its presence can be confirmed if you apply the right detection method.'],hint:'Think: calling the legacy of every civilization directly a trace — it IS the faint impression left behind, and knowledge IS the instrument sensitive enough to read it'},
+{type:'metaphor',word:'velocity',q:'Which sentence is a metaphor using VELOCITY?',a:'Ideas don\'t move at the same velocity — some are comets, visible for a century and gone; some are light, already everywhere before you notice them.',ch:['Ideas don\'t move at the same velocity — some are comets, visible for a century and gone; some are light, already everywhere before you notice them.','Ideas move at different speeds — some last a long time, some spread very quickly.','Like objects moving at different velocities, ideas travel through culture at different rates and for different durations.','Ideas function at different velocities — some move through a generation and disappear, others propagate instantly.'],hint:'Think: calling ideas directly objects at different velocities — they ARE the comets and the light, and their motion IS not metaphorical speed but actual cultural physics'},
+{type:'metaphor',word:'velocity',q:'Which sentence is a metaphor using VELOCITY?',a:'Escape velocity is not a number — it is the moment a decision becomes irreversible.',ch:['Escape velocity is not a number — it is the moment a decision becomes irreversible.','Escape velocity is like the moment of irreversibility — once reached, there is no return.','Like the moment when a decision can no longer be reversed, escape velocity is the point of no return.','Escape velocity functions as the threshold of irreversibility — the point past which turning back becomes impossible.'],hint:'Think: calling escape velocity directly the moment of irreversibility — it IS the threshold where physical commitment and personal commitment become the same thing'},
+{type:'metaphor',word:'extraordinary',q:'Which sentence is a metaphor using EXTRAORDINARY?',a:'Every ordinary Tuesday contains an extraordinary — you just have to be looking when it happens.',ch:['Every ordinary Tuesday contains an extraordinary — you just have to be looking when it happens.','Every ordinary day contains something extraordinary — if you look, you\'ll find it.','Like an extraordinary hidden inside the ordinary, every day holds something remarkable for those who notice.','Every day functions like a container for something extraordinary — the ordinary is just what surrounds it.'],hint:'Think: calling the extraordinary a thing inside the ordinary — it IS already there, and attention IS not seeking it but being present when it arrives'},
+{type:'metaphor',word:'mere',q:'Which sentence is a metaphor using MERE?',a:'What seems mere is often a door — small, plain, and the entrance to something the ordinary room never gave access to.',ch:['What seems mere is often a door — small, plain, and the entrance to something the ordinary room never gave access to.','What seems mere is like a door — unimpressive in appearance, but potentially leading somewhere important.','Like a plain door that opens onto an unexpected space, what seems mere often leads to more than it appears.','The seemingly mere functions the way a plain door does — its appearance belies what lies behind it.'],hint:'Think: calling what seems mere directly a door — it IS the entrance, and smallness IS not limitation but concealment of what lies beyond'},
+{type:'metaphor',word:'apprehensive',q:'Which sentence is a metaphor using APPREHENSIVE?',a:'Apprehension is the down payment on an experience you\'ve agreed to have but haven\'t fully accepted yet.',ch:['Apprehension is the down payment on an experience you\'ve agreed to have but haven\'t fully accepted yet.','Apprehension is like a down payment — it\'s the cost you pay in advance before the experience arrives.','Like a down payment made before delivery, apprehension is what you give up before the thing you agreed to arrives.','Apprehension functions like a down payment — it costs something before the experience begins.'],hint:'Think: calling apprehension directly a down payment — it IS the cost of agreeing before accepting, and the experience IS what you\'ve already paid for but not yet received'},
+{type:'metaphor',word:'coincide',q:'Which sentence is a metaphor using COINCIDE?',a:'When two truths coincide, they don\'t become one truth — they become proof that truth has more than one address.',ch:['When two truths coincide, they don\'t become one truth — they become proof that truth has more than one address.','When two truths coincide, it\'s like having the same address — both are in the same place.','Like having two different paths lead to the same address, when two truths coincide they confirm the location from different directions.','Two truths that coincide function like a shared address — they indicate the same location regardless of the route taken.'],hint:'Think: calling coinciding truths directly proof that truth has more than one address — the coincidence IS the discovery of multiple valid locations, not the merging into one'},
+{type:'metaphor',word:'scale',q:'Which sentence is a metaphor using SCALE?',a:'The universe has no scale — it is the original, and everything we use to measure it is the model.',ch:['The universe has no scale — it is the original, and everything we use to measure it is the model.','The universe is like something without a scale — too large for any single instrument to capture.','Like an original that has no model to compare itself to, the universe cannot be measured against anything larger.','The universe functions without scale — it is the standard against which all other sizes are measured.'],hint:'Think: calling the universe directly the original with no scale — it IS the thing models are made from, and all our instruments ARE the scale models of it, not the other way around'}
+];
+
+var quiz={questions:[],index:0,score:0,streak:0,answers:[],answered:false};
+var fcIndex=0,fcFlipped=false;
+
+function shuffle(arr){var a=arr.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+
+function showStart(){show('screen-start');hide('screen-quiz');hide('screen-results');hide('screen-flash');}
+function showQuiz(){hide('screen-start');show('screen-quiz');hide('screen-results');hide('screen-flash');}
+function showResults(){hide('screen-start');hide('screen-quiz');show('screen-results');hide('screen-flash');}
+function showFlashcards(){hide('screen-start');hide('screen-quiz');hide('screen-results');show('screen-flash');fcIndex=0;fcFlipped=false;renderFlashcard();}
+
+function startQuiz(){
+  var pool=shuffle(QUESTIONS).slice(0,20);
+  quiz.questions=pool;quiz.index=0;quiz.score=0;quiz.streak=0;quiz.answers=[];quiz.answered=false;
+  showQuiz();renderQuestion();
+}
+
+function renderQuestion(){
+  var q=quiz.questions[quiz.index];
+  var pct=Math.round((quiz.index/20)*100);
+  $('prog-bar').style.width=pct+'%';
+  $('q-counter').textContent='Question '+(quiz.index+1)+' of 20';
+  var sb=$('streak-badge');
+  if(quiz.streak>=3){sb.classList.remove('hidden');sb.textContent='🔥 '+quiz.streak+' streak';}else{sb.classList.add('hidden');}
+  var ts=TYPE_STYLES[q.type];
+  var badge=$('type-badge');
+  badge.textContent=ts.label;badge.style.color=ts.color;badge.style.background=ts.bg;badge.style.border='1px solid '+ts.color;
+  $('q-text').textContent=q.q;
+  var choiceBox=$('choices');clearEl(choiceBox);
+  var shuffled=shuffle(q.ch);
+  shuffled.forEach(function(c){
+    var btn=document.createElement('button');
+    btn.className='choice-btn';btn.textContent=c;
+    btn.addEventListener('click',function(){selectAnswer(c,btn,q);});
+    choiceBox.appendChild(btn);
+  });
+  $('hint-text').textContent='';
+  quiz.answered=false;
+}
+
+function selectAnswer(choice,btn,q){
+  if(quiz.answered)return;
+  quiz.answered=true;
+  var correct=choice===q.a;
+  var allBtns=$('choices').querySelectorAll('.choice-btn');
+  allBtns.forEach(function(b){
+    b.disabled=true;
+    if(b.textContent===q.a)b.classList.add('correct');
+    else if(b===btn&&!correct)b.classList.add('wrong');
+  });
+  if(correct){
+    quiz.score++;quiz.streak++;
+    burst(btn.getBoundingClientRect().left+btn.offsetWidth/2,btn.getBoundingClientRect().top,'#34d399',22);
+    if(quiz.streak>0&&quiz.streak%3===0)confettiBurst();
+  }else{
+    quiz.streak=0;
+    $('hint-text').textContent='💡 '+q.hint;
+    burst(btn.getBoundingClientRect().left+btn.offsetWidth/2,btn.getBoundingClientRect().top,'#ef4444',14);
+  }
+  quiz.answers.push({q:q,chosen:choice,correct:correct});
+  setTimeout(function(){
+    quiz.index++;
+    if(quiz.index<quiz.questions.length){renderQuestion();}
+    else{buildResults();}
+  },1100);
+}
+
+function buildResults(){
+  showResults();
+  var pct=Math.round((quiz.score/20)*100);
+  var ring=$('score-ring');clearEl(ring);
+  var span=mk('span','',quiz.score+'/20');ring.appendChild(span);
+  ring.style.borderColor=pct>=80?'#34d399':pct>=60?'#fbbf24':'#ef4444';
+  var title=$('results-title');
+  if(pct===100)title.textContent='Perfect Score! 🏆';
+  else if(pct>=80)title.textContent='Excellent Work! ⭐';
+  else if(pct>=60)title.textContent='Good Effort! Keep Studying! 📚';
+  else title.textContent='Keep Practicing — You\'ll Get There! 💪';
+  $('results-msg').textContent='You scored '+quiz.score+' out of 20 ('+pct+'%)';
+  var bd=$('breakdown');clearEl(bd);
+  var counts={synonym:0,antonym:0,analogy:0,simile:0,metaphor:0};
+  var totals={synonym:0,antonym:0,analogy:0,simile:0,metaphor:0};
+  quiz.answers.forEach(function(a){totals[a.q.type]++;if(a.correct)counts[a.q.type]++;});
+  Object.keys(counts).forEach(function(t){
+    if(totals[t]===0)return;
+    var ts=TYPE_STYLES[t];var chip=mk('span','bd-chip',ts.label+': '+counts[t]+'/'+totals[t]);
+    chip.style.color=ts.color;chip.style.background=ts.bg;chip.style.border='1px solid '+ts.color;
+    bd.appendChild(chip);
+  });
+  var rl=$('review-list');clearEl(rl);
+  var wrong=quiz.answers.filter(function(a){return!a.correct;});
+  if(wrong.length===0){var p=mk('p','','✨ Perfect score — no missed questions!');p.style.color='#34d399';p.style.textAlign='center';rl.appendChild(p);}
+  else{
+    wrong.forEach(function(a){
+      var div=mk('div','review-item');
+      div.appendChild(mk('div','ri-q',a.q.q));
+      div.appendChild(mk('div','ri-a','✓ Correct: '+a.q.a));
+      div.appendChild(mk('div','ri-yours','✗ Your answer: '+a.chosen));
+      rl.appendChild(div);
+    });
+  }
+}
+
+function renderFlashcard(){
+  var w=WORDS[fcIndex];fcFlipped=false;
+  $('fc-card').classList.remove('flipped');
+  $('fc-word').textContent=w.word;
+  $('fc-pos').textContent=w.pos;
+  $('fc-def').textContent=w.def;
+  $('fc-example').textContent=w.ex;
+  $('fc-count').textContent='Card '+(fcIndex+1)+' of '+WORDS.length;
+  $('fc-nav-label').textContent=(fcIndex+1)+' / '+WORDS.length;
+  $('fc-prog').style.width=(((fcIndex+1)/WORDS.length)*100)+'%';
+}
+
+function flipCard(){
+  fcFlipped=!fcFlipped;
+  if(fcFlipped)$('fc-card').classList.add('flipped');
+  else $('fc-card').classList.remove('flipped');
+}
+
+function fcNav(dir){
+  fcIndex=(fcIndex+dir+WORDS.length)%WORDS.length;
+  renderFlashcard();
+}
+
+$('btn-start').addEventListener('click',startQuiz);
+$('btn-flash-start').addEventListener('click',showFlashcards);
+$('btn-retry').addEventListener('click',startQuiz);
+$('btn-flash-results').addEventListener('click',showFlashcards);
+$('btn-fc-back').addEventListener('click',showStart);
+$('fc-scene').addEventListener('click',flipCard);
+$('fc-prev').addEventListener('click',function(){fcNav(-1);});
+$('fc-next').addEventListener('click',function(){fcNav(1);});
+
+})();
+</script>
+</body>
+</html>
