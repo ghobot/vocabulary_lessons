@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wordly Wise &mdash; Lesson 16: The "Unsinkable" Titanic</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#021412;color:#e8e8f0;min-height:100vh;overflow-x:hidden}
+canvas#stars{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.screen{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+.screen.hidden{display:none}
+#home-link{position:fixed;top:14px;left:18px;z-index:100;color:#14b8a6;text-decoration:none;font-size:14px;background:rgba(20,184,166,.12);padding:6px 14px;border-radius:20px;border:1px solid #0f766e;transition:background .2s}
+#home-link:hover{background:rgba(20,184,166,.28)}
+.start-card{background:rgba(2,20,18,.88);border:1px solid #0f766e;border-radius:24px;padding:48px 40px;max-width:540px;width:100%;text-align:center;box-shadow:0 0 60px rgba(20,184,166,.22)}
+.start-card h1{font-size:2.4rem;font-weight:800;background:linear-gradient(135deg,#14b8a6,#38bdf8,#67e8f9);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+.start-card .subtitle{color:#94a3b8;margin-bottom:28px;font-size:1rem}
+.start-card p{color:#cbd5e1;line-height:1.7;margin-bottom:32px;font-size:.97rem}
+.btn{display:inline-block;padding:13px 34px;border-radius:50px;border:none;cursor:pointer;font-size:1rem;font-weight:700;transition:transform .15s,box-shadow .15s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.btn-primary{background:linear-gradient(135deg,#0f766e,#14b8a6);color:#fff;box-shadow:0 4px 18px rgba(20,184,166,.4)}
+.btn-secondary{background:rgba(20,184,166,.08);color:#14b8a6;border:1px solid #0f766e;margin-top:14px}
+.btn-sm{padding:8px 20px;font-size:.85rem}
+.quiz-wrap{max-width:680px;width:100%}
+.progress-bar-outer{background:rgba(255,255,255,.08);border-radius:10px;height:8px;margin-bottom:20px;overflow:hidden}
+.progress-bar-inner{height:100%;border-radius:10px;background:linear-gradient(90deg,#0f766e,#14b8a6);transition:width .4s}
+.q-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.q-counter{color:#94a3b8;font-size:.9rem}
+.streak-badge{background:rgba(251,191,36,.15);border:1px solid #f59e0b;color:#fbbf24;border-radius:20px;padding:4px 12px;font-size:.8rem;font-weight:700}
+.type-badge{border-radius:20px;padding:4px 14px;font-size:.78rem;font-weight:700;display:inline-block;margin-bottom:14px}
+.q-text{font-size:1.2rem;font-weight:600;color:#e2e8f0;line-height:1.6;margin-bottom:24px}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.choice-btn{background:rgba(20,184,166,.06);border:1.5px solid rgba(20,184,166,.2);border-radius:14px;padding:14px 18px;color:#e2e8f0;font-size:.95rem;cursor:pointer;transition:all .15s;text-align:left}
+.choice-btn:hover:not(:disabled){background:rgba(20,184,166,.18);border-color:#14b8a6}
+.choice-btn.correct{background:rgba(16,185,129,.2);border-color:#10b981;color:#6ee7b7}
+.choice-btn.wrong{background:rgba(239,68,68,.2);border-color:#ef4444;color:#fca5a5}
+.results-card{background:rgba(2,20,18,.88);border:1px solid #0f766e;border-radius:24px;padding:40px 36px;max-width:620px;width:100%;text-align:center}
+.score-ring{width:120px;height:120px;border-radius:50%;margin:0 auto 20px;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:800;border:4px solid #14b8a6;background:rgba(20,184,166,.1)}
+.breakdown{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:20px 0}
+.bd-chip{border-radius:20px;padding:5px 14px;font-size:.8rem;font-weight:600}
+.review-list{margin-top:24px;text-align:left;max-height:280px;overflow-y:auto}
+.review-item{background:rgba(255,255,255,.05);border-radius:10px;padding:10px 14px;margin-bottom:8px;font-size:.85rem;line-height:1.5}
+.review-item .ri-q{color:#94a3b8}
+.review-item .ri-a{color:#6ee7b7;font-weight:600}
+.review-item .ri-yours{color:#fca5a5}
+.results-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:24px}
+.fc-wrap{max-width:540px;width:100%;display:flex;flex-direction:column;align-items:center}
+.fc-wrap h2{font-size:1.5rem;font-weight:700;color:#14b8a6;margin-bottom:6px}
+.fc-count{color:#64748b;font-size:.85rem;margin-bottom:24px}
+.fc-scene{width:100%;max-width:420px;height:260px;perspective:1000px;cursor:pointer;margin-bottom:20px}
+.fc-card{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.4,0,.2,1)}
+.fc-card.flipped{transform:rotateY(180deg)}
+.fc-face{position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center}
+.fc-front{background:linear-gradient(135deg,rgba(20,184,166,.22),rgba(20,184,166,.1));border:1.5px solid #0f766e}
+.fc-back{background:linear-gradient(135deg,rgba(4,120,87,.4),rgba(52,211,153,.15));border:1.5px solid #34d399;transform:rotateY(180deg)}
+#fc-word{font-size:2rem;font-weight:800;color:#e2e8f0}
+#fc-pos{font-size:.85rem;color:#14b8a6;margin-top:6px}
+#fc-flip-hint{font-size:.75rem;color:#64748b;margin-top:14px}
+#fc-def{font-size:.95rem;color:#ccfbf1;line-height:1.6}
+#fc-example{font-size:.82rem;color:#5eead4;font-style:italic;margin-top:10px}
+.fc-nav{display:flex;align-items:center;gap:18px}
+.fc-nav button{background:rgba(20,184,166,.15);border:1.5px solid #0f766e;color:#14b8a6;border-radius:50%;width:42px;height:42px;font-size:1.2rem;cursor:pointer;transition:background .15s}
+.fc-nav button:hover{background:rgba(20,184,166,.32)}
+.fc-nav span{color:#94a3b8;font-size:.9rem;min-width:70px;text-align:center}
+.fc-progress{width:100%;background:rgba(255,255,255,.08);border-radius:10px;height:6px;margin-top:18px;overflow:hidden}
+.fc-progress-inner{height:100%;background:linear-gradient(90deg,#0f766e,#14b8a6);transition:width .35s;border-radius:10px}
+.hint-text{color:#94a3b8;font-size:.85rem;font-style:italic;margin-top:8px;min-height:20px}
+#particle-canvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:200}
+@media(max-width:500px){.choices{grid-template-columns:1fr}.start-card h1{font-size:1.8rem}}
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+<canvas id="particle-canvas"></canvas>
+<a href="../index.html" id="home-link">&#8592; Home</a>
+
+<div id="screen-start" class="screen">
+  <div class="start-card">
+    <div style="font-size:3rem;margin-bottom:10px">&#x1F6A2;</div>
+    <h1>The "Unsinkable" Titanic</h1>
+    <div class="subtitle">Wordly Wise &middot; Lesson 16</div>
+    <p>On the night of April 14, 1912, the <em>Titanic</em> sailed through treacherous waters, its passengers lulled into a false sense of security. From the collision that caused a catastrophe to the predicament of too few lifeboats, these 15 words will help you understand one of history's most consequential disasters.</p>
+    <div><button class="btn btn-primary" id="btn-start">Begin the Challenge &#8594;</button></div>
+    <div><button class="btn btn-secondary" id="btn-flash-start">&#x1F4DA; Study Flashcards</button></div>
+  </div>
+</div>
+
+<div id="screen-quiz" class="screen hidden">
+  <div class="quiz-wrap">
+    <div class="progress-bar-outer"><div class="progress-bar-inner" id="prog-bar" style="width:0%"></div></div>
+    <div class="q-header">
+      <span class="q-counter" id="q-counter">Question 1 of 20</span>
+      <span class="streak-badge hidden" id="streak-badge">&#x1F525; 0 streak</span>
+    </div>
+    <div id="type-badge" class="type-badge"></div>
+    <div class="q-text" id="q-text"></div>
+    <div class="choices" id="choices"></div>
+    <div class="hint-text" id="hint-text"></div>
+  </div>
+</div>
+
+<div id="screen-results" class="screen hidden">
+  <div class="results-card">
+    <div class="score-ring" id="score-ring"></div>
+    <h2 id="results-title" style="margin-bottom:6px;color:#e2e8f0"></h2>
+    <p id="results-msg" style="color:#94a3b8;margin-bottom:4px"></p>
+    <div class="breakdown" id="breakdown"></div>
+    <div class="review-list" id="review-list"></div>
+    <div class="results-btns">
+      <button class="btn btn-primary btn-sm" id="btn-retry">Try Again</button>
+      <button class="btn btn-secondary btn-sm" id="btn-flash-results">&#x1F4DA; Review Flashcards</button>
+    </div>
+  </div>
+</div>
+
+<div id="screen-flash" class="screen hidden">
+  <div class="fc-wrap">
+    <h2>&#x1F4DA; Lesson 16 Flashcards</h2>
+    <div class="fc-count" id="fc-count">Card 1 of 15</div>
+    <div class="fc-scene" id="fc-scene">
+      <div class="fc-card" id="fc-card">
+        <div class="fc-face fc-front">
+          <div id="fc-word"></div>
+          <div id="fc-pos"></div>
+          <div id="fc-flip-hint">tap to reveal &#8594;</div>
+        </div>
+        <div class="fc-face fc-back">
+          <div id="fc-def"></div>
+          <div id="fc-example"></div>
+        </div>
+      </div>
+    </div>
+    <div class="fc-nav">
+      <button id="fc-prev">&#8249;</button>
+      <span id="fc-nav-label">1 / 15</span>
+      <button id="fc-next">&#8250;</button>
+    </div>
+    <div class="fc-progress"><div class="fc-progress-inner" id="fc-prog" style="width:6.67%"></div></div>
+    <button class="btn btn-secondary btn-sm" id="btn-fc-back" style="margin-top:22px">&#8592; Back</button>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+var sc=document.getElementById('stars'),ctx=sc.getContext('2d'),W,H,stars=[];
+function initStars(){W=sc.width=window.innerWidth;H=sc.height=window.innerHeight;stars=[];for(var i=0;i<220;i++)stars.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.4+.3,s:Math.random()*.4+.1,b:Math.random()});}
+function drawStars(){ctx.clearRect(0,0,W,H);var g=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,W*.7);g.addColorStop(0,'rgba(20,184,166,.12)');g.addColorStop(.5,'rgba(20,184,166,.05)');g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);stars.forEach(function(s){s.b+=s.s*.016;var a=.4+.55*Math.abs(Math.sin(s.b));ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle='rgba(20,184,166,'+a+')';ctx.fill();});requestAnimationFrame(drawStars);}
+window.addEventListener('resize',initStars);initStars();drawStars();
+
+var pc=document.getElementById('particle-canvas'),pctx=pc.getContext('2d'),particles=[];
+function resizePC(){pc.width=window.innerWidth;pc.height=window.innerHeight;}resizePC();window.addEventListener('resize',resizePC);
+function burst(x,y,color,count){for(var i=0;i<count;i++)particles.push({x:x,y:y,vx:(Math.random()-0.5)*7,vy:(Math.random()-2.5)*6,r:Math.random()*5+2,color:color,life:1,dec:Math.random()*.025+.015});}
+function confettiBurst(){var cols=['#14b8a6','#38bdf8','#67e8f9','#34d399','#fbbf24'];for(var i=0;i<90;i++){var c=cols[Math.floor(Math.random()*cols.length)];particles.push({x:Math.random()*pc.width,y:-10,vx:(Math.random()-0.5)*4,vy:Math.random()*4+2,r:Math.random()*6+2,color:c,life:1,dec:Math.random()*.012+.008});}}
+function animParticles(){pctx.clearRect(0,0,pc.width,pc.height);particles=particles.filter(function(p){p.x+=p.vx;p.y+=p.vy;p.vy+=0.12;p.life-=p.dec;if(p.life<=0)return false;pctx.globalAlpha=p.life;pctx.beginPath();pctx.arc(p.x,p.y,p.r,0,Math.PI*2);pctx.fillStyle=p.color;pctx.fill();return true;});pctx.globalAlpha=1;requestAnimationFrame(animParticles);}animParticles();
+
+function clearEl(el){while(el.firstChild)el.removeChild(el.firstChild);}
+function mk(tag,cls,txt){var el=document.createElement(tag);if(cls)el.className=cls;if(txt!==undefined)el.textContent=txt;return el;}
+function show(id){document.getElementById(id).classList.remove('hidden');}
+function hide(id){document.getElementById(id).classList.add('hidden');}
+function $(id){return document.getElementById(id);}
+
+var WORDS=[
+  {word:'awe',pos:'n./v.',def:'(n.) A feeling of fear or nervous wonder and respect. (v.) To fill with awe. awesome (adj.): Causing feelings of awe.',ex:'"The view of Earth from space filled the astronauts with awe."'},
+  {word:'catastrophe',pos:'n.',def:'Something that causes great loss and suffering; a terrible disaster.',ex:'"The earthquake was a catastrophe that claimed thousands of victims."'},
+  {word:'collide',pos:'v.',def:'To come together with great force. collision (n.): The act of colliding.',ex:'"The two skaters were injured when they collided on the ice."'},
+  {word:'consequence',pos:'n.',def:'1. A result or outcome. 2. Importance.',ex:'"Receiving a scolding was the consequence of my rude behavior."'},
+  {word:'deceive',pos:'v.',def:'To cause to believe something that is not true. deceptive (adj.): Intended to or likely to deceive or mislead. deception (n.): An act of deceiving.',ex:'"The Wizard of Oz tried to deceive Dorothy by pretending to perform real magic."'},
+  {word:'fatality',pos:'n.',def:'A death resulting from an accident or a disaster.',ex:'"Fortunately there were no fatalities when the train ran off the track."'},
+  {word:'improvise',pos:'v.',def:'1. To compose or perform without preparation. 2. To make do with whatever is on hand.',ex:'"The actors occasionally improvise a scene based on suggestions from the audience."'},
+  {word:'loom',pos:'n./v.',def:'(n.) A machine or device for weaving cloth. (v.) 1. To appear in a sudden and frightening way. 2. To get close.',ex:'"A sinister figure loomed out of the darkness, scaring us half to death."'},
+  {word:'lull',pos:'v./n.',def:'(v.) To cause to relax. (n.) A temporary calm or quiet period.',ex:'"The sound of the ocean lulled us to sleep."'},
+  {word:'placid',pos:'adj.',def:'Calm and peaceful.',ex:'"The wind suddenly picked up, ruffling the placid surface of the lake."'},
+  {word:'predicament',pos:'n.',def:'A difficult or trying situation.',ex:'"Running out of gas at night on a deserted road put the travelers in a predicament."'},
+  {word:'priority',pos:'n.',def:'The state or condition of being before another in importance or time.',ex:'"Chandra\'s first priority was to clean her room before her friends came over."'},
+  {word:'reinforce',pos:'v.',def:'To increase or strengthen. reinforcements (n. pl.): Extra people such as soldiers or police sent to provide help.',ex:'"Telling frightened children there is nothing to worry about only reinforces their fear."'},
+  {word:'stern',pos:'n./adj.',def:'(n.) The rear part of a boat. (adj.) Unpleasantly severe.',ex:'"The judge\'s stern expression suggested she was about to hand down a heavy sentence."'},
+  {word:'treacherous',pos:'adj.',def:'1. Not to be trusted. 2. Actually dangerous while seeming to be safe.',ex:'"Hidden rocks make this part of the river treacherous."'}
+];
+
+var TYPE_STYLES={
+  synonym:{label:'Synonym',color:'#60a5fa',bg:'rgba(96,165,250,.15)'},
+  antonym:{label:'Antonym',color:'#f472b6',bg:'rgba(244,114,182,.15)'},
+  analogy:{label:'Analogy',color:'#a78bfa',bg:'rgba(167,139,250,.15)'},
+  simile:{label:'Simile',color:'#34d399',bg:'rgba(52,211,153,.15)'},
+  metaphor:{label:'Metaphor',color:'#fbbf24',bg:'rgba(251,191,36,.15)'}
+};
+
+var QUESTIONS=[
+// ── SYNONYMS (50) ──────────────────────────────────────────────────────────
+{type:'synonym',word:'awe',q:'AWE most nearly means:',a:'wonder',ch:['wonder','disgust','contempt','boredom'],hint:'Awe is the feeling of amazement and wonder — often mixed with a little fear at something vast or remarkable'},
+{type:'synonym',word:'awe',q:'Which word is a synonym for AWE?',a:'reverence',ch:['reverence','contempt','boredom','annoyance'],hint:'Reverence is deep respect mixed with wonder — the same feeling as awe toward something impressive or overwhelming'},
+{type:'synonym',word:'awe',q:'AWE is closest in meaning to:',a:'amazement',ch:['amazement','indifference','contempt','boredom'],hint:'To feel amazed is to feel awe — a sense of wonder at something extraordinary'},
+{type:'synonym',word:'awe',q:'A sight that fills you with AWE leaves you feeling _____.',a:'wonder-struck',ch:['wonder-struck','bored','disgusted','indifferent'],hint:'Wonder-struck means overcome with wonder — exactly what awe does to you'},
+{type:'synonym',word:'catastrophe',q:'CATASTROPHE most nearly means:',a:'disaster',ch:['disaster','celebration','achievement','blessing'],hint:'A catastrophe is a terrible disaster causing great loss — the opposite of a celebration'},
+{type:'synonym',word:'catastrophe',q:'Which word is a synonym for CATASTROPHE?',a:'calamity',ch:['calamity','triumph','success','blessing'],hint:'A calamity is a great misfortune or disaster — exactly what catastrophe means'},
+{type:'synonym',word:'catastrophe',q:'CATASTROPHE is closest in meaning to:',a:'tragedy',ch:['tragedy','achievement','triumph','benefit'],hint:'A tragedy causes great suffering and loss — just like a catastrophe'},
+{type:'synonym',word:'collide',q:'COLLIDE most nearly means:',a:'crash',ch:['crash','separate','avoid','dodge'],hint:'To collide is to come together with great force — a crash is exactly that kind of violent meeting'},
+{type:'synonym',word:'collide',q:'Which word is a synonym for COLLIDE?',a:'smash into',ch:['smash into','diverge from','retreat from','part from'],hint:'To smash into something is to collide with it — both involve violent forceful contact'},
+{type:'synonym',word:'collide',q:'COLLIDE is closest in meaning to:',a:'impact',ch:['impact','separate','diverge','divide'],hint:'When things collide they impact each other — coming together with great force'},
+{type:'synonym',word:'consequence',q:'CONSEQUENCE most nearly means:',a:'result',ch:['result','cause','origin','source'],hint:'A consequence is what follows from an action — a result or outcome of what came before'},
+{type:'synonym',word:'consequence',q:'Which word is a synonym for CONSEQUENCE?',a:'outcome',ch:['outcome','origin','source','cause'],hint:'An outcome is what results from something — just like a consequence follows from a cause'},
+{type:'synonym',word:'consequence',q:'CONSEQUENCE (as in importance) is closest in meaning to:',a:'significance',ch:['significance','triviality','insignificance','unimportance'],hint:'When something is of consequence it matters — it has significance and importance'},
+{type:'synonym',word:'consequence',q:'The CONSEQUENCE of an action is its _____.',a:'effect',ch:['effect','origin','beginning','source'],hint:'An effect is what something causes to happen — consequences ARE the effects of our choices'},
+{type:'synonym',word:'deceive',q:'DECEIVE most nearly means:',a:'mislead',ch:['mislead','enlighten','inform','clarify'],hint:'To deceive someone is to give them false information — to mislead them away from the truth'},
+{type:'synonym',word:'deceive',q:'Which word is a synonym for DECEIVE?',a:'trick',ch:['trick','enlighten','reveal','inform'],hint:'To trick someone is to deceive them — making them believe something false'},
+{type:'synonym',word:'deceive',q:'DECEIVE is closest in meaning to:',a:'fool',ch:['fool','inform','enlighten','guide'],hint:'To fool someone is to make them believe something untrue — the same as deceiving them'},
+{type:'synonym',word:'fatality',q:'FATALITY most nearly means:',a:'death',ch:['death','survival','recovery','rescue'],hint:'A fatality is a death resulting from an accident or disaster — the most serious outcome'},
+{type:'synonym',word:'fatality',q:'Which word is a synonym for FATALITY?',a:'casualty',ch:['casualty','survivor','recovery','rescue'],hint:'A casualty can refer to someone killed in an accident or disaster — like a fatality'},
+{type:'synonym',word:'fatality',q:'FATALITY is closest in meaning to:',a:'loss of life',ch:['loss of life','survival','escape','recovery'],hint:'A fatality means a life was lost — the outcome of an accident that proved fatal'},
+{type:'synonym',word:'improvise',q:'IMPROVISE most nearly means:',a:'make do',ch:['make do','plan carefully','rehearse','prepare'],hint:'To improvise is to work with whatever is available — to make do without proper preparation'},
+{type:'synonym',word:'improvise',q:'Which word is a synonym for IMPROVISE?',a:'ad-lib',ch:['ad-lib','rehearse','plan ahead','prepare'],hint:'To ad-lib is to improvise — doing or saying something without preparation'},
+{type:'synonym',word:'improvise',q:'IMPROVISE is closest in meaning to:',a:'wing it',ch:['wing it','plan carefully','prepare thoroughly','rehearse'],hint:'To wing it means to improvise — doing something without preparation or rehearsal'},
+{type:'synonym',word:'improvise',q:'An actor who IMPROVISES is _____ their lines.',a:'inventing on the spot',ch:['inventing on the spot','following a script','reading from notes','rehearsing carefully'],hint:'When actors improvise they create their lines in the moment — inventing without a script'},
+{type:'synonym',word:'loom',q:'LOOM (to appear ominously) most nearly means:',a:'emerge threateningly',ch:['emerge threateningly','retreat quietly','disappear suddenly','shrink away'],hint:'To loom is to appear in a sudden and frightening way — emerging threateningly from the dark'},
+{type:'synonym',word:'loom',q:'Which word is a synonym for LOOM (to get close menacingly)?',a:'hover',ch:['hover','retreat','disappear','shrink'],hint:'To hover near something is to loom over it — present in a looming waiting way'},
+{type:'synonym',word:'loom',q:'A LOOM (noun) is a machine for _____ cloth.',a:'weaving',ch:['weaving','cutting','dyeing','washing'],hint:'A loom is a device used for weaving — it interlaces threads to make fabric'},
+{type:'synonym',word:'lull',q:'LULL (v.) most nearly means:',a:'soothe',ch:['soothe','agitate','disturb','excite'],hint:'To lull someone is to calm or soothe them — often into a feeling of security or sleep'},
+{type:'synonym',word:'lull',q:'Which word is a synonym for LULL (n., a quiet period)?',a:'pause',ch:['pause','commotion','uproar','activity'],hint:'A lull is a temporary pause in activity — a brief quiet period before things resume'},
+{type:'synonym',word:'lull',q:'LULL (v.) is closest in meaning to:',a:'calm',ch:['calm','excite','agitate','disturb'],hint:'To lull is to calm or quiet — making someone feel peaceful and relaxed'},
+{type:'synonym',word:'lull',q:'There was a LULL in the storm, which means the storm temporarily _____.',a:'quieted',ch:['quieted','intensified','worsened','strengthened'],hint:'A lull in a storm is when it temporarily quiets down — a pause before resuming'},
+{type:'synonym',word:'placid',q:'PLACID most nearly means:',a:'calm',ch:['calm','turbulent','agitated','stormy'],hint:'Placid describes something calm and undisturbed — the opposite of turbulent or stormy'},
+{type:'synonym',word:'placid',q:'Which word is a synonym for PLACID?',a:'serene',ch:['serene','turbulent','agitated','stormy'],hint:'Serene means pleasantly calm and peaceful — exactly what placid means'},
+{type:'synonym',word:'placid',q:'PLACID is closest in meaning to:',a:'tranquil',ch:['tranquil','stormy','restless','agitated'],hint:'Tranquil means free from disturbance — calm and peaceful just like placid'},
+{type:'synonym',word:'predicament',q:'PREDICAMENT most nearly means:',a:'difficult situation',ch:['difficult situation','easy solution','great opportunity','lucky break'],hint:'A predicament is a difficult or trying situation — one that is hard to get out of'},
+{type:'synonym',word:'predicament',q:'Which word is a synonym for PREDICAMENT?',a:'plight',ch:['plight','opportunity','advantage','solution'],hint:'A plight is a difficult situation — just like a predicament it is something you need help to escape'},
+{type:'synonym',word:'predicament',q:'PREDICAMENT is closest in meaning to:',a:'dilemma',ch:['dilemma','opportunity','advantage','blessing'],hint:'A dilemma is a situation with difficult choices — like a predicament it is hard to solve'},
+{type:'synonym',word:'priority',q:'PRIORITY most nearly means:',a:'main concern',ch:['main concern','minor detail','afterthought','trivial matter'],hint:'A priority is the most important concern — it comes before everything else'},
+{type:'synonym',word:'priority',q:'Which word is a synonym for PRIORITY?',a:'precedence',ch:['precedence','afterthought','minor detail','low rank'],hint:'Precedence means being first in importance or order — exactly what having priority means'},
+{type:'synonym',word:'priority',q:'PRIORITY is closest in meaning to:',a:'top importance',ch:['top importance','minor detail','afterthought','last concern'],hint:'Something that is a priority is most important — it takes top position in your attention'},
+{type:'synonym',word:'reinforce',q:'REINFORCE most nearly means:',a:'strengthen',ch:['strengthen','weaken','undermine','erode'],hint:'To reinforce something is to make it stronger — adding support so it can withstand more'},
+{type:'synonym',word:'reinforce',q:'Which word is a synonym for REINFORCE?',a:'bolster',ch:['bolster','weaken','undermine','erode'],hint:'To bolster something is to give it extra support and strength — just like reinforcing it'},
+{type:'synonym',word:'reinforce',q:'REINFORCE is closest in meaning to:',a:'support',ch:['support','undermine','weaken','erode'],hint:'To support something is to hold it up and strengthen it — the core meaning of reinforce'},
+{type:'synonym',word:'reinforce',q:'REINFORCEMENTS are extra people sent to _____ a force.',a:'strengthen',ch:['strengthen','reduce','weaken','replace'],hint:'Reinforcements add numbers and power to a force — they reinforce or strengthen it'},
+{type:'synonym',word:'stern',q:'STERN (adj.) most nearly means:',a:'harsh',ch:['harsh','gentle','lenient','mild'],hint:'A stern person or expression is severe and uncompromising — the opposite of gentle or lenient'},
+{type:'synonym',word:'stern',q:'Which word is a synonym for STERN (adj.)?',a:'strict',ch:['strict','lenient','gentle','mild'],hint:'Strict means demanding compliance and allowing no softness — exactly like stern'},
+{type:'synonym',word:'stern',q:'STERN (adj.) is closest in meaning to:',a:'severe',ch:['severe','gentle','lenient','mild'],hint:'Severe means very strict and harsh — the same meaning as stern when describing a person or expression'},
+{type:'synonym',word:'stern',q:'STERN (n.) refers to the _____ of a boat.',a:'rear',ch:['rear','front','side','top'],hint:'The stern is the back end of a boat — the front is called the bow'},
+{type:'synonym',word:'treacherous',q:'TREACHEROUS most nearly means:',a:'dangerous',ch:['dangerous','safe','reliable','trustworthy'],hint:'Treacherous conditions are dangerous — especially because the danger may be hidden'},
+{type:'synonym',word:'treacherous',q:'Which word is a synonym for TREACHEROUS (not to be trusted)?',a:'disloyal',ch:['disloyal','faithful','loyal','trustworthy'],hint:'A treacherous person is disloyal — they cannot be trusted to stay on your side'},
+{type:'synonym',word:'treacherous',q:'TREACHEROUS (dangerous while seeming safe) is closest in meaning to:',a:'deceptively hazardous',ch:['deceptively hazardous','openly risky','clearly unsafe','obviously dangerous'],hint:'Treacherous danger is hidden — it seems safe but is actually very hazardous'},
+{type:'synonym',word:'treacherous',q:'TREACHEROUS waters are ones that are _____ despite calm appearances.',a:'dangerous',ch:['dangerous','safe','calm','reliable'],hint:'Treacherous waters look safe but hide dangers — the key is the deceptive nature of the risk'},
+// ── ANTONYMS (35) ──────────────────────────────────────────────────────────
+{type:'antonym',word:'awe',q:'Which word is the OPPOSITE of AWE?',a:'contempt',ch:['contempt','wonder','reverence','amazement'],hint:'Awe is a feeling of wonder and respect — contempt is the complete opposite: looking down on something'},
+{type:'antonym',word:'awe',q:'AWE is most nearly OPPOSITE in meaning to:',a:'indifference',ch:['indifference','reverence','wonder','amazement'],hint:'Awe means deep wonder and respect — indifference means not caring at all'},
+{type:'antonym',word:'catastrophe',q:'Which word is the OPPOSITE of CATASTROPHE?',a:'blessing',ch:['blessing','disaster','calamity','tragedy'],hint:'A catastrophe causes suffering and loss — a blessing brings good fortune and happiness'},
+{type:'antonym',word:'catastrophe',q:'CATASTROPHE is most nearly OPPOSITE in meaning to:',a:'triumph',ch:['triumph','disaster','tragedy','calamity'],hint:'A catastrophe is a terrible failure or disaster — a triumph is a great success and victory'},
+{type:'antonym',word:'collide',q:'Which word is the OPPOSITE of COLLIDE?',a:'separate',ch:['separate','crash','smash','impact'],hint:'To collide means things come together with force — to separate means they move apart'},
+{type:'antonym',word:'collide',q:'COLLIDE is most nearly OPPOSITE in meaning to:',a:'avoid',ch:['avoid','crash','impact','slam'],hint:'To collide is to hit something — to avoid is to successfully steer clear of it'},
+{type:'antonym',word:'consequence',q:'Which word is the OPPOSITE of CONSEQUENCE (importance)?',a:'insignificance',ch:['insignificance','importance','weight','significance'],hint:'Something of great consequence matters greatly — something of no consequence has no importance'},
+{type:'antonym',word:'consequence',q:'CONSEQUENCE (result) is most nearly OPPOSITE in meaning to:',a:'cause',ch:['cause','effect','outcome','result'],hint:'A consequence is a result — the opposite is the cause that made it happen'},
+{type:'antonym',word:'consequence',q:'An action of NO CONSEQUENCE is one that is _____.',a:'unimportant',ch:['unimportant','critical','vital','significant'],hint:'Consequence means importance — something of no consequence has no importance whatsoever'},
+{type:'antonym',word:'deceive',q:'Which word is the OPPOSITE of DECEIVE?',a:'enlighten',ch:['enlighten','mislead','trick','fool'],hint:'To deceive is to create false beliefs — to enlighten is to give someone true understanding'},
+{type:'antonym',word:'deceive',q:'DECEIVE is most nearly OPPOSITE in meaning to:',a:'inform honestly',ch:['inform honestly','mislead','trick','fool'],hint:'To deceive means to give false impressions — to inform honestly means to share the truth'},
+{type:'antonym',word:'fatality',q:'Which word is the OPPOSITE of FATALITY?',a:'survival',ch:['survival','death','casualty','loss'],hint:'A fatality means someone died — survival is the opposite: remaining alive'},
+{type:'antonym',word:'fatality',q:'FATALITY is most nearly OPPOSITE in meaning to:',a:'recovery',ch:['recovery','death','loss','casualty'],hint:'A fatality is when someone does not recover from an accident — recovery is the opposite outcome'},
+{type:'antonym',word:'improvise',q:'Which word is the OPPOSITE of IMPROVISE?',a:'plan',ch:['plan','adapt','invent','make do'],hint:'To improvise means to work without a plan — to plan means to prepare everything carefully in advance'},
+{type:'antonym',word:'improvise',q:'IMPROVISE is most nearly OPPOSITE in meaning to:',a:'prepare',ch:['prepare','adapt','invent','make do'],hint:'Improvising means acting without preparation — preparing means doing everything in advance'},
+{type:'antonym',word:'loom',q:'Which word is the OPPOSITE of LOOM (to appear ominously)?',a:'retreat',ch:['retreat','approach','appear','hover'],hint:'To loom is to approach in a threatening way — to retreat is to move away'},
+{type:'antonym',word:'loom',q:'LOOM (to appear threateningly) is most nearly OPPOSITE in meaning to:',a:'disappear',ch:['disappear','approach','hover','appear'],hint:'Something that looms emerges and draws closer — disappearing is the opposite of appearing'},
+{type:'antonym',word:'lull',q:'Which word is the OPPOSITE of LULL (v.)?',a:'agitate',ch:['agitate','calm','soothe','quiet'],hint:'To lull is to calm or soothe — to agitate is to stir up and disturb'},
+{type:'antonym',word:'lull',q:'LULL (n., a calm period) is most nearly OPPOSITE in meaning to:',a:'commotion',ch:['commotion','quiet','calm','pause'],hint:'A lull is a temporary quiet — a commotion is the opposite: noise and activity'},
+{type:'antonym',word:'placid',q:'Which word is the OPPOSITE of PLACID?',a:'turbulent',ch:['turbulent','calm','serene','peaceful'],hint:'Placid means calm and undisturbed — turbulent means violently disturbed and rough'},
+{type:'antonym',word:'placid',q:'PLACID is most nearly OPPOSITE in meaning to:',a:'stormy',ch:['stormy','tranquil','serene','calm'],hint:'A placid surface is smooth and calm — a stormy one is the complete opposite'},
+{type:'antonym',word:'predicament',q:'Which word is the OPPOSITE of PREDICAMENT?',a:'solution',ch:['solution','problem','difficulty','trouble'],hint:'A predicament is a difficult problem — a solution is what resolves it'},
+{type:'antonym',word:'predicament',q:'PREDICAMENT is most nearly OPPOSITE in meaning to:',a:'advantage',ch:['advantage','difficulty','trouble','hardship'],hint:'A predicament puts you at a disadvantage — an advantage is the opposite situation'},
+{type:'antonym',word:'priority',q:'Which word is the OPPOSITE of PRIORITY?',a:'afterthought',ch:['afterthought','concern','importance','urgency'],hint:'A priority is the most important thing — an afterthought is something considered last'},
+{type:'antonym',word:'priority',q:'PRIORITY is most nearly OPPOSITE in meaning to:',a:'last concern',ch:['last concern','high importance','urgency','precedence'],hint:'Priority means first in importance — the last concern is addressed only after everything else'},
+{type:'antonym',word:'reinforce',q:'Which word is the OPPOSITE of REINFORCE?',a:'weaken',ch:['weaken','strengthen','bolster','support'],hint:'To reinforce is to make stronger — to weaken is to make it less able to withstand force'},
+{type:'antonym',word:'reinforce',q:'REINFORCE is most nearly OPPOSITE in meaning to:',a:'undermine',ch:['undermine','strengthen','bolster','support'],hint:'To undermine is to weaken from below — the opposite of reinforcing which adds strength'},
+{type:'antonym',word:'stern',q:'Which word is the OPPOSITE of STERN (adj.)?',a:'gentle',ch:['gentle','harsh','strict','severe'],hint:'Stern means harsh and uncompromising — gentle means kind and soft in manner'},
+{type:'antonym',word:'stern',q:'STERN (adj.) is most nearly OPPOSITE in meaning to:',a:'lenient',ch:['lenient','harsh','strict','severe'],hint:'A stern judge applies rules harshly — a lenient one is more forgiving and flexible'},
+{type:'antonym',word:'treacherous',q:'Which word is the OPPOSITE of TREACHEROUS?',a:'trustworthy',ch:['trustworthy','dangerous','disloyal','hazardous'],hint:'Treacherous means not to be trusted — trustworthy means you can rely on it completely'},
+{type:'antonym',word:'treacherous',q:'TREACHEROUS is most nearly OPPOSITE in meaning to:',a:'reliable',ch:['reliable','dangerous','disloyal','hazardous'],hint:'Treacherous conditions are dangerous and untrustworthy — reliable conditions are safe and predictable'},
+{type:'antonym',word:'awe',q:'An AWE-inspiring sight is the opposite of a _____ sight.',a:'dull',ch:['dull','wonderful','amazing','remarkable'],hint:'Awe is inspired by something extraordinary — the opposite leaves you completely unmoved'},
+{type:'antonym',word:'catastrophe',q:'The CATASTROPHE caused suffering; the opposite would be _____.',a:'a joyous celebration',ch:['a joyous celebration','a tragic event','a disaster','a terrible loss'],hint:'A catastrophe brings suffering and loss — the true opposite is an event that brings joy and gain'},
+{type:'antonym',word:'deceive',q:'To DECEIVE someone is the opposite of _____.',a:'being honest with them',ch:['being honest with them','tricking them','misleading them','fooling them'],hint:'Deception creates false beliefs — honesty creates true ones'},
+{type:'antonym',word:'lull',q:'Something that LULLS you to sleep is the opposite of something that _____ you.',a:'startles',ch:['startles','soothes','calms','quiets'],hint:'Lulling brings calm and sleep — startling brings sudden alertness and alarm'},
+// ── ANALOGIES (40) ──────────────────────────────────────────────────────────
+{type:'analogy',word:'catastrophe',q:'CATASTROPHE is to DISASTER as COLLISION is to _____',a:'crash',ch:['crash','avoidance','escape','safety'],hint:'Both pairs are synonyms — a catastrophe is a disaster and a collision is a...'},
+{type:'analogy',word:'stern',q:'STERN is to BOAT as TAIL is to _____',a:'aircraft',ch:['aircraft','sail','anchor','rudder'],hint:'The stern is the rear of a boat — the tail is the rear of an...'},
+{type:'analogy',word:'awe',q:'AWE is to WONDER as PLACID is to _____',a:'calm',ch:['calm','turbulent','agitated','excited'],hint:'Both pairs are synonyms — awe means wonder and placid means...'},
+{type:'analogy',word:'deceive',q:'DECEIVE is to TRUST as BETRAY is to _____',a:'loyalty',ch:['loyalty','deception','treachery','dishonesty'],hint:'Deceiving destroys trust — betraying destroys...'},
+{type:'analogy',word:'improvise',q:'IMPROVISE is to PLAN as REACT is to _____',a:'prepare',ch:['prepare','adapt','invent','respond'],hint:'To improvise is the opposite of planning — to react is the opposite of...'},
+{type:'analogy',word:'lull',q:'LULL is to AGITATE as CALM is to _____',a:'disturb',ch:['disturb','soothe','quiet','relax'],hint:'Lull is the opposite of agitate — calm is the opposite of...'},
+{type:'analogy',word:'predicament',q:'PREDICAMENT is to SOLUTION as PROBLEM is to _____',a:'answer',ch:['answer','difficulty','trouble','challenge'],hint:'A predicament needs a solution — a problem needs an...'},
+{type:'analogy',word:'priority',q:'PRIORITY is to IMPORTANCE as RANK is to _____',a:'order',ch:['order','disarray','chaos','disorder'],hint:'Priority reflects importance — rank reflects...'},
+{type:'analogy',word:'reinforce',q:'REINFORCE is to WEAKEN as STRENGTHEN is to _____',a:'undermine',ch:['undermine','bolster','support','fortify'],hint:'Reinforce is the opposite of weaken — strengthen is the opposite of...'},
+{type:'analogy',word:'treacherous',q:'TREACHEROUS is to TRUSTWORTHY as DANGEROUS is to _____',a:'safe',ch:['safe','risky','hazardous','perilous'],hint:'Treacherous is the opposite of trustworthy — dangerous is the opposite of...'},
+{type:'analogy',word:'fatality',q:'FATALITY is to DEATH as SURVIVAL is to _____',a:'life',ch:['life','loss','casualty','tragedy'],hint:'A fatality means death — survival means...'},
+{type:'analogy',word:'collide',q:'COLLIDE is to COLLISION as DECEIVE is to _____',a:'deception',ch:['deception','truth','honesty','clarity'],hint:'Collision is the noun form of collide — deception is the noun form of...'},
+{type:'analogy',word:'awe',q:'AWE is to AWESOME as CATASTROPHE is to _____',a:'catastrophic',ch:['catastrophic','wonderful','pleasant','mild'],hint:'Awesome is the adjective form of awe — catastrophic is the adjective form of...'},
+{type:'analogy',word:'loom',q:'LOOM is to APPEAR as VANISH is to _____',a:'disappear',ch:['disappear','emerge','materialize','arrive'],hint:'To loom means to appear — to vanish means to...'},
+{type:'analogy',word:'consequence',q:'CONSEQUENCE is to CAUSE as EFFECT is to _____',a:'reason',ch:['reason','result','outcome','conclusion'],hint:'A consequence follows from a cause — an effect follows from a...'},
+{type:'analogy',word:'stern',q:'STERN is to LENIENT as HARSH is to _____',a:'gentle',ch:['gentle','strict','severe','rigid'],hint:'Stern is the opposite of lenient — harsh is the opposite of...'},
+{type:'analogy',word:'improvise',q:'IMPROVISE is to JAZZ MUSICIAN as REHEARSE is to _____',a:'classical performer',ch:['classical performer','chef','writer','painter'],hint:'Jazz musicians improvise freely — classical performers carefully...'},
+{type:'analogy',word:'placid',q:'PLACID is to LAKE as TURBULENT is to _____',a:'storm',ch:['storm','pond','puddle','stream'],hint:'A lake is often placid — a storm is often turbulent'},
+{type:'analogy',word:'predicament',q:'PREDICAMENT is to ESCAPE as TRAP is to _____',a:'freedom',ch:['freedom','capture','prison','entrapment'],hint:'A predicament is something you need to escape from — a trap is something you need to gain...'},
+{type:'analogy',word:'priority',q:'PRIORITY is to FIRST as AFTERTHOUGHT is to _____',a:'last',ch:['last','second','middle','primary'],hint:'Priority means first in importance — an afterthought comes...'},
+{type:'analogy',word:'reinforce',q:'REINFORCE is to STRENGTH as ERODE is to _____',a:'weakness',ch:['weakness','power','force','resilience'],hint:'Reinforcing something adds strength — eroding something creates...'},
+{type:'analogy',word:'treacherous',q:'TREACHEROUS is to ALLY as RELIABLE is to _____',a:'partner',ch:['partner','enemy','rival','opponent'],hint:'A treacherous ally cannot be trusted — a reliable partner always can be'},
+{type:'analogy',word:'loom',q:'LOOM is to WEAVER as FURNACE is to _____',a:'blacksmith',ch:['blacksmith','swimmer','painter','actor'],hint:'A loom is the tool a weaver uses — a furnace is the tool a blacksmith uses'},
+{type:'analogy',word:'catastrophe',q:'CATASTROPHE is to MAJOR as MISHAP is to _____',a:'minor',ch:['minor','enormous','devastating','catastrophic'],hint:'A catastrophe is a large-scale disaster — a mishap is something...'},
+{type:'analogy',word:'awe',q:'AWE is to GRANDEUR as FEAR is to _____',a:'threat',ch:['threat','safety','comfort','security'],hint:'Awe is inspired by grandeur — fear is inspired by a...'},
+{type:'analogy',word:'fatality',q:'FATALITY is to LIFEGUARD as ILLNESS is to _____',a:'doctor',ch:['doctor','teacher','engineer','lawyer'],hint:'A lifeguard works to prevent fatalities — a doctor works to prevent...'},
+{type:'analogy',word:'consequence',q:'CONSEQUENCE is to RECKLESSNESS as REWARD is to _____',a:'responsibility',ch:['responsibility','carelessness','negligence','recklessness'],hint:'Recklessness leads to consequences — responsibility leads to...'},
+{type:'analogy',word:'lull',q:'LULL is to STORM as INTERMISSION is to _____',a:'performance',ch:['performance','silence','chaos','noise'],hint:'A lull is a pause in a storm — an intermission is a pause in a...'},
+{type:'analogy',word:'deceive',q:'DECEIVE is to DISHONEST as INFORM is to _____',a:'truthful',ch:['truthful','misleading','deceptive','dishonest'],hint:'Someone who deceives is dishonest — someone who informs truthfully is...'},
+{type:'analogy',word:'placid',q:'PLACID is to SERENE as TREACHEROUS is to _____',a:'dangerous',ch:['dangerous','peaceful','calm','tranquil'],hint:'Placid and serene are synonyms — treacherous and dangerous are...'},
+{type:'analogy',word:'stern',q:'STERN is to CAPTAIN as STRICT is to _____',a:'teacher',ch:['teacher','student','friend','artist'],hint:'A captain might be stern — a teacher might be strict'},
+{type:'analogy',word:'priority',q:'PRIORITY is to SCHEDULE as HEADLINE is to _____',a:'newspaper',ch:['newspaper','article','story','column'],hint:'A priority stands out in a schedule as most important — a headline stands out in a...'},
+{type:'analogy',word:'reinforce',q:'REINFORCE is to CONCRETE as SHARPEN is to _____',a:'blade',ch:['blade','rope','cloth','pillow'],hint:'You reinforce concrete to make it stronger — you sharpen a blade to make it more effective'},
+{type:'analogy',word:'collide',q:'COLLIDE is to SEPARATE as ATTRACT is to _____',a:'repel',ch:['repel','draw','pull','magnetize'],hint:'Collide is the opposite of separate — attract is the opposite of...'},
+{type:'analogy',word:'fatality',q:'FATALITY is to ACCIDENT as VICTORY is to _____',a:'battle',ch:['battle','disaster','catastrophe','failure'],hint:'A fatality can result from an accident — a victory can result from a...'},
+{type:'analogy',word:'awe',q:'AWE is to OVERCOME as BOREDOM is to _____',a:'unaffected',ch:['unaffected','amazed','stunned','overwhelmed'],hint:'Awe overcomes you — boredom leaves you...'},
+{type:'analogy',word:'predicament',q:'PREDICAMENT is to CAPTAIN SMITH as CRISIS is to _____',a:'leader',ch:['leader','follower','student','spectator'],hint:'Captain Smith faced a predicament on the Titanic — a leader faces a...'},
+{type:'analogy',word:'treacherous',q:'TREACHEROUS is to SURFACE as DECEPTIVE is to _____',a:'appearance',ch:['appearance','truth','fact','reality'],hint:'A treacherous surface looks safe but is not — a deceptive appearance looks true but is not'},
+{type:'analogy',word:'consequence',q:'CONSEQUENCE is to ACTION as ECHO is to _____',a:'sound',ch:['sound','silence','darkness','stillness'],hint:'A consequence follows from an action — an echo follows from a...'},
+{type:'analogy',word:'improvise',q:'IMPROVISE is to RIGID PLAN as ADAPT is to _____',a:'fixed rules',ch:['fixed rules','rehearsal','planning','preparation'],hint:'Improvising means working without a rigid plan — adapting means working without...'},
+// ── SIMILES (35) ──────────────────────────────────────────────────────────
+{type:'simile',word:'awe',q:'Complete the simile: The passengers on the lifeboat watched the sinking ship with an awe like ___',a:'witnesses to a mountain collapsing — the size of the thing made it impossible to look away even as it destroyed itself',ch:['witnesses to a mountain collapsing — the size of the thing made it impossible to look away even as it destroyed itself','tourists watching a familiar landmark at closing time — noting the hour and turning toward the exit','bystanders observing a routine task completed exactly on schedule','spectators whose attention had wandered long before the event ended'],hint:'Think: awe at catastrophe = unable to look away at something vast destroying itself — too large to process as real'},
+{type:'simile',word:'awe',q:'Complete the simile: The children stood before the ocean as awed as ___',a:'someone who has just learned that the word "vast" was invented by someone who had never seen this yet',ch:['someone who has just learned that the word "vast" was invented by someone who had never seen this yet','a regular visitor grown accustomed to the size and no longer adjusting their expectations','a traveler confirming that the body of water matched the description in the guidebook','someone checking off an item on a list of places they had agreed to visit'],hint:'Think: awe at the ocean = encountering something that redefines your vocabulary for size'},
+{type:'simile',word:'catastrophe',q:'Complete the simile: The sinking of the Titanic was a catastrophe like ___',a:'a word that takes years to finish being said — you hear the beginning and the end keeps arriving for decades',ch:['a word that takes years to finish being said — you hear the beginning and the end keeps arriving for decades','a routine announcement made at the expected hour and received without particular concern','an event that unfolded on schedule and confirmed what everyone had already assumed','a small incident resolved within the hour with no lasting effect'],hint:'Think: catastrophe = something whose consequences keep arriving long after the event — the word is not finished when it begins'},
+{type:'simile',word:'catastrophe',q:'Complete the simile: The earthquake struck like a catastrophe that ___',a:'had been waiting underground for centuries — patient as a debt arriving exactly when it was finally owed',ch:['had been waiting underground for centuries — patient as a debt arriving exactly when it was finally owed','had been scheduled on the calendar and reminded everyone the week before with appropriate notice','arrived at a convenient hour with enough warning for all residents to relocate in advance','was expected in the forecast and fully prepared for by everyone in the affected region'],hint:'Think: a natural catastrophe = something that was building for a long time before it arrived — patience before devastation'},
+{type:'simile',word:'collide',q:'Complete the simile: The iceberg and the Titanic collided like ___',a:'a sentence that meets its period too soon — the story still going the punctuation arriving without warning',ch:['a sentence that meets its period too soon — the story still going the punctuation arriving without warning','two cars in a parking lot stopping in time before any damage occurred','a planned meeting between two parties that had coordinated their paths well in advance','two boats that gave each other wide berth and passed safely in the night'],hint:'Think: the collision = a story cut short by punctuation that arrives without warning — the ship is the sentence the iceberg is the period'},
+{type:'simile',word:'collide',q:'Complete the simile: When their opinions collided the argument was like ___',a:'two rivers that had been flowing toward each other for years — the meeting sudden but inevitable',ch:['two rivers that had been flowing toward each other for years — the meeting sudden but inevitable','a scheduled debate in which both sides knew the outcome before they arrived','a quiet agreement reached after a brief productive exchange of views','a conversation in which each person carefully confirmed the other\'s position before speaking'],hint:'Think: a collision of opinions = forces moving toward each other that were always going to meet — not planned but not surprising'},
+{type:'simile',word:'collide',q:'Complete the simile: The two cyclists collided as suddenly as ___',a:'a word interrupted mid-syllable — there and then not the gap where it was obvious to everyone',ch:['a word interrupted mid-syllable — there and then not the gap where it was obvious to everyone','a sentence completed calmly at its natural end before the next one began','a conversation wrapping up on schedule with both participants satisfied','an event everyone had seen coming from miles and had arranged to avoid with plenty of time'],hint:'Think: a sudden collision = interruption — the sentence cut off before it finishes the gap shocking because something was there'},
+{type:'simile',word:'consequence',q:'Complete the simile: The consequences of the Titanic\'s sinking spread like ___',a:'ripples from a stone dropped in still water — the center already gone but the effects still moving outward years later',ch:['ripples from a stone dropped in still water — the center already gone but the effects still moving outward years later','a single note played and then silenced — present for a moment then completely gone','a flame extinguished in still air — leaving no smoke no warmth no record of having been lit','a word spoken in a room where no one was present — existing for the moment then absorbed by the walls'],hint:'Think: consequences of a great catastrophe = ripples — the event is over but the effects keep moving outward'},
+{type:'simile',word:'consequence',q:'Complete the simile: Ignoring the warning had consequences like ___',a:'a bill you delayed paying — not cancelled by the delay only collecting the interest of having been avoided',ch:['a bill you delayed paying — not cancelled by the delay only collecting the interest of having been avoided','a forecast you checked before leaving and found accurate on your return','a reminder you acknowledged at the time and resolved before it required further attention','a task you completed ahead of schedule so that nothing remained when the deadline arrived'],hint:'Think: consequence of avoidance = a bill that grows — delay does not cancel it only adds to what is owed'},
+{type:'simile',word:'deceive',q:'Complete the simile: The calm sea deceived the sailors like ___',a:'a mirror reflecting a blue sky when the storm is already behind you — what you see is what was there not what is coming',ch:['a mirror reflecting a blue sky when the storm is already behind you — what you see is what was there not what is coming','a weather station reporting accurate current conditions with full confidence about the hours ahead','an instrument calibrated to show what is actually present at the moment of measurement','a signal that correctly represented the state of the system at every point it was checked'],hint:'Think: deceptive calm sea = showing what was true not what is coming — a mirror that reflects old light'},
+{type:'simile',word:'deceive',q:'Complete the simile: She was deceived by the stranger\'s friendly manner like ___',a:'a reader trusting the prologue of a book that lies about its own ending from the first sentence',ch:['a reader trusting the prologue of a book that lies about its own ending from the first sentence','someone who read the last chapter first and knew exactly what to expect from the opening pages','a critic who had received an honest summary of the plot before attending','a reader given a complete and accurate description of the story before buying the book'],hint:'Think: being deceived by appearances = trusting a prologue that has already decided to mislead you about what follows'},
+{type:'simile',word:'deceive',q:'Complete the simile: The magician deceived the audience like ___',a:'the left hand deceives the eye — not by being faster but by being interesting enough that the right hand becomes invisible',ch:['the left hand deceives the eye — not by being faster but by being interesting enough that the right hand becomes invisible','a hand that performs exactly what the audience expects confirming the prediction they arrived with','an instrument so accurate that it leaves no room for doubt about what it is measuring','someone who shows both hands at once and lets the audience decide what to watch'],hint:'Think: deception by misdirection = the interesting hand draws attention so the working hand can disappear'},
+{type:'simile',word:'fatality',q:'Complete the simile: Each fatality in the disaster was like ___',a:'a sentence removed from the middle of a paragraph — the story continues but something in the shape of it is permanently missing',ch:['a sentence removed from the middle of a paragraph — the story continues but something in the shape of it is permanently missing','a footnote added at the end of a chapter — present noted and not affecting the main text','a word substituted for another of the same length — the line unchanged the meaning nearly identical','a revision that improved the original by removing something that had always been unnecessary'],hint:'Think: a fatality = something permanently removed — the story keeps going but a part of its structure is gone'},
+{type:'simile',word:'fatality',q:'Complete the simile: News of the fatalities arrived like ___',a:'the last page of a letter whose earlier sections had tried to prepare you — the sentence at the end that all the careful language was building toward',ch:['the last page of a letter whose earlier sections had tried to prepare you — the sentence at the end that all the careful language was building toward','a brief note confirming an expected and welcome outcome that required no follow-up','a form returned with the boxes checked correctly — no revision needed no further action required','a message confirming an appointment scheduled in advance and now complete on both ends'],hint:'Think: news of deaths in a disaster = the final sentence all the careful preparation was building toward'},
+{type:'simile',word:'improvise',q:'Complete the simile: The crew improvised under pressure like ___',a:'a musician who has lost the sheet music but still knows the key — not playing what was written but playing in the same language',ch:['a musician who has lost the sheet music but still knows the key — not playing what was written but playing in the same language','a performer who reads from the score at every rehearsal and never attempts a passage from memory','a pianist who waits for the music to be placed in front of them before beginning the concert','an instrumentalist who confirms each note against the written part before moving to the next'],hint:'Think: improvising under pressure = playing without the score but in the right key — not scripted but still structured'},
+{type:'simile',word:'improvise',q:'Complete the simile: She improvised her speech as naturally as ___',a:'someone returning a phone call they expected — the words arriving in the right order because the conversation had already happened in their head',ch:['someone returning a phone call they expected — the words arriving in the right order because the conversation had already happened in their head','a speaker reading from a prepared text that had been rehearsed in full the day before','a presenter following an outline so thoroughly memorized that the notes were only a formality','someone who had written the exact words they would use before arriving at the event'],hint:'Think: natural improvisation = having already rehearsed the conversation internally — the words arrive without a script because the thinking was done first'},
+{type:'simile',word:'improvise',q:'Complete the simile: Improvising a raft from debris was like ___',a:'writing a sentence using only the letters left on the keyboard after the vowels broke — possible but everything takes longer and sounds different',ch:['writing a sentence using only the letters left on the keyboard after the vowels broke — possible but everything takes longer and sounds different','typing a message using a full keyboard with autocorrect enabled the sentences forming easily','composing an email on a device with every key functional and a strong wireless connection','completing a form that had been pre-filled with the relevant information before arrival'],hint:'Think: improvising with what remains = working with what the disaster left — the task is possible but nothing is the right tool'},
+{type:'simile',word:'loom',q:'Complete the simile: The iceberg loomed out of the darkness like ___',a:'a problem that had always been there too large to be an accident arriving exactly when avoidance was no longer possible',ch:['a problem that had always been there too large to be an accident arriving exactly when avoidance was no longer possible','a scheduled delivery arriving at the expected hour with the correct address confirmed in advance','a guest who called ahead arrived on time and waited patiently by the entrance','a fact that had been announced in advance confirmed repeatedly and received without surprise'],hint:'Think: the iceberg looming = something massive that was always there only visible at the moment avoidance became impossible'},
+{type:'simile',word:'loom',q:'Complete the simile: The deadline loomed as heavily as ___',a:'a ceiling that had been gradually lowering for weeks — only noticed when there was no longer enough room to stand upright',ch:['a ceiling that had been gradually lowering for weeks — only noticed when there was no longer enough room to stand upright','a comfortable room with standard dimensions that remained unchanged throughout the project','a space that stayed the same height from the first day to the last consistent and predictable','a ceiling measured at the start and confirmed to be the same measurement at the end'],hint:'Think: a looming deadline = a ceiling that was always dropping but only becomes unbearable at the moment you cannot ignore it'},
+{type:'simile',word:'lull',q:'Complete the simile: The calm sea lulled the passengers like ___',a:'a language you do not speak telling you there is no danger — soothing by tone impossible to verify by meaning',ch:['a language you do not speak telling you there is no danger — soothing by tone impossible to verify by meaning','a direct warning delivered in your native language with clear instructions on what to do next','a precise technical report describing current conditions accurately and projecting future ones','a measured explanation from a qualified expert who had studied the situation before speaking'],hint:'Think: being lulled by calm seas = reassured by tone without being able to understand the message — soothing but not informative'},
+{type:'simile',word:'lull',q:'Complete the simile: There was a lull in the argument like ___',a:'the pause between lightning and thunder — not the end of the storm just the moment when you count how far away it still is',ch:['the pause between lightning and thunder — not the end of the storm just the moment when you count how far away it still is','a resolution reached mutually by both parties and confirmed with a handshake before leaving','a silence that signaled the end of the disagreement and the beginning of a new understanding','a pause in which both sides confirmed that the issue had been resolved to everyone\'s satisfaction'],hint:'Think: a lull in an argument = the gap between lightning and thunder — not the end of the storm just a measurement of distance'},
+{type:'simile',word:'placid',q:'Complete the simile: The sea appeared as placid as ___',a:'a mirror that had decided not to show what was approaching from the other side',ch:['a mirror that had decided not to show what was approaching from the other side','a window that transmitted everything on the other side with complete accuracy and no distortion','a surface that reflected the present conditions faithfully and without omission','an instrument calibrated to show exactly what existed nothing hidden nothing withheld'],hint:'Think: a placid sea hiding danger = a mirror that shows only what it wants to — beautiful and still while concealing the approaching disaster'},
+{type:'simile',word:'placid',q:'Complete the simile: Her placid expression was like ___',a:'a lake in the hour before the wind shifts — the surface showing nothing of what is already moving in the air above it',ch:['a lake in the hour before the wind shifts — the surface showing nothing of what is already moving in the air above it','a body of water in full storm accurately reflecting the state of the atmosphere above','a clear pool in calm weather representing current conditions at the moment of observation','a surface that always showed what was actually present — no discrepancy between appearance and state'],hint:'Think: a placid expression hiding feeling = a lake whose surface is still while the wind above it is already shifting'},
+{type:'simile',word:'predicament',q:'Complete the simile: Captain Smith\'s predicament was like ___',a:'being given a question with no right answer by someone who still expected the correct one — the situation impossible the requirement unchanged',ch:['being given a question with no right answer by someone who still expected the correct one — the situation impossible the requirement unchanged','receiving a question with a clear correct answer and enough time to think carefully before responding','a problem with a known solution that required only the right tools and enough time to implement','a situation in which the correct choice was obvious to everyone present and required no deliberation'],hint:'Think: Captain Smith\'s predicament = being expected to find a right answer when none exists — the impossible question with the demand still in place'},
+{type:'simile',word:'predicament',q:'Complete the simile: Being trapped in a predicament is like ___',a:'standing in a room where all the exits have become walls — you remember there were doors but the architecture has been reorganized while you were not looking',ch:['standing in a room where all the exits have become walls — you remember there were doors but the architecture has been reorganized while you were not looking','entering a building through the main entrance and exiting through the same door when the visit is complete','navigating a hallway with clearly marked exits at both ends and no locked doors between them','finding yourself in a lobby with multiple obvious exits each available without restriction'],hint:'Think: a predicament = a room where the exits became walls — trapped by circumstances that changed the architecture of escape'},
+{type:'simile',word:'predicament',q:'Complete the simile: She faced her predicament like ___',a:'a chess player who has made one move too many — the board still in play but the game already decided by what cannot be undone',ch:['a chess player who has made one move too many — the board still in play but the game already decided by what cannot be undone','a player in full command of the board with multiple winning lines available and ample time to choose','someone who has studied the opening and knows exactly which responses will follow each move','a player whose position is so strong that the outcome no longer requires careful calculation'],hint:'Think: facing a predicament = a chess position where one move too many has already decided the game — still playing already decided'},
+{type:'simile',word:'priority',q:'Complete the simile: Women and children were given priority like ___',a:'a rule written before the emergency — present because someone had imagined this moment before it arrived waiting to be used',ch:['a rule written before the emergency — present because someone had imagined this moment before it arrived waiting to be used','a policy created on the spot by the people who would be affected by it with everyone\'s agreement','a guideline developed during the crisis itself tested against the situation before being applied','a suggestion offered by a bystander and accepted after brief discussion among those involved'],hint:'Think: priority in a crisis = a rule that was written before the emergency — someone imagined this moment in advance'},
+{type:'simile',word:'priority',q:'Complete the simile: His first priority was as clear as ___',a:'the first word of a sentence — everything else exists to support it and the sentence does not work in a different order',ch:['the first word of a sentence — everything else exists to support it and the sentence does not work in a different order','the last word in a paragraph — completing the thought arriving only after all the others have come first','a word chosen randomly from anywhere in the sentence — its position negotiable its importance equal to the rest','a punctuation mark that could be moved without changing the meaning of the sentence it appeared in'],hint:'Think: a top priority = the first word in a sentence — everything else is subordinate to it and the order is not negotiable'},
+{type:'simile',word:'reinforce',q:'Complete the simile: The second hull reinforced the ship like ___',a:'a belief that has been said out loud so many times it starts to feel like fact — the repetition adding weight the original claim did not have',ch:['a belief that has been said out loud so many times it starts to feel like fact — the repetition adding weight the original claim did not have','a statement checked against the evidence each time it was repeated and confirmed to be accurate','a claim revised whenever new information suggested it was incomplete or incorrect','an argument strengthened each time by reference to new data that actually supported it'],hint:'Think: the second hull reinforcing the first = repetition creating certainty — the claim gains weight from being said rather than from being verified'},
+{type:'simile',word:'reinforce',q:'Complete the simile: He reinforced his argument with evidence like ___',a:'a builder adding cross-beams to a wall that was already standing — it did not need them to exist but it needed them to last',ch:['a builder adding cross-beams to a wall that was already standing — it did not need them to exist but it needed them to last','a worker building a wall using only the original design trusting the first layer to hold without addition','a constructor who completed the structure on the first day and closed the project without further review','an architect who determined that the original specifications were sufficient and required no modification'],hint:'Think: reinforcing an argument = adding structural support to something that already stands — necessary not for existence but for endurance'},
+{type:'simile',word:'stern',q:'Complete the simile: The captain\'s stern expression was like ___',a:'weather from the north — not cruel by intention just cold by nature and serious by the time it reaches you',ch:['weather from the north — not cruel by intention just cold by nature and serious by the time it reaches you','a sunny forecast confirmed on the morning of the event — warm predicted and exactly as expected','a mild breeze that arrived from a comfortable direction and required no special preparation','a forecast adjusted from cold to warm by the time the crew consulted it in the morning'],hint:'Think: a stern expression = northern weather — not cruel just cold by nature and becoming serious with distance'},
+{type:'simile',word:'stern',q:'Complete the simile: The Titanic\'s stern rose above the water like ___',a:'a final statement from something that had not finished saying what it meant — lifted up for one last moment before going under',ch:['a final statement from something that had not finished saying what it meant — lifted up for one last moment before going under','a resting object completing its task and lowering gently to a prepared surface below','a piece of equipment reaching its designated position and locking into place without incident','a structure completing its descent on schedule and settling as designed without unexpected movement'],hint:'Think: the stern rising as the ship sinks = a final statement being made — raised up for one last word before disappearing'},
+{type:'simile',word:'treacherous',q:'Complete the simile: The iceberg-filled waters were as treacherous as ___',a:'a sentence full of words you know individually but cannot follow when they appear together in this order',ch:['a sentence full of words you know individually but cannot follow when they appear together in this order','a straightforward paragraph in familiar language that communicated its meaning on the first reading','a text whose content was fully accessible without any special knowledge of the subject matter','a document prepared for a general audience and verified for clarity by a professional editor'],hint:'Think: treacherous waters = familiar elements arranged so they become unnavigable — you know the words but cannot read the sentence'},
+{type:'simile',word:'treacherous',q:'Complete the simile: The ally proved treacherous as ___',a:'a lock that only works from the outside — perfectly fine as long as you are not the one who needs to get back in',ch:['a lock that only works from the outside — perfectly fine as long as you are not the one who needs to get back in','a key that opens the door reliably from either side in all weather at any hour','a deadbolt tested and confirmed to function correctly for both the person leaving and the one returning','a mechanism checked by a locksmith and certified to operate as described in both directions'],hint:'Think: a treacherous ally = a lock that only works against you — fine from one side a trap from the other'},
+{type:'simile',word:'treacherous',q:'Complete the simile: The treacherous section of the trail looked as safe as ___',a:'a paragraph whose last sentence contradicts everything the first one promised — you only discover this at the end',ch:['a paragraph whose last sentence contradicts everything the first one promised — you only discover this at the end','a clear trail with accurate signage marking each change in terrain and level of difficulty','a path described in the guidebook with accurate ratings for the skill level required to complete it','a route reviewed by experienced hikers who confirmed the difficulty matched the posted description'],hint:'Think: treacherous terrain that looks safe = a paragraph you trust until the last sentence — the contradiction arrives only at the end'},
+// ── METAPHORS (35) ──────────────────────────────────────────────────────────
+{type:'metaphor',word:'awe',q:'Which sentence is a metaphor using AWE?',a:'The ocean is not large — it is the original definition of the word written before the word existed.',ch:['The ocean is not large — it is the original definition of the word written before the word existed.','The ocean is like a definition of largeness — it demonstrates the concept better than any dictionary could.','Like a dictionary entry made visible the ocean shows what vast means better than any written explanation.','The ocean functions like a demonstration of vastness — more effective than any definition at showing what the word means.'],hint:'Think: calling the ocean directly the definition — it IS the word\'s original meaning not something that illustrates it'},
+{type:'metaphor',word:'awe',q:'Which sentence is a metaphor using AWE?',a:'Awe is not an emotion — it is the moment the mind runs out of categories and has to sit down.',ch:['Awe is not an emotion — it is the moment the mind runs out of categories and has to sit down.','Awe is like running out of categories — the mind cannot file the experience and simply stops trying.','Like a mind that has run out of categories awe is what happens when nothing familiar applies.','Awe functions the way category-exhaustion does — it happens when the experience is too large for any existing box.'],hint:'Think: calling awe directly the moment categories run out — it IS the failure of the filing system not just a feeling'},
+{type:'metaphor',word:'catastrophe',q:'Which sentence is a metaphor using CATASTROPHE?',a:'A catastrophe is not an event — it is a before-and-after that replaces the before permanently.',ch:['A catastrophe is not an event — it is a before-and-after that replaces the before permanently.','A catastrophe is like a dividing line — after it nothing looks the same as it did before.','Like a line that separates before from after a catastrophe marks the point where the world changes.','A catastrophe functions like a before-and-after — it changes the picture so completely that the before becomes hard to imagine.'],hint:'Think: calling a catastrophe directly a before-and-after — it IS the replacement of what came before not an event within it'},
+{type:'metaphor',word:'catastrophe',q:'Which sentence is a metaphor using CATASTROPHE?',a:'The Titanic was not a ship — it was a catastrophe waiting to be named traveling at twenty-two knots.',ch:['The Titanic was not a ship — it was a catastrophe waiting to be named traveling at twenty-two knots.','The Titanic was like a catastrophe in waiting — its fate not yet determined but its speed already set.','Like a catastrophe that had not yet occurred the Titanic carried the possibility of disaster while sailing.','The Titanic functioned like a catastrophe not yet named — the disaster was possible from the start.'],hint:'Think: calling the Titanic directly a catastrophe waiting — it WAS the disaster already just not yet named moving toward its moment'},
+{type:'metaphor',word:'collide',q:'Which sentence is a metaphor using COLLIDE?',a:'Their friendship did not end — it collided with the truth and neither could survive the impact.',ch:['Their friendship did not end — it collided with the truth and neither could survive the impact.','Their friendship ended the way two objects collide — with great force and permanent damage to both.','Like two things colliding their friendship ended with the kind of force that damages both sides permanently.','Their friendship ended in the way collisions do — with force so great that both sides were fundamentally changed.'],hint:'Think: calling the end of a friendship directly a collision — it IS the violent meeting with truth not something that resembles one'},
+{type:'metaphor',word:'collide',q:'Which sentence is a metaphor using COLLIDE?',a:'Every collision is a negotiation that was never requested — two objects trying to occupy the same space and finding it impossible.',ch:['Every collision is a negotiation that was never requested — two objects trying to occupy the same space and finding it impossible.','Every collision is like a failed negotiation — two things meeting where only one can be and neither willing to yield.','Like a negotiation that was never scheduled every collision is the meeting of things that should not share a space.','Collisions function the way failed negotiations do — both parties are present where only one can fit.'],hint:'Think: calling a collision directly an unrequested negotiation — it IS the argument over space happening at the speed of impact'},
+{type:'metaphor',word:'consequence',q:'Which sentence is a metaphor using CONSEQUENCE?',a:'Consequences are not punishments — they are the grammar of reality and the sentence always follows the noun.',ch:['Consequences are not punishments — they are the grammar of reality and the sentence always follows the noun.','Consequences are like grammar — they follow inevitably from what came before as a sentence follows a subject.','Like a grammatical rule that determines what follows the subject consequence is the mechanism of cause and effect.','Consequences function the way grammar does — they determine what must come next after the choice is made.'],hint:'Think: calling consequences directly the grammar of reality — they ARE the rules that determine what follows not a judgment from outside'},
+{type:'metaphor',word:'consequence',q:'Which sentence is a metaphor using CONSEQUENCE?',a:'Ignoring a consequence does not delay it — it gives the debt compound interest until you are ready to pay.',ch:['Ignoring a consequence does not delay it — it gives the debt compound interest until you are ready to pay.','Ignoring a consequence is like ignoring a debt — it does not go away it grows while you are not looking.','Like a debt that grows when ignored a consequence that is avoided only increases in what it will eventually require.','Consequences that are ignored function like compound interest — they accumulate until the payment becomes unavoidable.'],hint:'Think: calling an ignored consequence directly compound interest — it IS the growing debt not something that resembles one'},
+{type:'metaphor',word:'deceive',q:'Which sentence is a metaphor using DECEIVE?',a:'Deception is not a lie — it is the architecture of a false world built carefully enough that the visitor never looks for the exits.',ch:['Deception is not a lie — it is the architecture of a false world built carefully enough that the visitor never looks for the exits.','Deception is like an architecture — it builds a structure the observer moves through without questioning its walls.','Like a building designed so the visitor never notices there are no exits deception creates a space you do not try to leave.','Deception functions like architecture — it shapes the space the deceived person moves through without awareness of its design.'],hint:'Think: calling deception directly an architecture — it IS the designed space and the deceived person IS the visitor who does not look for exits'},
+{type:'metaphor',word:'deceive',q:'Which sentence is a metaphor using DECEIVE?',a:'The sea that night was deception in its purest form — a mirror that had agreed to reflect only the sky.',ch:['The sea that night was deception in its purest form — a mirror that had agreed to reflect only the sky.','The sea that night was like a deceptive mirror — reflecting beauty while hiding what lay beneath.','Like a mirror that shows only what it chooses the sea that night deceived by reflecting only what was safe to show.','The sea functioned like deception that night — reflecting back only the peaceful image while concealing the danger.'],hint:'Think: calling the sea directly deception in its purest form — it IS the agreement to show only what is safe and the calm IS the choice of what to reflect'},
+{type:'metaphor',word:'fatality',q:'Which sentence is a metaphor using FATALITY?',a:'Each fatality was not a statistic — it was a story the sea took and never gave back.',ch:['Each fatality was not a statistic — it was a story the sea took and never gave back.','Each fatality was like a story — complete in itself irreplaceable gone with the people who knew it best.','Like a story that disappears with its teller each fatality took with it everything that only that person knew.','Fatalities function the way lost stories do — each one removes something that cannot be reconstructed from other sources.'],hint:'Think: calling each fatality directly a story the sea took — it IS the lost narrative and the ocean IS the one who holds it and never returns it'},
+{type:'metaphor',word:'fatality',q:'Which sentence is a metaphor using FATALITY?',a:'A fatality is not the end of a life — it is a sentence the universe has decided not to finish.',ch:['A fatality is not the end of a life — it is a sentence the universe has decided not to finish.','A fatality is like an unfinished sentence — it ends without a period the thought left incomplete.','Like a sentence stopped mid-word a fatality is a life interrupted before its natural conclusion.','Fatalities function the way unfinished sentences do — they leave behind a feeling of incompletion.'],hint:'Think: calling a fatality directly a sentence the universe will not finish — it IS the uncompleted thought stopped before its natural period'},
+{type:'metaphor',word:'improvise',q:'Which sentence is a metaphor using IMPROVISE?',a:'To improvise is not to guess — it is to trust that you have already learned what you need and let it speak.',ch:['To improvise is not to guess — it is to trust that you have already learned what you need and let it speak.','To improvise is like trusting your learning — drawing on what you know without the scaffolding of a plan.','Like trust in accumulated knowledge improvisation is the act of letting what you have learned work without direction.','Improvisation functions the way trust in knowledge does — it lets what has been absorbed speak without a written prompt.'],hint:'Think: calling improvisation directly the act of trusting what you\'ve learned — it IS the trust speaking not the guess arriving'},
+{type:'metaphor',word:'improvise',q:'Which sentence is a metaphor using IMPROVISE?',a:'In a crisis improvisation is not a fallback — it is the only plan that was always going to be needed.',ch:['In a crisis improvisation is not a fallback — it is the only plan that was always going to be needed.','In a crisis improvisation is like the only available plan — the scripted version having failed to account for the situation.','Like the only plan left when the prepared one fails improvisation becomes the method a crisis requires.','Improvisation in a crisis functions like the backup plan — the one you turn to when the original proves insufficient.'],hint:'Think: calling improvisation directly the plan that was always needed — it IS not the backup but the original even if you did not know it'},
+{type:'metaphor',word:'loom',q:'Which sentence is a metaphor using LOOM?',a:'The iceberg did not loom — it was a fact that had been present all along finally becoming visible.',ch:['The iceberg did not loom — it was a fact that had been present all along finally becoming visible.','The iceberg loomed like a fact finally made visible — always there only now coming into view.','Like a fact that had been present before it was noticed the iceberg loomed out of what had always been there.','The iceberg functioned like a looming fact — present before it was seen becoming undeniable once it was.'],hint:'Think: the iceberg is not looming — it IS the fact that was always there and looming IS just the moment visibility caught up to presence'},
+{type:'metaphor',word:'loom',q:'Which sentence is a metaphor using LOOM?',a:'The future loomed over him not as threat but as inventory — everything still waiting to be decided.',ch:['The future loomed over him not as threat but as inventory — everything still waiting to be decided.','The future loomed over him like an inventory — everything present but not yet assigned or resolved.','Like an inventory not yet taken the future loomed with the weight of everything that remained undone.','The future functioned like a looming inventory — everything accounted for in principle nothing yet resolved in practice.'],hint:'Think: calling the looming future directly inventory — it IS the list of undecided things not the threat of what is coming'},
+{type:'metaphor',word:'lull',q:'Which sentence is a metaphor using LULL?',a:'The calm sea was a lull the Titanic never survived — the quietest part of a storm is not its absence.',ch:['The calm sea was a lull the Titanic never survived — the quietest part of a storm is not its absence.','The calm sea was like a lull — the quiet before the disaster mistaken for peace.','Like a lull that precedes the worst part of a storm the calm sea before the collision was only a pause.','The calm sea functioned like a lull — temporary misleading and preceding the worst of what was coming.'],hint:'Think: calling the calm sea directly a lull the ship never survived — it IS the quiet that is not the end of the storm and the ship IS the victim of the pause'},
+{type:'metaphor',word:'lull',q:'Which sentence is a metaphor using LULL?',a:'A false sense of security is a lull — comfortable temporary and followed by exactly what it was hiding.',ch:['A false sense of security is a lull — comfortable temporary and followed by exactly what it was hiding.','A false sense of security is like a lull — it creates calm before the situation resumes.','Like a lull that precedes resumed danger a false sense of security is a pause before the reality returns.','A false sense of security functions like a lull — it offers temporary calm before the actual conditions reassert themselves.'],hint:'Think: calling false security directly a lull — it IS the pause and what follows IS what it was always concealing'},
+{type:'metaphor',word:'placid',q:'Which sentence is a metaphor using PLACID?',a:'The ocean\'s placid face was not peace — it was patience waiting for the right moment to show what it had been holding.',ch:['The ocean\'s placid face was not peace — it was patience waiting for the right moment to show what it had been holding.','The ocean\'s placid face was like patience — hiding something beneath the calm waiting to be revealed.','Like patience that has not yet become action the ocean\'s placid surface concealed what it was preparing to do.','The ocean\'s placid surface functioned like patience — calm on the exterior while holding something beneath it.'],hint:'Think: calling the ocean\'s calm directly patience — it IS the holding of something not the absence of it waiting for the right moment to show'},
+{type:'metaphor',word:'placid',q:'Which sentence is a metaphor using PLACID?',a:'A placid expression is a locked room — everything that matters is on the other side of the door.',ch:['A placid expression is a locked room — everything that matters is on the other side of the door.','A placid expression is like a locked room — it hides what is inside behind a surface that reveals nothing.','Like a locked room whose contents are unknown a placid expression keeps what is inside concealed.','A placid expression functions like a locked room — what it contains is inaccessible from the outside.'],hint:'Think: calling a placid expression directly a locked room — it IS the door and the true feeling IS what\'s on the other side not visible from outside'},
+{type:'metaphor',word:'predicament',q:'Which sentence is a metaphor using PREDICAMENT?',a:'A predicament is not a problem — it is a room where every door was a wall before you arrived.',ch:['A predicament is not a problem — it is a room where every door was a wall before you arrived.','A predicament is like a room with walls where doors should be — escape appears possible but is not.','Like a room whose apparent exits are actually walls a predicament creates the feeling of options without providing them.','A predicament functions the way a doorless room does — exits seem available until you walk toward them.'],hint:'Think: calling a predicament directly a room where every door was already a wall — it IS the impossible geometry not just a hard problem'},
+{type:'metaphor',word:'predicament',q:'Which sentence is a metaphor using PREDICAMENT?',a:'Captain Smith\'s predicament was not the iceberg — it was the arithmetic: not enough boats too many people and the ocean had no patience for remainders.',ch:['Captain Smith\'s predicament was not the iceberg — it was the arithmetic: not enough boats too many people and the ocean had no patience for remainders.','Captain Smith\'s predicament was like an impossible arithmetic problem — the numbers simply did not add up in a way that saved everyone.','Like an arithmetic problem that produces a remainder no one can account for Captain Smith\'s predicament left people who could not be saved.','Captain Smith\'s predicament functioned like bad arithmetic — the sum of available boats subtracted from total people left an unavoidable remainder.'],hint:'Think: calling the predicament directly the arithmetic — it IS the math and the ocean IS the force that has no patience for the numbers that do not fit'},
+{type:'metaphor',word:'priority',q:'Which sentence is a metaphor using PRIORITY?',a:'Priority is not a list — it is the answer to what you do when you cannot do everything and the answer was always going to be who you are.',ch:['Priority is not a list — it is the answer to what you do when you cannot do everything and the answer was always going to be who you are.','Priority is like a list that reveals character — what you put first shows what you value most.','Like a list whose first item reveals the values of the person who wrote it priority shows who someone is under pressure.','Priority functions like a character test — what you place first when resources are limited reveals what you actually believe.'],hint:'Think: calling priority directly the answer that reveals who you are — it IS the test already taken and the answer IS already written in who you have always been'},
+{type:'metaphor',word:'priority',q:'Which sentence is a metaphor using PRIORITY?',a:'Women and children first was not a rule — it was a sentence the sea forced everyone on board to write at the same time.',ch:['Women and children first was not a rule — it was a sentence the sea forced everyone on board to write at the same time.','Women and children first was like a sentence written under pressure — composed by circumstances rather than deliberate choice.','Like a sentence written by the situation rather than the author the priority was imposed by events rather than chosen freely.','The rule about women and children first functioned like a sentence written under duress — the situation dictated its content.'],hint:'Think: calling the priority rule directly a sentence the sea forced everyone to write — it IS the enforced composition and the ocean IS the author'},
+{type:'metaphor',word:'reinforce',q:'Which sentence is a metaphor using REINFORCE?',a:'The second hull did not reinforce the ship — it reinforced the belief and the belief was what sank.',ch:['The second hull did not reinforce the ship — it reinforced the belief and the belief was what sank.','The second hull reinforced the ship like a false promise — it added confidence without adding equivalent safety.','Like a reinforcement that strengthens belief more than structure the second hull gave confidence that exceeded the actual protection.','The second hull functioned like a reinforcement of certainty — it did more for the confidence in the ship than for the ship itself.'],hint:'Think: the second hull directly reinforced the belief not the ship — it IS what sank and the reinforcement IS the confidence that was never really structural'},
+{type:'metaphor',word:'reinforce',q:'Which sentence is a metaphor using REINFORCE?',a:'Repetition is not emphasis — it is reinforcement and what gets reinforced is not always what is true.',ch:['Repetition is not emphasis — it is reinforcement and what gets reinforced is not always what is true.','Repetition is like reinforcement — saying something often enough adds structural weight to it even when it lacks factual support.','Like a reinforcement that adds strength regardless of what is being strengthened repetition gives weight to claims without verifying them.','Repetition functions like reinforcement — it adds stability to a position through repetition rather than through accuracy.'],hint:'Think: calling repetition directly reinforcement — it IS the structural process and the danger IS that reinforcement works on false things as well as true ones'},
+{type:'metaphor',word:'stern',q:'Which sentence is a metaphor using STERN?',a:'A stern voice is not authority — it is weather: you did not choose to be in it and arguing with it only makes you colder.',ch:['A stern voice is not authority — it is weather: you did not choose to be in it and arguing with it only makes you colder.','A stern voice is like weather — impersonal powerful and not changed by disagreement.','Like weather you cannot argue with a stern voice carries authority that exists independently of whether you agree with it.','A stern voice functions like weather — present regardless of your opinion and unchanged by your response to it.'],hint:'Think: calling a stern voice directly weather — it IS the climate you are in not a decision being communicated and argument IS just standing in the cold'},
+{type:'metaphor',word:'stern',q:'Which sentence is a metaphor using STERN?',a:'The stern rising above the waterline was not a symbol — it was the ship\'s final sentence held up to be read before being taken.',ch:['The stern rising above the waterline was not a symbol — it was the ship\'s final sentence held up to be read before being taken.','The rising stern was like a final sentence — held up briefly before the ship disappeared beneath the waves.','Like a final sentence raised so it can be read one last time the stern rose above the water before the ship sank.','The stern functioned like a final sentence — visible for a moment above what was already consuming it.'],hint:'Think: calling the rising stern directly the ship\'s final sentence — it IS the last readable thing held up before being taken not something that resembles a statement'},
+{type:'metaphor',word:'treacherous',q:'Which sentence is a metaphor using TREACHEROUS?',a:'Treacherous water is not dangerous water — it is water that has agreed to look like something else.',ch:['Treacherous water is not dangerous water — it is water that has agreed to look like something else.','Treacherous water is like water in disguise — what you see is not what it is.','Like water that wears the face of calm while hiding its danger treacherous water deceives by its surface.','Treacherous water functions like a disguise — its surface appearance is different from its actual nature.'],hint:'Think: calling treacherous water directly water that agreed to look like something else — it IS the agreement to deceive not just the result of it'},
+{type:'metaphor',word:'treacherous',q:'Which sentence is a metaphor using TREACHEROUS?',a:'A treacherous ally is not a danger — they are a door that opens the wrong direction: you only discover this when you are already on the other side.',ch:['A treacherous ally is not a danger — they are a door that opens the wrong direction: you only discover this when you are already on the other side.','A treacherous ally is like a door that opens the wrong way — you find out too late which direction it was built for.','Like a door designed to trap rather than allow passage a treacherous ally only reveals their nature when it is too late to avoid the result.','A treacherous ally functions like a misdirected door — the problem only becomes clear after you have already passed through.'],hint:'Think: calling a treacherous ally directly a backwards door — they ARE the mechanism that traps and discovery IS only possible from the wrong side'},
+{type:'metaphor',word:'consequence',q:'Which sentence is a metaphor using CONSEQUENCE?',a:'Every action is a stone thrown into water — the consequence is not the splash but the ripple you cannot call back.',ch:['Every action is a stone thrown into water — the consequence is not the splash but the ripple you cannot call back.','Every action is like a stone thrown into water — both produce effects that spread outward and cannot be stopped.','Like a stone thrown into water every action produces ripples that spread beyond the initial point of impact.','Actions function the way thrown stones do — they produce ripples that travel outward from the moment of impact.'],hint:'Think: calling every action directly a stone — the consequence IS the uncallable ripple not the visible splash at impact'},
+{type:'metaphor',word:'priority',q:'Which sentence is a metaphor using PRIORITY?',a:'Choosing a priority is not a decision — it is a confession about what you were always going to choose when the moment came.',ch:['Choosing a priority is not a decision — it is a confession about what you were always going to choose when the moment came.','Choosing a priority is like making a confession — it reveals what you truly value when the choice is unavoidable.','Like a confession made under pressure choosing a priority reveals the truth about what someone values most.','Choosing a priority functions like a confession — the situation forces the truth out of what was previously unstated.'],hint:'Think: calling the choice of priority directly a confession — it IS the truth revealed not a decision made in the moment'},
+{type:'metaphor',word:'lull',q:'Which sentence is a metaphor using LULL?',a:'False confidence is the deepest lull — you do not know you have been quieted until the thing that was waiting arrives.',ch:['False confidence is the deepest lull — you do not know you have been quieted until the thing that was waiting arrives.','False confidence is like a lull — it creates quiet that conceals the approach of what is coming.','Like a lull before a storm false confidence makes danger invisible until it is too late to prepare.','False confidence functions like a lull — it provides temporary calm that makes the coming disruption more severe.'],hint:'Think: calling false confidence directly the deepest lull — it IS the quieting that conceals not something that resembles one'}
+];
+
+var quiz={questions:[],index:0,score:0,streak:0,answers:[],answered:false};
+var fcIndex=0,fcFlipped=false;
+
+function shuffle(arr){var a=arr.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+
+function showStart(){show('screen-start');hide('screen-quiz');hide('screen-results');hide('screen-flash');}
+function showQuiz(){hide('screen-start');show('screen-quiz');hide('screen-results');hide('screen-flash');}
+function showResults(){hide('screen-start');hide('screen-quiz');show('screen-results');hide('screen-flash');}
+function showFlashcards(){hide('screen-start');hide('screen-quiz');hide('screen-results');show('screen-flash');fcIndex=0;fcFlipped=false;renderFlashcard();}
+
+function startQuiz(){
+  var pool=shuffle(QUESTIONS).slice(0,20);
+  quiz.questions=pool;quiz.index=0;quiz.score=0;quiz.streak=0;quiz.answers=[];quiz.answered=false;
+  showQuiz();renderQuestion();
+}
+
+function renderQuestion(){
+  var q=quiz.questions[quiz.index];
+  var pct=Math.round((quiz.index/20)*100);
+  $('prog-bar').style.width=pct+'%';
+  $('q-counter').textContent='Question '+(quiz.index+1)+' of 20';
+  var sb=$('streak-badge');
+  if(quiz.streak>=3){sb.classList.remove('hidden');sb.textContent='🔥 '+quiz.streak+' streak';}else{sb.classList.add('hidden');}
+  var ts=TYPE_STYLES[q.type];
+  var badge=$('type-badge');
+  badge.textContent=ts.label;badge.style.color=ts.color;badge.style.background=ts.bg;badge.style.border='1px solid '+ts.color;
+  $('q-text').textContent=q.q;
+  var choiceBox=$('choices');clearEl(choiceBox);
+  var shuffled=shuffle(q.ch);
+  shuffled.forEach(function(c){
+    var btn=document.createElement('button');
+    btn.className='choice-btn';btn.textContent=c;
+    btn.addEventListener('click',function(){selectAnswer(c,btn,q);});
+    choiceBox.appendChild(btn);
+  });
+  $('hint-text').textContent='';
+  quiz.answered=false;
+}
+
+function selectAnswer(choice,btn,q){
+  if(quiz.answered)return;
+  quiz.answered=true;
+  var correct=choice===q.a;
+  var allBtns=$('choices').querySelectorAll('.choice-btn');
+  allBtns.forEach(function(b){
+    b.disabled=true;
+    if(b.textContent===q.a)b.classList.add('correct');
+    else if(b===btn&&!correct)b.classList.add('wrong');
+  });
+  if(correct){
+    quiz.score++;quiz.streak++;
+    burst(btn.getBoundingClientRect().left+btn.offsetWidth/2,btn.getBoundingClientRect().top,'#34d399',22);
+    if(quiz.streak>0&&quiz.streak%3===0)confettiBurst();
+  }else{
+    quiz.streak=0;
+    $('hint-text').textContent='💡 '+q.hint;
+    burst(btn.getBoundingClientRect().left+btn.offsetWidth/2,btn.getBoundingClientRect().top,'#ef4444',14);
+  }
+  quiz.answers.push({q:q,chosen:choice,correct:correct});
+  setTimeout(function(){
+    quiz.index++;
+    if(quiz.index<quiz.questions.length){renderQuestion();}
+    else{buildResults();}
+  },1100);
+}
+
+function buildResults(){
+  showResults();
+  var pct=Math.round((quiz.score/20)*100);
+  var ring=$('score-ring');clearEl(ring);
+  var span=mk('span','',quiz.score+'/20');ring.appendChild(span);
+  ring.style.borderColor=pct>=80?'#34d399':pct>=60?'#fbbf24':'#ef4444';
+  var title=$('results-title');
+  if(pct===100)title.textContent='Perfect Score! 🏆';
+  else if(pct>=80)title.textContent='Excellent Work! ⭐';
+  else if(pct>=60)title.textContent='Good Effort! Keep Studying! 📚';
+  else title.textContent='Keep Practicing — You\'ll Get There! 💪';
+  $('results-msg').textContent='You scored '+quiz.score+' out of 20 ('+pct+'%)';
+  var bd=$('breakdown');clearEl(bd);
+  var counts={synonym:0,antonym:0,analogy:0,simile:0,metaphor:0};
+  var totals={synonym:0,antonym:0,analogy:0,simile:0,metaphor:0};
+  quiz.answers.forEach(function(a){totals[a.q.type]++;if(a.correct)counts[a.q.type]++;});
+  Object.keys(counts).forEach(function(t){
+    if(totals[t]===0)return;
+    var ts=TYPE_STYLES[t];var chip=mk('span','bd-chip',ts.label+': '+counts[t]+'/'+totals[t]);
+    chip.style.color=ts.color;chip.style.background=ts.bg;chip.style.border='1px solid '+ts.color;
+    bd.appendChild(chip);
+  });
+  var rl=$('review-list');clearEl(rl);
+  var wrong=quiz.answers.filter(function(a){return!a.correct;});
+  if(wrong.length===0){var p=mk('p','','✨ Perfect score — no missed questions!');p.style.color='#34d399';p.style.textAlign='center';rl.appendChild(p);}
+  else{
+    wrong.forEach(function(a){
+      var div=mk('div','review-item');
+      div.appendChild(mk('div','ri-q',a.q.q));
+      div.appendChild(mk('div','ri-a','✓ Correct: '+a.q.a));
+      div.appendChild(mk('div','ri-yours','✗ Your answer: '+a.chosen));
+      rl.appendChild(div);
+    });
+  }
+}
+
+function renderFlashcard(){
+  var w=WORDS[fcIndex];fcFlipped=false;
+  $('fc-card').classList.remove('flipped');
+  $('fc-word').textContent=w.word;
+  $('fc-pos').textContent=w.pos;
+  $('fc-def').textContent=w.def;
+  $('fc-example').textContent=w.ex;
+  $('fc-count').textContent='Card '+(fcIndex+1)+' of '+WORDS.length;
+  $('fc-nav-label').textContent=(fcIndex+1)+' / '+WORDS.length;
+  $('fc-prog').style.width=(((fcIndex+1)/WORDS.length)*100)+'%';
+}
+
+function flipCard(){
+  fcFlipped=!fcFlipped;
+  if(fcFlipped)$('fc-card').classList.add('flipped');
+  else $('fc-card').classList.remove('flipped');
+}
+
+function fcNav(dir){
+  fcIndex=(fcIndex+dir+WORDS.length)%WORDS.length;
+  renderFlashcard();
+}
+
+$('btn-start').addEventListener('click',startQuiz);
+$('btn-flash-start').addEventListener('click',showFlashcards);
+$('btn-retry').addEventListener('click',startQuiz);
+$('btn-flash-results').addEventListener('click',showFlashcards);
+$('btn-fc-back').addEventListener('click',showStart);
+$('fc-scene').addEventListener('click',flipCard);
+$('fc-prev').addEventListener('click',function(){fcNav(-1);});
+$('fc-next').addEventListener('click',function(){fcNav(1);});
+
+})();
+</script>
+</body>
+</html>
