@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Wordly Wise 3000 — Book 6</title>
+<title>Vocabulary Quiz Hub</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#080d18;color:#f1f5f9;font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;overflow-x:hidden}
@@ -53,12 +53,12 @@ canvas#bg{position:fixed;inset:0;z-index:0;pointer-events:none}
 <canvas id="bg"></canvas>
 <div id="app">
   <div class="site-header">
-    <h1>Wordly Wise <span class="accent">3000</span></h1>
-    <p>Book 6 &nbsp;&middot;&nbsp; Vocabulary Quiz Collection</p>
+    <h1>Vocabulary <span class="accent">Quiz Hub</span></h1>
+    <p>Wordly Wise 3000 (Book 6) &nbsp;&middot;&nbsp; The Outsiders Vocabulary</p>
     <div class="stats-bar">
-      <div class="stat"><div class="stat-num">16</div><div class="stat-lbl">Lessons</div></div>
-      <div class="stat"><div class="stat-num">240</div><div class="stat-lbl">Words</div></div>
-      <div class="stat"><div class="stat-num">3,116</div><div class="stat-lbl">Questions</div></div>
+      <div class="stat"><div class="stat-num">18</div><div class="stat-lbl">Lessons</div></div>
+      <div class="stat"><div class="stat-num">264</div><div class="stat-lbl">Words</div></div>
+      <div class="stat"><div class="stat-num">3,402</div><div class="stat-lbl">Questions</div></div>
     </div>
   </div>
 
@@ -68,7 +68,7 @@ canvas#bg{position:fixed;inset:0;z-index:0;pointer-events:none}
 
   <div class="grid" id="grid"></div>
   <div id="no-results">No lessons match your search.</div>
-  <div class="footer">Wordly Wise 3000 &middot; Book 6 &middot; 15 words &middot; 195 questions per lesson</div>
+  <div class="footer">Wordly Wise 3000 (Book 6) lessons 1&ndash;16 &middot; The Outsiders vocabulary lessons 17&ndash;18</div>
 </div>
 
 <script>
@@ -109,7 +109,9 @@ var LESSONS=[
   {n:13, story:'The Ship of the Desert',      color:'#fb923c',q:194, words:['adapt','deplete','efficient','fatigue','gait','glare','habitat','oblivious','outmoded','prominent','quench','rigor','sear','transport','wend']},
   {n:14, story:'The Silk Road',               color:'#22d3ee',q:195, words:['benevolent','consent','discreet','engross','esteem','exaggerate','extensive','fantastic','intrigue','marvel','mission','opportunity','relinquish','tyrant','vanquish']},
   {n:15, story:'Our Place in the Cosmos',     color:'#d946ef',q:195, words:['analyze','apprehensive','coincide','compose','disk','envelop','exist','extraordinary','fuse','mere','revolve','scale','solar','trace','velocity']},
-  {n:16, story:'The "Unsinkable" Titanic',    color:'#14b8a6',q:195, words:['awe','catastrophe','collide','consequence','deceive','fatality','improvise','loom','lull','placid','predicament','priority','reinforce','stern','treacherous']}
+  {n:16, story:'The "Unsinkable" Titanic',    color:'#14b8a6',q:195, words:['awe','catastrophe','collide','consequence','deceive','fatality','improvise','loom','lull','placid','predicament','priority','reinforce','stern','treacherous']},
+  {n:17, story:'The Outsiders: Ch. 1–2', color:'#0ea5e9',q:169, words:['reckless','unfathomable','outfit','gingerly','sagely','savvy','roguishly','briskly','wince','stride','incredulous','scowl','stalk','stricken'], source:'S.E. Hinton’s The Outsiders'},
+  {n:18, story:'The Outsiders: Ch. 3–5', color:'#f97316',q:117, words:['grimly','quiver','unceasingly','absently','imploringly','reluctantly','gallant','elude','indignant','bewilder'], source:'S.E. Hinton’s The Outsiders'}
 ];
 
 function mk(tag,cls){var el=document.createElement(tag);if(cls)el.className=cls;return el;}
@@ -123,11 +125,11 @@ function buildCard(l){
 
   var top=mk('div','card-top');
   top.appendChild(txt(mk('div','lesson-num'),'Lesson '+l.n));
-  top.appendChild(txt(mk('div','lesson-badge'),'15 words'));
+  top.appendChild(txt(mk('div','lesson-badge'),l.words.length+' words'));
   a.appendChild(top);
 
   a.appendChild(txt(mk('h2'),l.story));
-  a.appendChild(txt(mk('div','card-story'),'Wordly Wise 3000 · Book 6'));
+  a.appendChild(txt(mk('div','card-story'),l.source||'Wordly Wise 3000 · Book 6'));
 
   var chips=mk('div','word-chips');
   l.words.slice(0,8).forEach(function(w){chips.appendChild(txt(mk('span','chip'),w));});

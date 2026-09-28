@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Outsiders: Ch. 1–2</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#020d12;color:#e8e8f0;min-height:100vh;overflow-x:hidden}
+canvas#stars{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.screen{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+.screen.hidden{display:none}
+#home-link{position:fixed;top:14px;left:18px;z-index:100;color:#0ea5e9;text-decoration:none;font-size:14px;background:rgba(14,165,233,.12);padding:6px 14px;border-radius:20px;border:1px solid #096b97;transition:background .2s}
+#home-link:hover{background:rgba(14,165,233,.28)}
+.start-card{background:#020d12;border:1px solid #096b97;border-radius:24px;padding:48px 40px;max-width:540px;width:100%;text-align:center;box-shadow:0 0 60px rgba(14,165,233,.22)}
+.start-card h1{font-size:2.4rem;font-weight:800;background:linear-gradient(135deg,#0ea5e9,#096b97,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+.start-card .subtitle{color:#94a3b8;margin-bottom:28px;font-size:1rem}
+.start-card p{color:#cbd5e1;line-height:1.7;margin-bottom:32px;font-size:.97rem}
+.btn{display:inline-block;padding:13px 34px;border-radius:50px;border:none;cursor:pointer;font-size:1rem;font-weight:700;transition:transform .15s,box-shadow .15s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.btn-primary{background:linear-gradient(135deg,#096b97,#0ea5e9);color:#fff;box-shadow:0 4px 18px rgba(14,165,233,.4)}
+.btn-secondary{background:rgba(14,165,233,.08);color:#0ea5e9;border:1px solid #096b97;margin-top:14px}
+.btn-sm{padding:8px 20px;font-size:.85rem}
+.quiz-wrap{max-width:680px;width:100%}
+.progress-bar-outer{background:rgba(255,255,255,.08);border-radius:10px;height:8px;margin-bottom:20px;overflow:hidden}
+.progress-bar-inner{height:100%;border-radius:10px;background:linear-gradient(90deg,#096b97,#0ea5e9);transition:width .4s}
+.q-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.q-counter{color:#94a3b8;font-size:.9rem}
+.streak-badge{background:rgba(251,191,36,.15);border:1px solid #f59e0b;color:#fbbf24;border-radius:20px;padding:4px 12px;font-size:.8rem;font-weight:700}
+.type-badge{border-radius:20px;padding:4px 14px;font-size:.78rem;font-weight:700;display:inline-block;margin-bottom:14px}
+.q-text{font-size:1.2rem;font-weight:600;color:#e2e8f0;line-height:1.6;margin-bottom:24px}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.choice-btn{background:rgba(14,165,233,.06);border:1.5px solid rgba(14,165,233,.2);border-radius:14px;padding:14px 18px;color:#e2e8f0;font-size:.95rem;cursor:pointer;transition:all .15s;text-align:left}
+.choice-btn:hover:not(:disabled){background:rgba(14,165,233,.18);border-color:#0ea5e9}
+.choice-btn.correct{background:rgba(16,185,129,.2);border-color:#10b981;color:#6ee7b7}
+.choice-btn.wrong{background:rgba(239,68,68,.2);border-color:#ef4444;color:#fca5a5}
+.results-card{background:#020d12;border:1px solid #096b97;border-radius:24px;padding:40px 36px;max-width:620px;width:100%;text-align:center}
+.score-ring{width:120px;height:120px;border-radius:50%;margin:0 auto 20px;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:800;border:4px solid #0ea5e9;background:rgba(14,165,233,.1)}
+.breakdown{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:20px 0}
+.bd-chip{border-radius:20px;padding:5px 14px;font-size:.8rem;font-weight:600}
+.review-list{margin-top:24px;text-align:left;max-height:280px;overflow-y:auto}
+.review-item{background:rgba(255,255,255,.05);border-radius:10px;padding:10px 14px;margin-bottom:8px;font-size:.85rem;line-height:1.5}
+.review-item .ri-q{color:#94a3b8}
+.review-item .ri-a{color:#6ee7b7;font-weight:600}
+.review-item .ri-yours{color:#fca5a5}
+.results-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:24px}
+.fc-wrap{max-width:540px;width:100%;display:flex;flex-direction:column;align-items:center}
+.fc-wrap h2{font-size:1.5rem;font-weight:700;color:#0ea5e9;margin-bottom:6px}
+.fc-count{color:#64748b;font-size:.85rem;margin-bottom:24px}
+.fc-scene{width:100%;max-width:420px;height:260px;perspective:1000px;cursor:pointer;margin-bottom:20px}
+.fc-card{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.4,0,.2,1)}
+.fc-card.flipped{transform:rotateY(180deg)}
+.fc-face{position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center}
+.fc-front{background:linear-gradient(135deg,rgba(14,165,233,.22),rgba(14,165,233,.1));border:1.5px solid #096b97}
+.fc-back{background:linear-gradient(135deg,rgba(14,165,233,.4),rgba(14,165,233,.15));border:1.5px solid #0ea5e9;transform:rotateY(180deg)}
+#fc-word{font-size:2rem;font-weight:800;color:#e2e8f0}
+#fc-pos{font-size:.85rem;color:#0ea5e9;margin-top:6px}
+#fc-flip-hint{font-size:.75rem;color:#64748b;margin-top:14px}
+#fc-def{font-size:.95rem;color:#f0fdfa;line-height:1.6}
+#fc-example{font-size:.82rem;color:#0ea5e9;font-style:italic;margin-top:10px}
+.fc-nav{display:flex;align-items:center;gap:18px}
+.fc-nav button{background:rgba(14,165,233,.15);border:1.5px solid #096b97;color:#0ea5e9;border-radius:50%;width:42px;height:42px;font-size:1.2rem;cursor:pointer;transition:background .15s}
+.fc-nav button:hover{background:rgba(14,165,233,.32)}
+.fc-nav span{color:#94a3b8;font-size:.9rem;min-width:70px;text-align:center}
+.fc-progress{width:100%;background:rgba(255,255,255,.08);border-radius:10px;height:6px;margin-top:18px;overflow:hidden}
+.fc-progress-inner{height:100%;background:linear-gradient(90deg,#096b97,#0ea5e9);transition:width .35s;border-radius:10px}
+.hint-text{color:#94a3b8;font-size:.85rem;font-style:italic;margin-top:8px;min-height:20px}
+#particle-canvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:200}
+@media(max-width:500px){.choices{grid-template-columns:1fr}.start-card h1{font-size:1.8rem}}
+
+.practice-menu{max-width:520px;width:100%}
+.practice-menu h2{font-size:1.6rem;font-weight:800;color:#0ea5e9;margin-bottom:6px;text-align:center}
+.practice-menu .sub{color:#94a3b8;font-size:.88rem;text-align:center;margin-bottom:28px}
+.practice-card{display:block;width:100%;text-align:left;background:rgba(14,165,233,.06);border:1.5px solid #096b97;border-radius:16px;padding:18px 20px;margin-bottom:14px;cursor:pointer;transition:all .15s;color:#e2e8f0}
+.practice-card:hover{background:rgba(14,165,233,.15);border-color:#0ea5e9}
+.practice-card .pc-title{font-size:1.05rem;font-weight:700;color:#e2e8f0;margin-bottom:4px}
+.practice-card .pc-desc{font-size:.82rem;color:#94a3b8}
+.practice-wrap{max-width:640px;width:100%}
+.practice-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.practice-score{color:#94a3b8;font-size:.85rem}
+.match-cols{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:20px}
+.match-item{background:rgba(14,165,233,.06);border:1.5px solid #096b97;border-radius:12px;padding:12px 14px;margin-bottom:10px;cursor:pointer;font-size:.9rem;color:#e2e8f0;transition:all .15s}
+.match-item:hover{border-color:#0ea5e9}
+.match-item.selected{border-color:#0ea5e9;background:rgba(14,165,233,.22)}
+.match-item.matched{background:rgba(16,185,129,.18);border-color:#10b981;color:#6ee7b7;cursor:default}
+.match-item.wrong-flash{background:rgba(239,68,68,.22);border-color:#ef4444}
+.blank-sentence{font-size:1.15rem;line-height:1.7;color:#e2e8f0;margin-bottom:26px;text-align:center}
+.blank-sentence .blank{color:#0ea5e9;font-weight:800;letter-spacing:.05em}
+.fib-choices{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.aq-word{font-size:1.7rem;font-weight:800;color:#0ea5e9;text-align:center;margin-bottom:4px}
+.aq-pos{text-align:center;color:#64748b;font-size:.82rem;margin-bottom:18px}
+.aq-prompt{font-size:1.02rem;color:#e2e8f0;line-height:1.6;margin-bottom:16px;text-align:center}
+.aq-textarea{width:100%;min-height:120px;background:rgba(14,165,233,.06);border:1.5px solid #096b97;border-radius:12px;padding:14px;color:#e8e8f0;font-family:inherit;font-size:.95rem;line-height:1.6;resize:vertical;margin-bottom:14px}
+.aq-textarea:focus{outline:none;border-color:#0ea5e9}
+.aq-checklist{background:rgba(14,165,233,.08);border:1px solid #096b97;border-radius:12px;padding:16px 18px;margin-top:6px;text-align:left;display:none}
+.aq-checklist.shown{display:block}
+.aq-checklist ul{margin:8px 0 0 20px;color:#cbd5e1;font-size:.85rem;line-height:1.8}
+.aq-checklist .aq-def{color:#0ea5e9;font-weight:700;font-size:.85rem;margin-bottom:4px}
+.practice-nav{display:flex;gap:12px;justify-content:center;margin-top:22px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+<canvas id="particle-canvas"></canvas>
+<a href="../index.html" id="home-link">&#8592; Home</a>
+
+<div id="screen-start" class="screen">
+  <div class="start-card">
+    <div style="font-size:3rem;margin-bottom:10px">&#x1F4D6;</div>
+    <h1>The Outsiders: Ch. 1–2</h1>
+    <div class="subtitle">S.E. Hinton&rsquo;s <em>The Outsiders</em> &middot; Lesson 17</div>
+    <p>Master 14 key vocabulary words from <em>The Outsiders</em>. Test yourself with synonyms, antonyms, analogies, similes, and metaphors, then try Test Practice &mdash; the same synonym-match, fill-in-the-blank, and short-answer format as your real quiz.</p>
+    <div><button class="btn btn-primary" id="btn-start">Begin the Challenge &#8594;</button></div>
+    <div><button class="btn btn-secondary" id="btn-flash-start">&#x1F4DA; Study Flashcards</button></div>
+    <div><button class="btn btn-secondary" id="btn-practice-start">&#x1F4DD; Test Practice</button></div>
+  </div>
+</div>
+
+<div id="screen-quiz" class="screen hidden">
+  <div class="quiz-wrap">
+    <div class="progress-bar-outer"><div class="progress-bar-inner" id="prog-bar" style="width:0%"></div></div>
+    <div class="q-header">
+      <span class="q-counter" id="q-counter">Question 1 of 20</span>
+      <span class="streak-badge hidden" id="streak-badge">&#x1F525; 0 streak</span>
+    </div>
+    <div id="type-badge" class="type-badge"></div>
+    <div class="q-text" id="q-text"></div>
+    <div class="choices" id="choices"></div>
+    <div class="hint-text" id="hint-text"></div>
+  </div>
+</div>
+
+<div id="screen-results" class="screen hidden">
+  <div class="results-card">
+    <div class="score-ring" id="score-ring"></div>
+    <h2 id="results-title" style="margin-bottom:6px;color:#e2e8f0"></h2>
+    <p id="results-msg" style="color:#94a3b8;margin-bottom:4px"></p>
+    <div class="breakdown" id="breakdown"></div>
+    <div class="review-list" id="review-list"></div>
+    <div class="results-btns">
+      <button class="btn btn-primary btn-sm" id="btn-retry">Try Again</button>
+      <button class="btn btn-secondary btn-sm" id="btn-flash-results">&#x1F4DA; Review Flashcards</button>
+    </div>
+  </div>
+</div>
+
+<div id="screen-flash" class="screen hidden">
+  <div class="fc-wrap">
+    <h2>&#x1F4DA; Lesson 17 Flashcards</h2>
+    <div class="fc-count" id="fc-count">Card 1 of 14</div>
+    <div class="fc-scene" id="fc-scene">
+      <div class="fc-card" id="fc-card">
+        <div class="fc-face fc-front">
+          <div id="fc-word"></div>
+          <div id="fc-pos"></div>
+          <div id="fc-flip-hint">tap to reveal &#8594;</div>
+        </div>
+        <div class="fc-face fc-back">
+          <div id="fc-def"></div>
+          <div id="fc-example"></div>
+        </div>
+      </div>
+    </div>
+    <div class="fc-nav">
+      <button id="fc-prev">&#8249;</button>
+      <span id="fc-nav-label">1 / 14</span>
+      <button id="fc-next">&#8250;</button>
+    </div>
+    <div class="fc-progress"><div class="fc-progress-inner" id="fc-prog" style="width:7.14%"></div></div>
+    <button class="btn btn-secondary btn-sm" id="btn-fc-back" style="margin-top:22px">&#8592; Back</button>
+  </div>
+</div>
+
+<div id="screen-practice-menu" class="screen hidden">
+  <div class="practice-menu">
+    <h2>&#x1F4DD; Test Practice</h2>
+    <div class="sub">Same format as your real vocab test &mdash; three parts</div>
+    <button class="practice-card" id="btn-open-synmatch">
+      <div class="pc-title">1. Synonym Match</div>
+      <div class="pc-desc">Match each clue to its vocabulary word</div>
+    </button>
+    <button class="practice-card" id="btn-open-fib">
+      <div class="pc-title">2. Fill-in-the-Blank</div>
+      <div class="pc-desc">Pick the word that best completes the sentence</div>
+    </button>
+    <button class="practice-card" id="btn-open-aq">
+      <div class="pc-title">3. Answer the Question</div>
+      <div class="pc-desc">Practice writing a full-sentence response</div>
+    </button>
+    <div style="text-align:center"><button class="btn btn-secondary btn-sm" id="btn-practice-back">&#8592; Back</button></div>
+  </div>
+</div>
+
+<div id="screen-synmatch" class="screen hidden">
+  <div class="practice-wrap">
+    <div class="practice-head">
+      <span class="practice-score" id="sm-score">Matched 0 of 5</span>
+      <button class="btn btn-secondary btn-sm" id="btn-sm-back">&#8592; Menu</button>
+    </div>
+    <div class="match-cols">
+      <div id="sm-clues"></div>
+      <div id="sm-words"></div>
+    </div>
+    <div class="practice-nav"><button class="btn btn-primary btn-sm" id="btn-sm-next">New Round &#8594;</button></div>
+  </div>
+</div>
+
+<div id="screen-fib" class="screen hidden">
+  <div class="practice-wrap">
+    <div class="practice-head">
+      <span class="practice-score" id="fib-score">Question 1 of 8</span>
+      <button class="btn btn-secondary btn-sm" id="btn-fib-back">&#8592; Menu</button>
+    </div>
+    <div class="blank-sentence" id="fib-sentence"></div>
+    <div class="fib-choices" id="fib-choices"></div>
+    <div class="hint-text" id="fib-hint"></div>
+  </div>
+</div>
+
+<div id="screen-aq" class="screen hidden">
+  <div class="practice-wrap">
+    <div class="practice-head">
+      <span class="practice-score" id="aq-count">Word 1 of 14</span>
+      <button class="btn btn-secondary btn-sm" id="btn-aq-back">&#8592; Menu</button>
+    </div>
+    <div class="aq-word" id="aq-word"></div>
+    <div class="aq-pos" id="aq-pos"></div>
+    <div class="aq-prompt" id="aq-prompt"></div>
+    <textarea class="aq-textarea" id="aq-textarea" placeholder="Write your answer in complete sentences..."></textarea>
+    <div class="practice-nav">
+      <button class="btn btn-secondary btn-sm" id="btn-aq-check">Show Checklist &amp; Definition</button>
+      <button class="btn btn-primary btn-sm" id="btn-aq-next">Next Word &#8594;</button>
+    </div>
+    <div class="aq-checklist" id="aq-checklist">
+      <div class="aq-def" id="aq-def"></div>
+      <div id="aq-ex" style="color:#94a3b8;font-size:.85rem;font-style:italic;margin-top:6px"></div>
+      <ul>
+        <li>Did you use the word <b>correctly</b>, matching its real meaning?</li>
+        <li>Did you write in <b>complete sentences</b>?</li>
+        <li>Did you include enough <b>detail</b> that someone could guess the word's meaning from your answer?</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+var sc=document.getElementById('stars'),ctx=sc.getContext('2d'),W,H,stars=[];
+function initStars(){W=sc.width=window.innerWidth;H=sc.height=window.innerHeight;stars=[];for(var i=0;i<220;i++)stars.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.4+.3,s:Math.random()*.4+.1,b:Math.random()});}
+function drawStars(){ctx.clearRect(0,0,W,H);var g=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,W*.7);g.addColorStop(0,'rgba(14,165,233,.12)');g.addColorStop(.5,'rgba(14,165,233,.05)');g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);stars.forEach(function(s){s.b+=s.s*.016;var a=.4+.55*Math.abs(Math.sin(s.b));ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle='rgba(14,165,233,'+a+')';ctx.fill();});requestAnimationFrame(drawStars);}
+window.addEventListener('resize',initStars);initStars();drawStars();
+
+var pc=document.getElementById('particle-canvas'),pctx=pc.getContext('2d'),particles=[];
+function resizePC(){pc.width=window.innerWidth;pc.height=window.innerHeight;}resizePC();window.addEventListener('resize',resizePC);
+function burst(x,y,color,count){for(var i=0;i<count;i++)particles.push({x:x,y:y,vx:(Math.random()-0.5)*7,vy:(Math.random()-2.5)*6,r:Math.random()*5+2,color:color,life:1,dec:Math.random()*.025+.015});}
+function confettiBurst(){var cols=['#0ea5e9','#38bdf8','#34d399','#fbbf24','#f472b6'];for(var i=0;i<90;i++){var c=cols[Math.floor(Math.random()*cols.length)];particles.push({x:Math.random()*pc.width,y:-10,vx:(Math.random()-0.5)*4,vy:Math.random()*4+2,r:Math.random()*6+2,color:c,life:1,dec:Math.random()*.012+.008});}}
+function animParticles(){pctx.clearRect(0,0,pc.width,pc.height);particles=particles.filter(function(p){p.x+=p.vx;p.y+=p.vy;p.vy+=0.12;p.life-=p.dec;if(p.life<=0)return false;pctx.globalAlpha=p.life;pctx.beginPath();pctx.arc(p.x,p.y,p.r,0,Math.PI*2);pctx.fillStyle=p.color;pctx.fill();return true;});pctx.globalAlpha=1;requestAnimationFrame(animParticles);}animParticles();
+
+function clearEl(el){while(el.firstChild)el.removeChild(el.firstChild);}
+function mk(tag,cls,txt){var el=document.createElement(tag);if(cls)el.className=cls;if(txt!==undefined)el.textContent=txt;return el;}
+function show(id){document.getElementById(id).classList.remove('hidden');}
+function hide(id){document.getElementById(id).classList.add('hidden');}
+function $(id){return document.getElementById(id);}
+
+var WORDS=[
+  {word:"reckless",pos:"adj.",def:"Without caution or concern for consequences; careless.",ex:"Dally's reckless streak got him arrested more than once, but Ponyboy admired how fearless he seemed."},
+  {word:"unfathomable",pos:"adj.",def:"Not able to be imagined or understood.",ex:"For some unfathomable reason, Dally loved fights, blondes, and school \u2014 three things that never seemed to fit together."},
+  {word:"outfit",pos:"n.",def:"A group organized to carry out a particular activity, especially of a military or business nature.",ex:"Tim Shepard's outfit ran the downtown streets the way Darry's gang ran their own turf."},
+  {word:"gingerly",pos:"adv.",def:"In a careful or cautious manner; warily.",ex:"Ponyboy touched his bruised cheek gingerly, half expecting the pain to be worse than it was."},
+  {word:"sagely",pos:"adv.",def:"Wisely, in a knowing way.",ex:"Two-Bit nodded sagely, as if bruises were something he'd studied his whole life."},
+  {word:"savvy",pos:"v.",def:"To understand or get the sense of (an idea, etc.).",ex:"\u201cHe loves you a lot \u2014 savvy?\u201d Soda asked, making sure Ponyboy understood before he let the subject drop."},
+  {word:"roguishly",pos:"adv.",def:"In a good-naturedly mischievous way.",ex:"Dally grinned roguishly at Cherry, daring her to be annoyed with him."},
+  {word:"briskly",pos:"adv.",def:"In an active, energetic, or lively way; quickly.",ex:"Cherry answered Ponyboy's question briskly, changing the subject before Marcia could bring up Sodapop again."},
+  {word:"wince",pos:"v.",def:"To shrink suddenly back or away, as from pain or distress; flinch.",ex:"Ponyboy winced inside every time someone brought up Sodapop dropping out of school."},
+  {word:"stride",pos:"v.",def:"To walk with long, even steps, as in an energetic or showy way.",ex:"Dally crossed the lot with a stride so confident it looked like the whole place already belonged to him."},
+  {word:"incredulous",pos:"adj.",def:"Indicating or showing disbelief.",ex:"Cherry gave Dally an incredulous look, as if his nerve was the most surprising thing she'd seen all night."},
+  {word:"scowl",pos:"v.",def:"To make an angry frown.",ex:"Dallas scowled for a second before he got up and stalked off without another word."},
+  {word:"stalk",pos:"v.",def:"To walk with measured, stiff, or haughty strides.",ex:"His fists jammed in his pockets, Dally stalked off and didn't come back that night."},
+  {word:"stricken",pos:"adj.",def:"Deeply affected, as with grief, fear, or other emotions.",ex:"Steve's stricken expression told Ponyboy something was terribly wrong before anyone said a word."}
+];
+
+var TYPE_STYLES={
+  synonym:{label:'Synonym',color:'#60a5fa',bg:'rgba(96,165,250,.15)'},
+  antonym:{label:'Antonym',color:'#f472b6',bg:'rgba(244,114,182,.15)'},
+  analogy:{label:'Analogy',color:'#a78bfa',bg:'rgba(167,139,250,.15)'},
+  simile:{label:'Simile',color:'#34d399',bg:'rgba(52,211,153,.15)'},
+  metaphor:{label:'Metaphor',color:'#fbbf24',bg:'rgba(251,191,36,.15)'}
+};
+
+var QUESTIONS=[
+{"type": "antonym", "word": "scowl", "q": "SCOWL is most nearly OPPOSITE in meaning to:", "a": "beam", "ch": ["beam", "cringe", "grimace", "casual"], "hint": "'Scowl' means To make an angry frown — 'beam' is the opposite idea."},
+{"type": "antonym", "word": "unfathomable", "q": "UNFATHOMABLE is most nearly OPPOSITE in meaning to:", "a": "clear", "ch": ["clear", "foolhardy", "quickly", "delicately"], "hint": "'Unfathomable' means Not able to be imagined or understood — 'clear' is the opposite idea."},
+{"type": "synonym", "word": "wince", "q": "Which word is a synonym for WINCE?", "a": "cringe", "ch": ["cringe", "grin", "trudge", "ordinary"], "hint": "'Wince' means To shrink suddenly back or away, as from pain or distress; flinch — 'cringe' captures the same idea."},
+{"type": "metaphor", "word": "sagely", "q": "Which sentence is a metaphor using SAGELY?", "a": "Sagely is not just a nod — it is a whole lecture Two-Bit delivers without saying a single word.", "ch": ["Sagely is not just a nod — it is a whole lecture Two-Bit delivers without saying a single word.", "Two-Bit nodded sagely, as if bruises were something he'd studied his whole life.", "Sagely was like an old man who has watched the same fight a hundred times and already knows how it ends.", "Sagely felt like a coach who nods at a mistake because he made the exact same one years ago."], "hint": "A metaphor makes a direct equation without 'like' or 'as'. The correct answer calls sagely something else directly, not comparing it to something."},
+{"type": "antonym", "word": "briskly", "q": "BRISKLY is most nearly OPPOSITE in meaning to:", "a": "sluggishly", "ch": ["sluggishly", "crew", "grasp", "harsh"], "hint": "'Briskly' means In an active, energetic, or lively way; quickly — 'sluggishly' is the opposite idea."},
+{"type": "antonym", "word": "reckless", "q": "Which word is the OPPOSITE of RECKLESS?", "a": "careful", "ch": ["careful", "flinch", "recoil", "foolhardy"], "hint": "'Reckless' means Without caution or concern for consequences; careless — 'careful' is the opposite idea."},
+{"type": "antonym", "word": "unfathomable", "q": "Which word is the OPPOSITE of UNFATHOMABLE?", "a": "understandable", "ch": ["understandable", "grasp", "quickly", "cautiously"], "hint": "'Unfathomable' means Not able to be imagined or understood — 'understandable' is the opposite idea."},
+{"type": "synonym", "word": "wince", "q": "WINCE most nearly means:", "a": "shrink back", "ch": ["shrink back", "individual", "prudent", "gradual"], "hint": "'Wince' means To shrink suddenly back or away, as from pain or distress; flinch — 'shrink back' captures the same idea."},
+{"type": "simile", "word": "incredulous", "q": "Complete the simile: Being incredulous felt like ___", "a": "a teacher rereading a test answer twice, sure it must be a typo", "ch": ["a teacher rereading a test answer twice, sure it must be a typo", "a schedule that stayed exactly the same from morning to night", "a familiar road taken so many times that nothing about it required attention", "a sunny afternoon with nothing unusual on the horizon"], "hint": "Think about what 'incredulous' means: Indicating or showing disbelief The best completion captures that feeling in a concrete image."},
+{"type": "antonym", "word": "outfit", "q": "Which word is the OPPOSITE of OUTFIT?", "a": "individual", "ch": ["individual", "casual", "band", "delicately"], "hint": "'Outfit' means A group organized to carry out a particular activity, especi — 'individual' is the opposite idea."},
+{"type": "antonym", "word": "unfathomable", "q": "Which word is the OPPOSITE of UNFATHOMABLE?", "a": "obvious", "ch": ["obvious", "glare", "recoil", "heedless"], "hint": "'Unfathomable' means Not able to be imagined or understood — 'obvious' is the opposite idea."},
+{"type": "simile", "word": "scowl", "q": "Complete the simile: Being scowl felt like ___", "a": "a teacher's face when a joke lands at exactly the wrong moment", "ch": ["a teacher's face when a joke lands at exactly the wrong moment", "a list completed ahead of schedule with every item checked", "a schedule that stayed exactly the same from morning to night", "a sunny afternoon with nothing unusual on the horizon"], "hint": "Think about what 'scowl' means: To make an angry frown The best completion captures that feeling in a concrete image."},
+{"type": "antonym", "word": "savvy", "q": "Which word is the OPPOSITE of SAVVY?", "a": "misunderstand", "ch": ["misunderstand", "grasp", "slyly", "grimace"], "hint": "'Savvy' means To understand or get the sense of (an idea, etc.) — 'misunderstand' is the opposite idea."},
+{"type": "simile", "word": "stalk", "q": "Complete the simile: STALK — it was like ___", "a": "a soldier leaving a battlefield he refuses to admit he lost", "ch": ["a soldier leaving a battlefield he refuses to admit he lost", "a list completed ahead of schedule with every item checked", "a routine confirmed by everyone in the room before it began", "something expected and received exactly as advertised"], "hint": "Think about what 'stalk' means: To walk with measured, stiff, or haughty strides The best completion captures that feeling in a concrete image."},
+{"type": "synonym", "word": "savvy", "q": "Which word is a synonym for SAVVY?", "a": "comprehend", "ch": ["comprehend", "miss", "individual", "comprehensible"], "hint": "'Savvy' means To understand or get the sense of (an idea, etc.) — 'comprehend' captures the same idea."},
+{"type": "analogy", "word": "wince", "q": "WINCE is to RELAX as INCREDULOUS is to _____", "a": "convinced", "ch": ["convinced", "sudden", "loud", "savvy"], "hint": "Both pairs are antonyms — wince opposes relax, and incredulous opposes convinced."},
+{"type": "antonym", "word": "stricken", "q": "STRICKEN is most nearly OPPOSITE in meaning to:", "a": "untouched", "ch": ["untouched", "doubtful", "devastated", "disbelieving"], "hint": "'Stricken' means Deeply affected, as with grief, fear, or other emotions — 'untouched' is the opposite idea."},
+{"type": "simile", "word": "roguishly", "q": "Complete the simile: Being roguishly felt like ___", "a": "a kid handing back a joke they know is a little too bold, grinning the whole time", "ch": ["a kid handing back a joke they know is a little too bold, grinning the whole time", "a list completed ahead of schedule with every item checked", "a familiar road taken so many times that nothing about it required attention", "a sunny afternoon with nothing unusual on the horizon"], "hint": "Think about what 'roguishly' means: In a good-naturedly mischievous way The best completion captures that feeling in a concrete image."},
+{"type": "synonym", "word": "roguishly", "q": "ROGUISHLY is closest in meaning to:", "a": "playfully", "ch": ["playfully", "solemnly", "shuffle", "composed"], "hint": "'Roguishly' means In a good-naturedly mischievous way — 'playfully' captures the same idea."},
+{"type": "synonym", "word": "gingerly", "q": "Which word is a synonym for GINGERLY?", "a": "warily", "ch": ["warily", "seriously", "roughly", "relax"], "hint": "'Gingerly' means In a careful or cautious manner; warily — 'warily' captures the same idea."},
+{"type": "synonym", "word": "briskly", "q": "BRISKLY most nearly means:", "a": "promptly", "ch": ["promptly", "ordinary", "shuffle", "roughly"], "hint": "'Briskly' means In an active, energetic, or lively way; quickly — 'promptly' captures the same idea."},
+{"type": "analogy", "word": "briskly", "q": "BRISKLY is to SLOWLY as STRIDE is to _____", "a": "amble", "ch": ["amble", "reckless", "gentle", "gingerly"], "hint": "Both pairs are antonyms — briskly opposes slowly, and stride opposes amble."},
+{"type": "synonym", "word": "reckless", "q": "Which word is a synonym for RECKLESS?", "a": "rash", "ch": ["rash", "amble", "clear", "individual"], "hint": "'Reckless' means Without caution or concern for consequences; careless — 'rash' captures the same idea."},
+{"type": "synonym", "word": "gingerly", "q": "GINGERLY most nearly means:", "a": "tentatively", "ch": ["tentatively", "sluggishly", "casual", "confuse"], "hint": "'Gingerly' means In a careful or cautious manner; warily — 'tentatively' captures the same idea."},
+{"type": "analogy", "word": "incredulous", "q": "INCREDULOUS is to UNCONVINCED as SCOWL is to _____", "a": "glare", "ch": ["glare", "stalk", "stride", "gentle"], "hint": "Both pairs are synonyms — incredulous/unconvinced and scowl/glare share the same relationship."},
+{"type": "synonym", "word": "outfit", "q": "OUTFIT most nearly means:", "a": "gang", "ch": ["gang", "carelessly", "routine", "sudden"], "hint": "'Outfit' means A group organized to carry out a particular activity, especially of a  — 'gang' captures the same idea."},
+{"type": "antonym", "word": "briskly", "q": "Which word is the OPPOSITE of BRISKLY?", "a": "slowly", "ch": ["slowly", "understand", "loud", "unimaginable"], "hint": "'Briskly' means In an active, energetic, or lively way; quickly — 'slowly' is the opposite idea."},
+{"type": "metaphor", "word": "roguishly", "q": "Which sentence is a metaphor using ROGUISHLY?", "a": "A roguish grin is not an apology — it is Dally's way of saying trouble is more fun when you smile through it.", "ch": ["A roguish grin is not an apology — it is Dally's way of saying trouble is more fun when you smile through it.", "Dally grinned roguishly at Cherry, daring her to be annoyed with him.", "Roguishly was like a cat that just knocked something off the table and is watching to see if you'll laugh.", "Roguishly felt like a kid handing back a joke they know is a little too bold, grinning the whole time."], "hint": "A metaphor makes a direct equation without 'like' or 'as'. The correct answer calls roguishly something else directly, not comparing it to something."},
+{"type": "simile", "word": "stricken", "q": "Complete the simile: Being stricken felt like ___", "a": "a radio that goes silent mid-song and never explains why", "ch": ["a radio that goes silent mid-song and never explains why", "a routine confirmed by everyone in the room before it began", "a familiar road taken so many times that nothing about it required attention", "a list completed ahead of schedule with every item checked"], "hint": "Think about what 'stricken' means: Deeply affected, as with grief, fear, or other emotions The best completion captures that feeling in a concrete image."},
+{"type": "simile", "word": "savvy", "q": "Complete the simile: Being savvy felt like ___", "a": "a radio station tuning in clearly after nothing but static", "ch": ["a radio station tuning in clearly after nothing but static", "a familiar road taken so many times that nothing about it required attention", "a list completed ahead of schedule with every item checked", "a sunny afternoon with nothing unusual on the horizon"], "hint": "Think about what 'savvy' means: To understand or get the sense of (an idea, etc.) The best completion captures that feeling in a concrete image."},
+{"type": "synonym", "word": "sagely", "q": "Which word is a synonym for SAGELY?", "a": "knowingly", "ch": ["knowingly", "saunter", "misunderstand", "shuffle"], "hint": "'Sagely' means Wisely, in a knowing way — 'knowingly' captures the same idea."},
+{"type": "simile", "word": "wince", "q": "Complete the simile: WINCE — it was like ___", "a": "a hand pulled back from a stove half a second before it even touches the metal", "ch": ["a hand pulled back from a stove half a second before it even touches the metal", "a schedule that stayed exactly the same from morning to night", "a routine confirmed by everyone in the room before it began", "a familiar road taken so many times that nothing about it required attention"], "hint": "Think about what 'wince' means: To shrink suddenly back or away, as from pain or distress; flinch The best completion captures that feeling in a concrete image."},
+{"type": "synonym", "word": "reckless", "q": "RECKLESS most nearly means:", "a": "heedless", "ch": ["heedless", "stand firm", "trudge", "wary"], "hint": "'Reckless' means Without caution or concern for consequences; careless — 'heedless' captures the same idea."},
+{"type": "antonym", "word": "roguishly", "q": "Which word is the OPPOSITE of ROGUISHLY?", "a": "innocently", "ch": ["innocently", "plain", "cringe", "disbelieving"], "hint": "'Roguishly' means In a good-naturedly mischievous way — 'innocently' is the opposite idea."},
+{"type": "analogy", "word": "roguishly", "q": "ROGUISHLY is to SOLEMNLY as WINCE is to _____", "a": "stand firm", "ch": ["stand firm", "typical", "harsh", "stricken"], "hint": "Both pairs are antonyms — roguishly opposes solemnly, and wince opposes stand firm."},
+{"type": "analogy", "word": "scowl", "q": "SCOWL is to BEAM as STRICKEN is to _____", "a": "unaffected", "ch": ["unaffected", "familiar", "roguishly", "gentle"], "hint": "Both pairs are antonyms — scowl opposes beam, and stricken opposes unaffected."},
+{"type": "simile", "word": "stride", "q": "Complete the simile: Being stride felt like ___", "a": "a captain walking the deck of a ship they built with their own hands", "ch": ["a captain walking the deck of a ship they built with their own hands", "a routine confirmed by everyone in the room before it began", "a schedule that stayed exactly the same from morning to night", "a sunny afternoon with nothing unusual on the horizon"], "hint": "Think about what 'stride' means: To walk with long, even steps, as in an energetic or showy way The best completion captures that feeling in a concrete image."},
+{"type": "synonym", "word": "sagely", "q": "SAGELY most nearly means:", "a": "judiciously", "ch": ["judiciously", "solemnly", "wary", "untouched"], "hint": "'Sagely' means Wisely, in a knowing way — 'judiciously' captures the same idea."},
+{"type": "antonym", "word": "sagely", "q": "Which word is the OPPOSITE of SAGELY?", "a": "naively", "ch": ["naively", "shrink back", "storm off", "routine"], "hint": "'Sagely' means Wisely, in a knowing way — 'naively' is the opposite idea."},
+{"type": "analogy", "word": "outfit", "q": "OUTFIT is to SQUAD as GINGERLY is to _____", "a": "tentatively", "ch": ["tentatively", "typical", "sagely", "harsh"], "hint": "Both pairs are synonyms — outfit/squad and gingerly/tentatively share the same relationship."},
+{"type": "analogy", "word": "reckless", "q": "RECKLESS is to CARELESS as UNFATHOMABLE is to _____", "a": "unimaginable", "ch": ["unimaginable", "comprehensible", "outfit", "sudden"], "hint": "Both pairs are synonyms — reckless/careless and unfathomable/unimaginable share the same relationship."},
+{"type": "antonym", "word": "incredulous", "q": "INCREDULOUS is most nearly OPPOSITE in meaning to:", "a": "trusting", "ch": ["trusting", "baffling", "grimace", "march stiffly"], "hint": "'Incredulous' means Indicating or showing disbelief — 'trusting' is the opposite idea."},
+{"type": "synonym", "word": "briskly", "q": "Which word is a synonym for BRISKLY?", "a": "energetically", "ch": ["energetically", "lazily", "harsh", "composed"], "hint": "'Briskly' means In an active, energetic, or lively way; quickly — 'energetically' captures the same idea."},
+{"type": "analogy", "word": "stalk", "q": "STALK is to STORM OFF as STRICKEN is to _____", "a": "overwhelmed", "ch": ["overwhelmed", "gingerly", "untouched", "scowl"], "hint": "Both pairs are synonyms — stalk/storm off and stricken/overwhelmed share the same relationship."},
+{"type": "synonym", "word": "briskly", "q": "BRISKLY most nearly means:", "a": "quickly", "ch": ["quickly", "carelessly", "comprehensible", "loner"], "hint": "'Briskly' means In an active, energetic, or lively way; quickly — 'quickly' captures the same idea."},
+{"type": "synonym", "word": "scowl", "q": "SCOWL is closest in meaning to:", "a": "glare", "ch": ["glare", "silent", "routine", "convinced"], "hint": "'Scowl' means To make an angry frown — 'glare' captures the same idea."},
+{"type": "synonym", "word": "incredulous", "q": "INCREDULOUS most nearly means:", "a": "disbelieving", "ch": ["disbelieving", "comprehensible", "sudden", "gradual"], "hint": "'Incredulous' means Indicating or showing disbelief — 'disbelieving' captures the same idea."},
+{"type": "metaphor", "word": "savvy", "q": "Which sentence is a metaphor using SAVVY?", "a": "To savvy something is not to hear it — it is to feel the click when the idea finally fits.", "ch": ["To savvy something is not to hear it — it is to feel the click when the idea finally fits.", "“He loves you a lot — savvy?” Soda asked, making sure Ponyboy understood before he let the subject drop.", "Savvy was like a lock finally accepting the right key after every other one has failed.", "Savvy felt like a radio station tuning in clearly after nothing but static."], "hint": "A metaphor makes a direct equation without 'like' or 'as'. The correct answer calls savvy something else directly, not comparing it to something."},
+{"type": "simile", "word": "reckless", "q": "Complete the simile: Being reckless felt like ___", "a": "someone who jaywalks across a highway without ever once checking for traffic", "ch": ["someone who jaywalks across a highway without ever once checking for traffic", "a list completed ahead of schedule with every item checked", "a sunny afternoon with nothing unusual on the horizon", "a routine confirmed by everyone in the room before it began"], "hint": "Think about what 'reckless' means: Without caution or concern for consequences; careless The best completion captures that feeling in a concrete image."},
+{"type": "synonym", "word": "sagely", "q": "SAGELY most nearly means:", "a": "wisely", "ch": ["wisely", "roughly", "unwisely", "naively"], "hint": "'Sagely' means Wisely, in a knowing way — 'wisely' captures the same idea."},
+{"type": "simile", "word": "outfit", "q": "Complete the simile: OUTFIT — it was like ___", "a": "a pack of wolves that decided long ago never to hunt alone", "ch": ["a pack of wolves that decided long ago never to hunt alone", "a routine confirmed by everyone in the room before it began", "something expected and received exactly as advertised", "a sunny afternoon with nothing unusual on the horizon"], "hint": "Think about what 'outfit' means: A group organized to carry out a particular activity, especially of a  The best completion captures that feeling in a concrete image."},
+{"type": "analogy", "word": "scowl", "q": "SCOWL is to GLOWER as STALK is to _____", "a": "storm off", "ch": ["storm off", "silent", "reckless", "loud"], "hint": "Both pairs are synonyms — scowl/glower and stalk/storm off share the same relationship."},
+{"type": "antonym", "word": "wince", "q": "Which word is the OPPOSITE of WINCE?", "a": "relax", "ch": ["relax", "warily", "organization", "typical"], "hint": "'Wince' means To shrink suddenly back or away, as from pain or distress; f — 'relax' is the opposite idea."},
+{"type": "antonym", "word": "wince", "q": "WINCE is most nearly OPPOSITE in meaning to:", "a": "stand firm", "ch": ["stand firm", "pace", "frown", "wisely"], "hint": "'Wince' means To shrink suddenly back or away, as from pain or distress; f — 'stand firm' is the opposite idea."},
+{"type": "synonym", "word": "outfit", "q": "Which word is a synonym for OUTFIT?", "a": "crew", "ch": ["crew", "plain", "foolishly", "roughly"], "hint": "'Outfit' means A group organized to carry out a particular activity, especially of a  — 'crew' captures the same idea."},
+{"type": "simile", "word": "sagely", "q": "Complete the simile: Being sagely felt like ___", "a": "a coach who nods at a mistake because he made the exact same one years ago", "ch": ["a coach who nods at a mistake because he made the exact same one years ago", "a routine confirmed by everyone in the room before it began", "a schedule that stayed exactly the same from morning to night", "something expected and received exactly as advertised"], "hint": "Think about what 'sagely' means: Wisely, in a knowing way The best completion captures that feeling in a concrete image."},
+{"type": "simile", "word": "outfit", "q": "Complete the simile: Being outfit felt like ___", "a": "a team that shows up to every fight already wearing matching jackets", "ch": ["a team that shows up to every fight already wearing matching jackets", "something expected and received exactly as advertised", "a sunny afternoon with nothing unusual on the horizon", "a schedule that stayed exactly the same from morning to night"], "hint": "Think about what 'outfit' means: A group organized to carry out a particular activity, especially of a  The best completion captures that feeling in a concrete image."},
+{"type": "synonym", "word": "incredulous", "q": "INCREDULOUS is closest in meaning to:", "a": "doubtful", "ch": ["doubtful", "seriously", "ordinary", "clear"], "hint": "'Incredulous' means Indicating or showing disbelief — 'doubtful' captures the same idea."},
+{"type": "analogy", "word": "sagely", "q": "SAGELY is to NAIVELY as ROGUISHLY is to _____", "a": "innocently", "ch": ["innocently", "casual", "gentle", "familiar"], "hint": "Both pairs are antonyms — sagely opposes naively, and roguishly opposes innocently."},
+{"type": "simile", "word": "unfathomable", "q": "Complete the simile: UNFATHOMABLE — it was like ___", "a": "trying to read a letter written in a language no one in the gang ever learned", "ch": ["trying to read a letter written in a language no one in the gang ever learned", "a schedule that stayed exactly the same from morning to night", "a routine confirmed by everyone in the room before it began", "a list completed ahead of schedule with every item checked"], "hint": "Think about what 'unfathomable' means: Not able to be imagined or understood The best completion captures that feeling in a concrete image."},
+{"type": "antonym", "word": "outfit", "q": "OUTFIT is most nearly OPPOSITE in meaning to:", "a": "loner", "ch": ["loner", "step out", "ordinary", "foolhardy"], "hint": "'Outfit' means A group organized to carry out a particular activity, especi — 'loner' is the opposite idea."},
+{"type": "analogy", "word": "wince", "q": "WINCE is to RECOIL as STRIDE is to _____", "a": "march", "ch": ["march", "silent", "outfit", "gentle"], "hint": "Both pairs are synonyms — wince/recoil and stride/march share the same relationship."},
+{"type": "synonym", "word": "roguishly", "q": "Which word is a synonym for ROGUISHLY?", "a": "impishly", "ch": ["impishly", "miss", "comprehensible", "routine"], "hint": "'Roguishly' means In a good-naturedly mischievous way — 'impishly' captures the same idea."},
+{"type": "antonym", "word": "roguishly", "q": "ROGUISHLY is most nearly OPPOSITE in meaning to:", "a": "seriously", "ch": ["seriously", "frown", "mysterious", "follow"], "hint": "'Roguishly' means In a good-naturedly mischievous way — 'seriously' is the opposite idea."},
+{"type": "antonym", "word": "reckless", "q": "RECKLESS is most nearly OPPOSITE in meaning to:", "a": "cautious", "ch": ["cautious", "familiar", "march stiffly", "unimaginable"], "hint": "'Reckless' means Without caution or concern for consequences; careless — 'cautious' is the opposite idea."},
+{"type": "analogy", "word": "roguishly", "q": "ROGUISHLY is to SLYLY as BRISKLY is to _____", "a": "promptly", "ch": ["promptly", "typical", "casual", "gradual"], "hint": "Both pairs are synonyms — roguishly/slyly and briskly/promptly share the same relationship."},
+{"type": "synonym", "word": "unfathomable", "q": "Which word is a synonym for UNFATHOMABLE?", "a": "inconceivable", "ch": ["inconceivable", "saunter", "recklessly", "obvious"], "hint": "'Unfathomable' means Not able to be imagined or understood — 'inconceivable' captures the same idea."},
+{"type": "antonym", "word": "stalk", "q": "Which word is the OPPOSITE of STALK?", "a": "amble", "ch": ["amble", "rash", "wisely", "swiftly"], "hint": "'Stalk' means To walk with measured, stiff, or haughty strides — 'amble' is the opposite idea."},
+{"type": "synonym", "word": "reckless", "q": "Which word is a synonym for RECKLESS?", "a": "daredevil", "ch": ["daredevil", "lazily", "innocently", "routine"], "hint": "'Reckless' means Without caution or concern for consequences; careless — 'daredevil' captures the same idea."},
+{"type": "synonym", "word": "unfathomable", "q": "UNFATHOMABLE most nearly means:", "a": "baffling", "ch": ["baffling", "gradual", "miss", "credulous"], "hint": "'Unfathomable' means Not able to be imagined or understood — 'baffling' captures the same idea."},
+{"type": "metaphor", "word": "reckless", "q": "Which sentence is a metaphor using RECKLESS?", "a": "Reckless is not a warning label — it is a dare Dally makes to the world every single day.", "ch": ["Reckless is not a warning label — it is a dare Dally makes to the world every single day.", "Dally's reckless streak got him arrested more than once, but Ponyboy admired how fearless he seemed.", "Reckless was like a boy who lights a match just to see how close he can hold it to his own sleeve.", "Reckless felt like someone who jaywalks across a highway without ever once checking for traffic."], "hint": "A metaphor makes a direct equation without 'like' or 'as'. The correct answer calls reckless something else directly, not comparing it to something."},
+{"type": "metaphor", "word": "stricken", "q": "Which sentence is a metaphor using STRICKEN?", "a": "Stricken is not an expression — it is grief arriving on someone's face before their voice can catch up.", "ch": ["Stricken is not an expression — it is grief arriving on someone's face before their voice can catch up.", "Steve's stricken expression told Ponyboy something was terribly wrong before anyone said a word.", "Stricken was like a house with all its lights suddenly out at once, the whole shape of it gone dark.", "Stricken felt like a radio that goes silent mid-song and never explains why."], "hint": "A metaphor makes a direct equation without 'like' or 'as'. The correct answer calls stricken something else directly, not comparing it to something."},
+{"type": "metaphor", "word": "gingerly", "q": "Which sentence is a metaphor using GINGERLY?", "a": "Gingerly is not a way of touching something — it is the question “will this hurt?” asked with your hands instead of your mouth.", "ch": ["Gingerly is not a way of touching something — it is the question “will this hurt?” asked with your hands instead of your mouth.", "Ponyboy touched his bruised cheek gingerly, half expecting the pain to be worse than it was.", "Gingerly was like a boy testing ice on a pond one small step at a time, ready to jump back the second it cracks.", "Gingerly felt like someone lifting a lid off a pot they're pretty sure is still boiling."], "hint": "A metaphor makes a direct equation without 'like' or 'as'. The correct answer calls gingerly something else directly, not comparing it to something."},
+{"type": "simile", "word": "savvy", "q": "Complete the simile: SAVVY — it was like ___", "a": "a lock finally accepting the right key after every other one has failed", "ch": ["a lock finally accepting the right key after every other one has failed", "a schedule that stayed exactly the same from morning to night", "a sunny afternoon with nothing unusual on the horizon", "a routine confirmed by everyone in the room before it began"], "hint": "Think about what 'savvy' means: To understand or get the sense of (an idea, etc.) The best completion captures that feeling in a concrete image."},
+{"type": "synonym", "word": "stalk", "q": "Which word is a synonym for STALK?", "a": "march stiffly", "ch": ["march stiffly", "composed", "gradual", "untouched"], "hint": "'Stalk' means To walk with measured, stiff, or haughty strides — 'march stiffly' captures the same idea."},
+{"type": "synonym", "word": "scowl", "q": "Which word is a synonym for SCOWL?", "a": "glower", "ch": ["glower", "harsh", "cautious", "lazily"], "hint": "'Scowl' means To make an angry frown — 'glower' captures the same idea."},
+{"type": "synonym", "word": "wince", "q": "WINCE is closest in meaning to:", "a": "recoil", "ch": ["recoil", "beam", "roughly", "saunter"], "hint": "'Wince' means To shrink suddenly back or away, as from pain or distress; flinch — 'recoil' captures the same idea."},
+{"type": "simile", "word": "briskly", "q": "Complete the simile: BRISKLY — it was like ___", "a": "a wind that changes direction the second it feels a conversation drift somewhere uncomfortable", "ch": ["a wind that changes direction the second it feels a conversation drift somewhere uncomfortable", "a schedule that stayed exactly the same from morning to night", "a list completed ahead of schedule with every item checked", "a familiar road taken so many times that nothing about it required attention"], "hint": "Think about what 'briskly' means: In an active, energetic, or lively way; quickly The best completion captures that feeling in a concrete image."},
+{"type": "metaphor", "word": "unfathomable", "q": "Which sentence is a metaphor using UNFATHOMABLE?", "a": "Unfathomable is not a mystery you can solve — it is a locked door with no keyhole anyone has found.", "ch": ["Unfathomable is not a mystery you can solve — it is a locked door with no keyhole anyone has found.", "For some unfathomable reason, Dally loved fights, blondes, and school — three things that never seemed to fit together.", "Unfathomable was like trying to read a letter written in a language no one in the gang ever learned.", "Unfathomable felt like a math problem with no numbers, only a question mark where the answer should be."], "hint": "A metaphor makes a direct equation without 'like' or 'as'. The correct answer calls unfathomable something else directly, not comparing it to something."},
+{"type": "synonym", "word": "savvy", "q": "SAVVY most nearly means:", "a": "understand", "ch": ["understand", "shuffle", "gentle", "gradual"], "hint": "'Savvy' means To understand or get the sense of (an idea, etc.) — 'understand' captures the same idea."},
+{"type": "analogy", "word": "stricken", "q": "STRICKEN is to AFFLICTED as RECKLESS is to _____", "a": "heedless", "ch": ["heedless", "routine", "wince", "wary"], "hint": "Both pairs are synonyms — stricken/afflicted and reckless/heedless share the same relationship."},
+{"type": "synonym", "word": "stride", "q": "STRIDE most nearly means:", "a": "march", "ch": ["march", "carelessly", "trusting", "untouched"], "hint": "'Stride' means To walk with long, even steps, as in an energetic or showy way — 'march' captures the same idea."},
+{"type": "antonym", "word": "sagely", "q": "Which word is the OPPOSITE of SAGELY?", "a": "foolishly", "ch": ["foolishly", "flinch", "casual", "rash"], "hint": "'Sagely' means Wisely, in a knowing way — 'foolishly' is the opposite idea."},
+{"type": "simile", "word": "unfathomable", "q": "Complete the simile: Being unfathomable felt like ___", "a": "a math problem with no numbers, only a question mark where the answer should be", "ch": ["a math problem with no numbers, only a question mark where the answer should be", "a list completed ahead of schedule with every item checked", "a sunny afternoon with nothing unusual on the horizon", "a schedule that stayed exactly the same from morning to night"], "hint": "Think about what 'unfathomable' means: Not able to be imagined or understood The best completion captures that feeling in a concrete image."},
+{"type": "antonym", "word": "stricken", "q": "Which word is the OPPOSITE of STRICKEN?", "a": "composed", "ch": ["composed", "doubtful", "strut", "band"], "hint": "'Stricken' means Deeply affected, as with grief, fear, or other emotions — 'composed' is the opposite idea."},
+{"type": "simile", "word": "roguishly", "q": "Complete the simile: ROGUISHLY — it was like ___", "a": "a cat that just knocked something off the table and is watching to see if you'll laugh", "ch": ["a cat that just knocked something off the table and is watching to see if you'll laugh", "a routine confirmed by everyone in the room before it began", "a sunny afternoon with nothing unusual on the horizon", "a list completed ahead of schedule with every item checked"], "hint": "Think about what 'roguishly' means: In a good-naturedly mischievous way The best completion captures that feeling in a concrete image."},
+{"type": "analogy", "word": "stalk", "q": "STALK is to AMBLE as RECKLESS is to _____", "a": "careful", "ch": ["careful", "ordinary", "daredevil", "stride"], "hint": "Both pairs are antonyms — stalk opposes amble, and reckless opposes careful."},
+{"type": "synonym", "word": "stricken", "q": "Which word is a synonym for STRICKEN?", "a": "anguished", "ch": ["anguished", "clear", "sluggishly", "innocently"], "hint": "'Stricken' means Deeply affected, as with grief, fear, or other emotions — 'anguished' captures the same idea."},
+{"type": "analogy", "word": "stricken", "q": "STRICKEN is to UNAFFECTED as UNFATHOMABLE is to _____", "a": "obvious", "ch": ["obvious", "baffling", "familiar", "reckless"], "hint": "Both pairs are antonyms — stricken opposes unaffected, and unfathomable opposes obvious."},
+{"type": "antonym", "word": "stalk", "q": "STALK is most nearly OPPOSITE in meaning to:", "a": "saunter", "ch": ["saunter", "routine", "squad", "impishly"], "hint": "'Stalk' means To walk with measured, stiff, or haughty strides — 'saunter' is the opposite idea."},
+{"type": "antonym", "word": "unfathomable", "q": "UNFATHOMABLE is most nearly OPPOSITE in meaning to:", "a": "comprehensible", "ch": ["comprehensible", "loud", "devastated", "squad"], "hint": "'Unfathomable' means Not able to be imagined or understood — 'comprehensible' is the opposite idea."},
+{"type": "antonym", "word": "scowl", "q": "Which word is the OPPOSITE of SCOWL?", "a": "smile", "ch": ["smile", "foolhardy", "march", "mischievously"], "hint": "'Scowl' means To make an angry frown — 'smile' is the opposite idea."},
+{"type": "simile", "word": "stride", "q": "Complete the simile: STRIDE — it was like ___", "a": "someone crossing a stage they've already decided is theirs before the audience has made up its mind", "ch": ["someone crossing a stage they've already decided is theirs before the audience has made up its mind", "something expected and received exactly as advertised", "a familiar road taken so many times that nothing about it required attention", "a routine confirmed by everyone in the room before it began"], "hint": "Think about what 'stride' means: To walk with long, even steps, as in an energetic or showy way The best completion captures that feeling in a concrete image."},
+{"type": "antonym", "word": "incredulous", "q": "Which word is the OPPOSITE of INCREDULOUS?", "a": "credulous", "ch": ["credulous", "casual", "devastated", "heedless"], "hint": "'Incredulous' means Indicating or showing disbelief — 'credulous' is the opposite idea."},
+{"type": "synonym", "word": "unfathomable", "q": "UNFATHOMABLE most nearly means:", "a": "incomprehensible", "ch": ["incomprehensible", "seriously", "clear", "gentle"], "hint": "'Unfathomable' means Not able to be imagined or understood — 'incomprehensible' captures the same idea."},
+{"type": "simile", "word": "stalk", "q": "Complete the simile: Being stalk felt like ___", "a": "a cat stiff-legged and furious, tail low, done with the conversation entirely", "ch": ["a cat stiff-legged and furious, tail low, done with the conversation entirely", "something expected and received exactly as advertised", "a sunny afternoon with nothing unusual on the horizon", "a list completed ahead of schedule with every item checked"], "hint": "Think about what 'stalk' means: To walk with measured, stiff, or haughty strides The best completion captures that feeling in a concrete image."},
+{"type": "antonym", "word": "reckless", "q": "RECKLESS is most nearly OPPOSITE in meaning to:", "a": "wary", "ch": ["wary", "grasp", "disbelieving", "flinch"], "hint": "'Reckless' means Without caution or concern for consequences; careless — 'wary' is the opposite idea."},
+{"type": "synonym", "word": "stalk", "q": "STALK is closest in meaning to:", "a": "storm off", "ch": ["storm off", "loud", "ordinary", "typical"], "hint": "'Stalk' means To walk with measured, stiff, or haughty strides — 'storm off' captures the same idea."},
+{"type": "synonym", "word": "stricken", "q": "STRICKEN most nearly means:", "a": "devastated", "ch": ["devastated", "credulous", "obvious", "wary"], "hint": "'Stricken' means Deeply affected, as with grief, fear, or other emotions — 'devastated' captures the same idea."},
+{"type": "metaphor", "word": "wince", "q": "Which sentence is a metaphor using WINCE?", "a": "A wince is not a movement — it is the body's own way of ducking a punch the words already threw.", "ch": ["A wince is not a movement — it is the body's own way of ducking a punch the words already threw.", "Ponyboy winced inside every time someone brought up Sodapop dropping out of school.", "Wince was like a hand pulled back from a stove half a second before it even touches the metal.", "Wince felt like a kid closing their eyes before the dodgeball even leaves the other player's hand."], "hint": "A metaphor makes a direct equation without 'like' or 'as'. The correct answer calls wince something else directly, not comparing it to something."},
+{"type": "synonym", "word": "gingerly", "q": "GINGERLY is closest in meaning to:", "a": "delicately", "ch": ["delicately", "gentle", "untouched", "typical"], "hint": "'Gingerly' means In a careful or cautious manner; warily — 'delicately' captures the same idea."},
+{"type": "antonym", "word": "roguishly", "q": "Which word is the OPPOSITE of ROGUISHLY?", "a": "solemnly", "ch": ["solemnly", "storm off", "careless", "unimaginable"], "hint": "'Roguishly' means In a good-naturedly mischievous way — 'solemnly' is the opposite idea."},
+{"type": "analogy", "word": "reckless", "q": "RECKLESS is to WARY as OUTFIT is to _____", "a": "individual", "ch": ["individual", "gang", "organization", "gingerly"], "hint": "Both pairs are antonyms — reckless opposes wary, and outfit opposes individual."},
+{"type": "antonym", "word": "savvy", "q": "SAVVY is most nearly OPPOSITE in meaning to:", "a": "miss", "ch": ["miss", "gang", "gradual", "casual"], "hint": "'Savvy' means To understand or get the sense of (an idea, etc.) — 'miss' is the opposite idea."},
+{"type": "analogy", "word": "gingerly", "q": "GINGERLY is to CARELESSLY as SAVVY is to _____", "a": "confuse", "ch": ["confuse", "follow", "loud", "stricken"], "hint": "Both pairs are antonyms — gingerly opposes carelessly, and savvy opposes confuse."},
+{"type": "simile", "word": "incredulous", "q": "Complete the simile: INCREDULOUS — it was like ___", "a": "a scoreboard that refuses to update because the number on it doesn't seem possible", "ch": ["a scoreboard that refuses to update because the number on it doesn't seem possible", "a sunny afternoon with nothing unusual on the horizon", "a list completed ahead of schedule with every item checked", "a familiar road taken so many times that nothing about it required attention"], "hint": "Think about what 'incredulous' means: Indicating or showing disbelief The best completion captures that feeling in a concrete image."},
+{"type": "synonym", "word": "roguishly", "q": "ROGUISHLY most nearly means:", "a": "slyly", "ch": ["slyly", "recklessly", "loud", "understandable"], "hint": "'Roguishly' means In a good-naturedly mischievous way — 'slyly' captures the same idea."},
+{"type": "antonym", "word": "sagely", "q": "SAGELY is most nearly OPPOSITE in meaning to:", "a": "unwisely", "ch": ["unwisely", "warily", "incomprehensible", "march stiffly"], "hint": "'Sagely' means Wisely, in a knowing way — 'unwisely' is the opposite idea."},
+{"type": "metaphor", "word": "scowl", "q": "Which sentence is a metaphor using SCOWL?", "a": "A scowl is not just a face — it is a warning sign nailed up seconds before the door slams.", "ch": ["A scowl is not just a face — it is a warning sign nailed up seconds before the door slams.", "Dallas scowled for a second before he got up and stalked off without another word.", "Scowl was like a sky going gray the second before a storm finally decides to happen.", "Scowl felt like a teacher's face when a joke lands at exactly the wrong moment."], "hint": "A metaphor makes a direct equation without 'like' or 'as'. The correct answer calls scowl something else directly, not comparing it to something."},
+{"type": "simile", "word": "briskly", "q": "Complete the simile: Being briskly felt like ___", "a": "a cashier ringing up a line that's gotten too long for small talk", "ch": ["a cashier ringing up a line that's gotten too long for small talk", "a routine confirmed by everyone in the room before it began", "a schedule that stayed exactly the same from morning to night", "a familiar road taken so many times that nothing about it required attention"], "hint": "Think about what 'briskly' means: In an active, energetic, or lively way; quickly The best completion captures that feeling in a concrete image."},
+{"type": "synonym", "word": "stride", "q": "STRIDE is closest in meaning to:", "a": "step out", "ch": ["step out", "harsh", "prudent", "stand firm"], "hint": "'Stride' means To walk with long, even steps, as in an energetic or showy way — 'step out' captures the same idea."},
+{"type": "antonym", "word": "stricken", "q": "Which word is the OPPOSITE of STRICKEN?", "a": "unaffected", "ch": ["unaffected", "storm off", "casual", "frown"], "hint": "'Stricken' means Deeply affected, as with grief, fear, or other emotions — 'unaffected' is the opposite idea."},
+{"type": "synonym", "word": "outfit", "q": "OUTFIT most nearly means:", "a": "band", "ch": ["band", "relax", "grin", "composed"], "hint": "'Outfit' means A group organized to carry out a particular activity, especially of a  — 'band' captures the same idea."},
+{"type": "synonym", "word": "unfathomable", "q": "Which word is a synonym for UNFATHOMABLE?", "a": "mysterious", "ch": ["mysterious", "convinced", "roughly", "seriously"], "hint": "'Unfathomable' means Not able to be imagined or understood — 'mysterious' captures the same idea."},
+{"type": "antonym", "word": "stride", "q": "Which word is the OPPOSITE of STRIDE?", "a": "trudge", "ch": ["trudge", "shrewdly", "glare", "devastated"], "hint": "'Stride' means To walk with long, even steps, as in an energetic or showy w — 'trudge' is the opposite idea."},
+{"type": "simile", "word": "gingerly", "q": "Complete the simile: Being gingerly felt like ___", "a": "someone lifting a lid off a pot they're pretty sure is still boiling", "ch": ["someone lifting a lid off a pot they're pretty sure is still boiling", "a familiar road taken so many times that nothing about it required attention", "a list completed ahead of schedule with every item checked", "something expected and received exactly as advertised"], "hint": "Think about what 'gingerly' means: In a careful or cautious manner; warily The best completion captures that feeling in a concrete image."},
+{"type": "analogy", "word": "savvy", "q": "SAVVY is to MISS as BRISKLY is to _____", "a": "sluggishly", "ch": ["sluggishly", "gradual", "casual", "energetically"], "hint": "Both pairs are antonyms — savvy opposes miss, and briskly opposes sluggishly."},
+{"type": "synonym", "word": "outfit", "q": "Which word is a synonym for OUTFIT?", "a": "organization", "ch": ["organization", "understandable", "gradual", "beam"], "hint": "'Outfit' means A group organized to carry out a particular activity, especially of a  — 'organization' captures the same idea."},
+{"type": "antonym", "word": "gingerly", "q": "Which word is the OPPOSITE of GINGERLY?", "a": "roughly", "ch": ["roughly", "warily", "gradual", "wisely"], "hint": "'Gingerly' means In a careful or cautious manner; warily — 'roughly' is the opposite idea."},
+{"type": "simile", "word": "stricken", "q": "Complete the simile: STRICKEN — it was like ___", "a": "a house with all its lights suddenly out at once, the whole shape of it gone dark", "ch": ["a house with all its lights suddenly out at once, the whole shape of it gone dark", "a sunny afternoon with nothing unusual on the horizon", "a routine confirmed by everyone in the room before it began", "something expected and received exactly as advertised"], "hint": "Think about what 'stricken' means: Deeply affected, as with grief, fear, or other emotions The best completion captures that feeling in a concrete image."},
+{"type": "synonym", "word": "stricken", "q": "STRICKEN is closest in meaning to:", "a": "overwhelmed", "ch": ["overwhelmed", "stand firm", "individual", "seriously"], "hint": "'Stricken' means Deeply affected, as with grief, fear, or other emotions — 'overwhelmed' captures the same idea."},
+{"type": "synonym", "word": "savvy", "q": "SAVVY most nearly means:", "a": "follow", "ch": ["follow", "sluggishly", "comprehensible", "familiar"], "hint": "'Savvy' means To understand or get the sense of (an idea, etc.) — 'follow' captures the same idea."},
+{"type": "analogy", "word": "incredulous", "q": "INCREDULOUS is to TRUSTING as STALK is to _____", "a": "shuffle", "ch": ["shuffle", "typical", "reckless", "routine"], "hint": "Both pairs are antonyms — incredulous opposes trusting, and stalk opposes shuffle."},
+{"type": "antonym", "word": "reckless", "q": "Which word is the OPPOSITE of RECKLESS?", "a": "prudent", "ch": ["prudent", "warily", "frown", "ordinary"], "hint": "'Reckless' means Without caution or concern for consequences; careless — 'prudent' is the opposite idea."},
+{"type": "synonym", "word": "reckless", "q": "RECKLESS most nearly means:", "a": "careless", "ch": ["careless", "seriously", "wary", "carelessly"], "hint": "'Reckless' means Without caution or concern for consequences; careless — 'careless' captures the same idea."},
+{"type": "antonym", "word": "stalk", "q": "Which word is the OPPOSITE of STALK?", "a": "shuffle", "ch": ["shuffle", "ordinary", "grasp", "organization"], "hint": "'Stalk' means To walk with measured, stiff, or haughty strides — 'shuffle' is the opposite idea."},
+{"type": "synonym", "word": "stalk", "q": "STALK most nearly means:", "a": "strut", "ch": ["strut", "amble", "clear", "shuffle"], "hint": "'Stalk' means To walk with measured, stiff, or haughty strides — 'strut' captures the same idea."},
+{"type": "simile", "word": "gingerly", "q": "Complete the simile: GINGERLY — it was like ___", "a": "a boy testing ice on a pond one small step at a time, ready to jump back the second it cracks", "ch": ["a boy testing ice on a pond one small step at a time, ready to jump back the second it cracks", "a familiar road taken so many times that nothing about it required attention", "a routine confirmed by everyone in the room before it began", "a sunny afternoon with nothing unusual on the horizon"], "hint": "Think about what 'gingerly' means: In a careful or cautious manner; warily The best completion captures that feeling in a concrete image."},
+{"type": "simile", "word": "scowl", "q": "Complete the simile: SCOWL — it was like ___", "a": "a sky going gray the second before a storm finally decides to happen", "ch": ["a sky going gray the second before a storm finally decides to happen", "a familiar road taken so many times that nothing about it required attention", "a list completed ahead of schedule with every item checked", "a schedule that stayed exactly the same from morning to night"], "hint": "Think about what 'scowl' means: To make an angry frown The best completion captures that feeling in a concrete image."},
+{"type": "synonym", "word": "outfit", "q": "OUTFIT is closest in meaning to:", "a": "squad", "ch": ["squad", "sluggishly", "trudge", "roughly"], "hint": "'Outfit' means A group organized to carry out a particular activity, especially of a  — 'squad' captures the same idea."},
+{"type": "antonym", "word": "scowl", "q": "Which word is the OPPOSITE of SCOWL?", "a": "grin", "ch": ["grin", "grasp", "follow", "anguished"], "hint": "'Scowl' means To make an angry frown — 'grin' is the opposite idea."},
+{"type": "metaphor", "word": "stride", "q": "Which sentence is a metaphor using STRIDE?", "a": "To stride is not to walk — it is to announce, with every step, that you were never asking for permission.", "ch": ["To stride is not to walk — it is to announce, with every step, that you were never asking for permission.", "Dally crossed the lot with a stride so confident it looked like the whole place already belonged to him.", "Stride was like someone crossing a stage they've already decided is theirs before the audience has made up its mind.", "Stride felt like a captain walking the deck of a ship they built with their own hands."], "hint": "A metaphor makes a direct equation without 'like' or 'as'. The correct answer calls stride something else directly, not comparing it to something."},
+{"type": "antonym", "word": "gingerly", "q": "GINGERLY is most nearly OPPOSITE in meaning to:", "a": "recklessly", "ch": ["recklessly", "follow", "foolhardy", "playfully"], "hint": "'Gingerly' means In a careful or cautious manner; warily — 'recklessly' is the opposite idea."},
+{"type": "antonym", "word": "incredulous", "q": "Which word is the OPPOSITE of INCREDULOUS?", "a": "convinced", "ch": ["convinced", "routine", "step out", "march"], "hint": "'Incredulous' means Indicating or showing disbelief — 'convinced' is the opposite idea."},
+{"type": "analogy", "word": "stride", "q": "STRIDE is to PACE as INCREDULOUS is to _____", "a": "doubtful", "ch": ["doubtful", "familiar", "typical", "casual"], "hint": "Both pairs are synonyms — stride/pace and incredulous/doubtful share the same relationship."},
+{"type": "antonym", "word": "stride", "q": "STRIDE is most nearly OPPOSITE in meaning to:", "a": "amble", "ch": ["amble", "storm off", "afflicted", "heedless"], "hint": "'Stride' means To walk with long, even steps, as in an energetic or showy w — 'amble' is the opposite idea."},
+{"type": "antonym", "word": "gingerly", "q": "Which word is the OPPOSITE of GINGERLY?", "a": "carelessly", "ch": ["carelessly", "warily", "shrewdly", "harsh"], "hint": "'Gingerly' means In a careful or cautious manner; warily — 'carelessly' is the opposite idea."},
+{"type": "analogy", "word": "stride", "q": "STRIDE is to SHUFFLE as SCOWL is to _____", "a": "grin", "ch": ["grin", "plain", "wince", "gentle"], "hint": "Both pairs are antonyms — stride opposes shuffle, and scowl opposes grin."},
+{"type": "synonym", "word": "scowl", "q": "SCOWL most nearly means:", "a": "grimace", "ch": ["grimace", "carelessly", "credulous", "typical"], "hint": "'Scowl' means To make an angry frown — 'grimace' captures the same idea."},
+{"type": "synonym", "word": "wince", "q": "WINCE most nearly means:", "a": "flinch", "ch": ["flinch", "miss", "gradual", "typical"], "hint": "'Wince' means To shrink suddenly back or away, as from pain or distress; flinch — 'flinch' captures the same idea."},
+{"type": "analogy", "word": "gingerly", "q": "GINGERLY is to CAUTIOUSLY as SAGELY is to _____", "a": "judiciously", "ch": ["judiciously", "ordinary", "loud", "casual"], "hint": "Both pairs are synonyms — gingerly/cautiously and sagely/judiciously share the same relationship."},
+{"type": "antonym", "word": "briskly", "q": "Which word is the OPPOSITE of BRISKLY?", "a": "lazily", "ch": ["lazily", "plain", "shrink back", "comprehend"], "hint": "'Briskly' means In an active, energetic, or lively way; quickly — 'lazily' is the opposite idea."},
+{"type": "synonym", "word": "stricken", "q": "STRICKEN most nearly means:", "a": "afflicted", "ch": ["afflicted", "beam", "comprehensible", "grin"], "hint": "'Stricken' means Deeply affected, as with grief, fear, or other emotions — 'afflicted' captures the same idea."},
+{"type": "synonym", "word": "unfathomable", "q": "UNFATHOMABLE is closest in meaning to:", "a": "unimaginable", "ch": ["unimaginable", "sluggishly", "credulous", "loud"], "hint": "'Unfathomable' means Not able to be imagined or understood — 'unimaginable' captures the same idea."},
+{"type": "analogy", "word": "briskly", "q": "BRISKLY is to SWIFTLY as WINCE is to _____", "a": "cringe", "ch": ["cringe", "typical", "unfathomable", "stricken"], "hint": "Both pairs are synonyms — briskly/swiftly and wince/cringe share the same relationship."},
+{"type": "metaphor", "word": "briskly", "q": "Which sentence is a metaphor using BRISKLY?", "a": "Briskly is not just fast — it is a door closing on a question before anyone can walk through it.", "ch": ["Briskly is not just fast — it is a door closing on a question before anyone can walk through it.", "Cherry answered Ponyboy's question briskly, changing the subject before Marcia could bring up Sodapop again.", "Briskly was like a wind that changes direction the second it feels a conversation drift somewhere uncomfortable.", "Briskly felt like a cashier ringing up a line that's gotten too long for small talk."], "hint": "A metaphor makes a direct equation without 'like' or 'as'. The correct answer calls briskly something else directly, not comparing it to something."},
+{"type": "metaphor", "word": "outfit", "q": "Which sentence is a metaphor using OUTFIT?", "a": "An outfit is not just a group of friends — it is a shield the greasers wear made of each other.", "ch": ["An outfit is not just a group of friends — it is a shield the greasers wear made of each other.", "Tim Shepard's outfit ran the downtown streets the way Darry's gang ran their own turf.", "Outfit was like a pack of wolves that decided long ago never to hunt alone.", "Outfit felt like a team that shows up to every fight already wearing matching jackets."], "hint": "A metaphor makes a direct equation without 'like' or 'as'. The correct answer calls outfit something else directly, not comparing it to something."},
+{"type": "synonym", "word": "sagely", "q": "SAGELY is closest in meaning to:", "a": "shrewdly", "ch": ["shrewdly", "plain", "gentle", "amble"], "hint": "'Sagely' means Wisely, in a knowing way — 'shrewdly' captures the same idea."},
+{"type": "metaphor", "word": "incredulous", "q": "Which sentence is a metaphor using INCREDULOUS?", "a": "An incredulous look is not confusion — it is a question your whole face asks without a single word.", "ch": ["An incredulous look is not confusion — it is a question your whole face asks without a single word.", "Cherry gave Dally an incredulous look, as if his nerve was the most surprising thing she'd seen all night.", "Incredulous was like a scoreboard that refuses to update because the number on it doesn't seem possible.", "Incredulous felt like a teacher rereading a test answer twice, sure it must be a typo."], "hint": "A metaphor makes a direct equation without 'like' or 'as'. The correct answer calls incredulous something else directly, not comparing it to something."},
+{"type": "simile", "word": "reckless", "q": "Complete the simile: RECKLESS — it was like ___", "a": "a boy who lights a match just to see how close he can hold it to his own sleeve", "ch": ["a boy who lights a match just to see how close he can hold it to his own sleeve", "a familiar road taken so many times that nothing about it required attention", "a routine confirmed by everyone in the room before it began", "a schedule that stayed exactly the same from morning to night"], "hint": "Think about what 'reckless' means: Without caution or concern for consequences; careless The best completion captures that feeling in a concrete image."},
+{"type": "antonym", "word": "savvy", "q": "Which word is the OPPOSITE of SAVVY?", "a": "confuse", "ch": ["confuse", "cringe", "familiar", "march"], "hint": "'Savvy' means To understand or get the sense of (an idea, etc.) — 'confuse' is the opposite idea."},
+{"type": "synonym", "word": "roguishly", "q": "ROGUISHLY most nearly means:", "a": "mischievously", "ch": ["mischievously", "shuffle", "trudge", "relax"], "hint": "'Roguishly' means In a good-naturedly mischievous way — 'mischievously' captures the same idea."},
+{"type": "synonym", "word": "reckless", "q": "RECKLESS is closest in meaning to:", "a": "foolhardy", "ch": ["foolhardy", "wary", "ordinary", "gentle"], "hint": "'Reckless' means Without caution or concern for consequences; careless — 'foolhardy' captures the same idea."},
+{"type": "synonym", "word": "incredulous", "q": "INCREDULOUS most nearly means:", "a": "unconvinced", "ch": ["unconvinced", "clear", "convinced", "lazily"], "hint": "'Incredulous' means Indicating or showing disbelief — 'unconvinced' captures the same idea."},
+{"type": "analogy", "word": "outfit", "q": "OUTFIT is to INDIVIDUAL as SAGELY is to _____", "a": "unwisely", "ch": ["unwisely", "ordinary", "roguishly", "gingerly"], "hint": "Both pairs are antonyms — outfit opposes individual, and sagely opposes unwisely."},
+{"type": "analogy", "word": "unfathomable", "q": "UNFATHOMABLE is to COMPREHENSIBLE as GINGERLY is to _____", "a": "roughly", "ch": ["roughly", "silent", "incredulous", "typical"], "hint": "Both pairs are antonyms — unfathomable opposes comprehensible, and gingerly opposes roughly."},
+{"type": "simile", "word": "wince", "q": "Complete the simile: Being wince felt like ___", "a": "a kid closing their eyes before the dodgeball even leaves the other player's hand", "ch": ["a kid closing their eyes before the dodgeball even leaves the other player's hand", "a schedule that stayed exactly the same from morning to night", "something expected and received exactly as advertised", "a familiar road taken so many times that nothing about it required attention"], "hint": "Think about what 'wince' means: To shrink suddenly back or away, as from pain or distress; flinch The best completion captures that feeling in a concrete image."},
+{"type": "synonym", "word": "savvy", "q": "SAVVY is closest in meaning to:", "a": "grasp", "ch": ["grasp", "saunter", "slowly", "confuse"], "hint": "'Savvy' means To understand or get the sense of (an idea, etc.) — 'grasp' captures the same idea."},
+{"type": "synonym", "word": "stride", "q": "Which word is a synonym for STRIDE?", "a": "pace", "ch": ["pace", "understandable", "slowly", "prudent"], "hint": "'Stride' means To walk with long, even steps, as in an energetic or showy way — 'pace' captures the same idea."},
+{"type": "analogy", "word": "savvy", "q": "SAVVY is to UNDERSTAND as ROGUISHLY is to _____", "a": "impishly", "ch": ["impishly", "outfit", "solemnly", "unfathomable"], "hint": "Both pairs are synonyms — savvy/understand and roguishly/impishly share the same relationship."},
+{"type": "synonym", "word": "gingerly", "q": "GINGERLY most nearly means:", "a": "cautiously", "ch": ["cautiously", "grin", "miss", "carelessly"], "hint": "'Gingerly' means In a careful or cautious manner; warily — 'cautiously' captures the same idea."},
+{"type": "antonym", "word": "stride", "q": "Which word is the OPPOSITE of STRIDE?", "a": "shuffle", "ch": ["shuffle", "typical", "glower", "sudden"], "hint": "'Stride' means To walk with long, even steps, as in an energetic or showy w — 'shuffle' is the opposite idea."},
+{"type": "simile", "word": "sagely", "q": "Complete the simile: SAGELY — it was like ___", "a": "an old man who has watched the same fight a hundred times and already knows how it ends", "ch": ["an old man who has watched the same fight a hundred times and already knows how it ends", "a sunny afternoon with nothing unusual on the horizon", "a routine confirmed by everyone in the room before it began", "a schedule that stayed exactly the same from morning to night"], "hint": "Think about what 'sagely' means: Wisely, in a knowing way The best completion captures that feeling in a concrete image."},
+{"type": "synonym", "word": "briskly", "q": "BRISKLY is closest in meaning to:", "a": "swiftly", "ch": ["swiftly", "plain", "casual", "shuffle"], "hint": "'Briskly' means In an active, energetic, or lively way; quickly — 'swiftly' captures the same idea."},
+{"type": "metaphor", "word": "stalk", "q": "Which sentence is a metaphor using STALK?", "a": "To stalk off is not to leave — it is to carry the whole argument away with you, still burning.", "ch": ["To stalk off is not to leave — it is to carry the whole argument away with you, still burning.", "His fists jammed in his pockets, Dally stalked off and didn't come back that night.", "Stalk was like a soldier leaving a battlefield he refuses to admit he lost.", "Stalk felt like a cat stiff-legged and furious, tail low, done with the conversation entirely."], "hint": "A metaphor makes a direct equation without 'like' or 'as'. The correct answer calls stalk something else directly, not comparing it to something."},
+{"type": "synonym", "word": "incredulous", "q": "Which word is a synonym for INCREDULOUS?", "a": "skeptical", "ch": ["skeptical", "wary", "miss", "foolishly"], "hint": "'Incredulous' means Indicating or showing disbelief — 'skeptical' captures the same idea."},
+{"type": "analogy", "word": "unfathomable", "q": "UNFATHOMABLE is to BAFFLING as OUTFIT is to _____", "a": "gang", "ch": ["gang", "sudden", "gingerly", "casual"], "hint": "Both pairs are synonyms — unfathomable/baffling and outfit/gang share the same relationship."},
+{"type": "analogy", "word": "sagely", "q": "SAGELY is to KNOWINGLY as SAVVY is to _____", "a": "understand", "ch": ["understand", "outfit", "stricken", "gentle"], "hint": "Both pairs are synonyms — sagely/knowingly and savvy/understand share the same relationship."},
+{"type": "synonym", "word": "scowl", "q": "SCOWL most nearly means:", "a": "frown", "ch": ["frown", "cautious", "confuse", "untouched"], "hint": "'Scowl' means To make an angry frown — 'frown' captures the same idea."}
+];
+
+var quiz={questions:[],index:0,score:0,streak:0,answers:[],answered:false};
+var fcIndex=0,fcFlipped=false;
+
+function shuffle(arr){var a=arr.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+
+function showStart(){show('screen-start');hide('screen-quiz');hide('screen-results');hide('screen-flash');}
+function showQuiz(){hide('screen-start');show('screen-quiz');hide('screen-results');hide('screen-flash');}
+function showResults(){hide('screen-start');hide('screen-quiz');show('screen-results');hide('screen-flash');}
+function showFlashcards(){hide('screen-start');hide('screen-quiz');hide('screen-results');show('screen-flash');fcIndex=0;fcFlipped=false;renderFlashcard();}
+
+function startQuiz(){
+  var pool=shuffle(QUESTIONS).slice(0,20);
+  quiz.questions=pool;quiz.index=0;quiz.score=0;quiz.streak=0;quiz.answers=[];quiz.answered=false;
+  showQuiz();renderQuestion();
+}
+
+function renderQuestion(){
+  var q=quiz.questions[quiz.index];
+  var pct=Math.round((quiz.index/20)*100);
+  $('prog-bar').style.width=pct+'%';
+  $('q-counter').textContent='Question '+(quiz.index+1)+' of 20';
+  var sb=$('streak-badge');
+  if(quiz.streak>=3){sb.classList.remove('hidden');sb.textContent='🔥 '+quiz.streak+' streak';}else{sb.classList.add('hidden');}
+  var ts=TYPE_STYLES[q.type];
+  var badge=$('type-badge');
+  badge.textContent=ts.label;badge.style.color=ts.color;badge.style.background=ts.bg;badge.style.border='1px solid '+ts.color;
+  $('q-text').textContent=q.q;
+  var choiceBox=$('choices');clearEl(choiceBox);
+  var shuffled=shuffle(q.ch);
+  shuffled.forEach(function(c){
+    var btn=document.createElement('button');
+    btn.className='choice-btn';btn.textContent=c;
+    btn.addEventListener('click',function(){selectAnswer(c,btn,q);});
+    choiceBox.appendChild(btn);
+  });
+  $('hint-text').textContent='';
+  quiz.answered=false;
+}
+
+function selectAnswer(choice,btn,q){
+  if(quiz.answered)return;
+  quiz.answered=true;
+  var correct=choice===q.a;
+  var allBtns=$('choices').querySelectorAll('.choice-btn');
+  allBtns.forEach(function(b){
+    b.disabled=true;
+    if(b.textContent===q.a)b.classList.add('correct');
+    else if(b===btn&&!correct)b.classList.add('wrong');
+  });
+  if(correct){
+    quiz.score++;quiz.streak++;
+    burst(btn.getBoundingClientRect().left+btn.offsetWidth/2,btn.getBoundingClientRect().top,'#34d399',22);
+    if(quiz.streak>0&&quiz.streak%3===0)confettiBurst();
+  }else{
+    quiz.streak=0;
+    $('hint-text').textContent='💡 '+q.hint;
+    burst(btn.getBoundingClientRect().left+btn.offsetWidth/2,btn.getBoundingClientRect().top,'#ef4444',14);
+  }
+  quiz.answers.push({q:q,chosen:choice,correct:correct});
+  setTimeout(function(){
+    quiz.index++;
+    if(quiz.index<quiz.questions.length){renderQuestion();}
+    else{buildResults();}
+  },1100);
+}
+
+function buildResults(){
+  showResults();
+  var pct=Math.round((quiz.score/20)*100);
+  var ring=$('score-ring');clearEl(ring);
+  var span=mk('span','',quiz.score+'/20');ring.appendChild(span);
+  ring.style.borderColor=pct>=80?'#34d399':pct>=60?'#fbbf24':'#ef4444';
+  var title=$('results-title');
+  if(pct===100)title.textContent='Perfect Score! 🏆';
+  else if(pct>=80)title.textContent='Excellent Work! ⭐';
+  else if(pct>=60)title.textContent='Good Effort! Keep Studying! 📚';
+  else title.textContent="Keep Practicing — You'll Get There! 💪";
+  $('results-msg').textContent='You scored '+quiz.score+' out of 20 ('+pct+'%)';
+  var bd=$('breakdown');clearEl(bd);
+  var counts={synonym:0,antonym:0,analogy:0,simile:0,metaphor:0};
+  var totals={synonym:0,antonym:0,analogy:0,simile:0,metaphor:0};
+  quiz.answers.forEach(function(a){totals[a.q.type]++;if(a.correct)counts[a.q.type]++;});
+  Object.keys(counts).forEach(function(t){
+    if(totals[t]===0)return;
+    var ts=TYPE_STYLES[t];var chip=mk('span','bd-chip',ts.label+': '+counts[t]+'/'+totals[t]);
+    chip.style.color=ts.color;chip.style.background=ts.bg;chip.style.border='1px solid '+ts.color;
+    bd.appendChild(chip);
+  });
+  var rl=$('review-list');clearEl(rl);
+  var wrong=quiz.answers.filter(function(a){return!a.correct;});
+  if(wrong.length===0){var p=mk('p','','✨ Perfect score — no missed questions!');p.style.color='#34d399';p.style.textAlign='center';rl.appendChild(p);}
+  else{
+    wrong.forEach(function(a){
+      var div=mk('div','review-item');
+      div.appendChild(mk('div','ri-q',a.q.q));
+      div.appendChild(mk('div','ri-a','✓ Correct: '+a.q.a));
+      div.appendChild(mk('div','ri-yours','✗ Your answer: '+a.chosen));
+      rl.appendChild(div);
+    });
+  }
+}
+
+function renderFlashcard(){
+  var w=WORDS[fcIndex];fcFlipped=false;
+  $('fc-card').classList.remove('flipped');
+  $('fc-word').textContent=w.word;
+  $('fc-pos').textContent=w.pos;
+  $('fc-def').textContent=w.def;
+  $('fc-example').textContent=w.ex;
+  $('fc-count').textContent='Card '+(fcIndex+1)+' of '+WORDS.length;
+  $('fc-nav-label').textContent=(fcIndex+1)+' / '+WORDS.length;
+  $('fc-prog').style.width=(((fcIndex+1)/WORDS.length)*100)+'%';
+}
+
+function flipCard(){
+  fcFlipped=!fcFlipped;
+  if(fcFlipped)$('fc-card').classList.add('flipped');
+  else $('fc-card').classList.remove('flipped');
+}
+
+function fcNav(dir){
+  fcIndex=(fcIndex+dir+WORDS.length)%WORDS.length;
+  renderFlashcard();
+}
+
+$('btn-start').addEventListener('click',startQuiz);
+$('btn-flash-start').addEventListener('click',showFlashcards);
+$('btn-retry').addEventListener('click',startQuiz);
+$('btn-flash-results').addEventListener('click',showFlashcards);
+$('btn-fc-back').addEventListener('click',showStart);
+$('fc-scene').addEventListener('click',flipCard);
+$('fc-prev').addEventListener('click',function(){fcNav(-1);});
+$('fc-next').addEventListener('click',function(){fcNav(1);});
+
+var PRACTICE_PROMPTS={"reckless": "Describe a reckless decision a character in The Outsiders makes. What consequence follows?", "unfathomable": "Write about something you find unfathomable — a decision, a rule, or an event you simply can't wrap your head around.", "outfit": "Describe a group or “outfit” you belong to (a team, a family, a club). What holds it together?", "gingerly": "Describe a time you did something gingerly — carefully, because you weren't sure it was safe.", "sagely": "Think of someone who always seems to nod sagely, like they already know how things will turn out. What makes them seem so wise?", "savvy": "Describe an idea that took you a while to savvy — to actually understand. What finally made it click?", "roguishly": "Describe someone you know who acts roguishly — mischievous, but never mean about it.", "briskly": "Describe a time you walked or spoke briskly — quickly and with purpose. What were you trying to avoid or get to?", "wince": "Describe something that always makes you wince — flinch — even just thinking about it.", "stride": "Describe a time you strode into a room — walked in confidently, like you owned the place.", "incredulous": "Describe something that left you incredulous — so surprising you almost couldn't believe it.", "scowl": "Describe a moment when someone scowled at you or someone else. What caused it?", "stalk": "Describe a time you or someone you know stalked off — stormed away, stiff and angry, from an argument.", "stricken": "Describe a moment you felt stricken — deeply and suddenly affected by grief, fear, or shock."};
+var smState={clues:[],selClue:null,matched:0,total:0};
+var fibState={items:[],index:0,score:0};
+var aqIndex=0;
+
+function showPracticeMenu(){hide('screen-start');hide('screen-quiz');hide('screen-results');hide('screen-flash');show('screen-practice-menu');hide('screen-synmatch');hide('screen-fib');hide('screen-aq');}
+
+function buildSynMatchRound(){
+  var pool=shuffle(WORDS).slice(0,5);
+  var clues=pool.map(function(w){return {word:w.word,clue:w.def.split('.')[0]};});
+  var wordsCol=shuffle(pool.map(function(w){return w.word;}));
+  smState={clues:clues,selClue:null,matched:0,total:clues.length};
+  $('sm-score').textContent='Matched 0 of '+smState.total;
+  var clueBox=$('sm-clues');clearEl(clueBox);
+  clues.forEach(function(c,i){
+    var div=mk('div','match-item',(i+1)+'. '+c.clue);
+    div.dataset.word=c.word;
+    div.addEventListener('click',function(){selectClue(div,c.word);});
+    clueBox.appendChild(div);
+  });
+  var wordBox=$('sm-words');clearEl(wordBox);
+  var letters='ABCDE';
+  wordsCol.forEach(function(w,i){
+    var div=mk('div','match-item',letters[i]+') '+w);
+    div.dataset.word=w;
+    div.addEventListener('click',function(){selectWord(div,w);});
+    wordBox.appendChild(div);
+  });
+}
+
+function selectClue(el,word){
+  if(el.classList.contains('matched'))return;
+  document.querySelectorAll('#sm-clues .match-item').forEach(function(d){d.classList.remove('selected');});
+  el.classList.add('selected');
+  smState.selClue={el:el,word:word};
+}
+
+function selectWord(el,word){
+  if(el.classList.contains('matched')||!smState.selClue)return;
+  var clue=smState.selClue;
+  if(clue.word===word){
+    clue.el.classList.remove('selected');clue.el.classList.add('matched');
+    el.classList.add('matched');
+    smState.matched++;
+    smState.selClue=null;
+    $('sm-score').textContent='Matched '+smState.matched+' of '+smState.total;
+    if(smState.matched===smState.total)confettiBurst();
+  }else{
+    el.classList.add('wrong-flash');
+    setTimeout(function(){el.classList.remove('wrong-flash');},450);
+  }
+}
+
+function buildFibRound(){
+  var pool=shuffle(WORDS).slice(0,Math.min(8,WORDS.length));
+  fibState={items:pool,index:0,score:0};
+  renderFib();
+}
+
+function renderFib(){
+  var w=fibState.items[fibState.index];
+  $('fib-score').textContent='Question '+(fibState.index+1)+' of '+fibState.items.length;
+  var sentence=w.ex.replace(new RegExp(w.word+'[a-z]*','gi'),'<span class="blank">_____</span>');
+  $('fib-sentence').innerHTML=sentence;
+  var others=shuffle(WORDS.filter(function(x){return x.word!==w.word;})).slice(0,3).map(function(x){return x.word;});
+  var choices=shuffle([w.word].concat(others));
+  var box=$('fib-choices');clearEl(box);
+  choices.forEach(function(c){
+    var btn=document.createElement('button');
+    btn.className='choice-btn';btn.textContent=c;
+    btn.addEventListener('click',function(){fibAnswer(c,btn,w);});
+    box.appendChild(btn);
+  });
+  $('fib-hint').textContent='';
+}
+
+function fibAnswer(choice,btn,w){
+  var allBtns=$('fib-choices').querySelectorAll('.choice-btn');
+  var correct=choice===w.word;
+  allBtns.forEach(function(b){
+    b.disabled=true;
+    if(b.textContent===w.word)b.classList.add('correct');
+    else if(b===btn&&!correct)b.classList.add('wrong');
+  });
+  if(correct){fibState.score++;burst(btn.getBoundingClientRect().left+btn.offsetWidth/2,btn.getBoundingClientRect().top,'#34d399',18);}
+  else{$('fib-hint').textContent='\ud83d\udca1 The word was "'+w.word+'" \u2014 '+w.def.split('.')[0]+'.';}
+  setTimeout(function(){
+    fibState.index++;
+    if(fibState.index<fibState.items.length)renderFib();
+    else{
+      $('fib-sentence').textContent='Round complete! You scored '+fibState.score+' of '+fibState.items.length+'.';
+      clearEl($('fib-choices'));
+      $('fib-hint').textContent='';
+      if(fibState.score===fibState.items.length)confettiBurst();
+    }
+  },1300);
+}
+
+function renderAq(){
+  var w=WORDS[aqIndex];
+  $('aq-count').textContent='Word '+(aqIndex+1)+' of '+WORDS.length;
+  $('aq-word').textContent=w.word;
+  $('aq-pos').textContent=w.pos;
+  $('aq-prompt').textContent=PRACTICE_PROMPTS[w.word]||('Use "'+w.word+'" correctly in a few complete sentences.');
+  $('aq-textarea').value='';
+  $('aq-checklist').classList.remove('shown');
+  $('aq-def').textContent=w.word+': '+w.def;
+  $('aq-ex').textContent=w.ex;
+}
+
+$('btn-practice-start').addEventListener('click',showPracticeMenu);
+$('btn-practice-back').addEventListener('click',showStart);
+$('btn-open-synmatch').addEventListener('click',function(){hide('screen-practice-menu');show('screen-synmatch');buildSynMatchRound();});
+$('btn-open-fib').addEventListener('click',function(){hide('screen-practice-menu');show('screen-fib');buildFibRound();});
+$('btn-open-aq').addEventListener('click',function(){hide('screen-practice-menu');show('screen-aq');aqIndex=0;renderAq();});
+$('btn-sm-back').addEventListener('click',function(){hide('screen-synmatch');show('screen-practice-menu');});
+$('btn-fib-back').addEventListener('click',function(){hide('screen-fib');show('screen-practice-menu');});
+$('btn-aq-back').addEventListener('click',function(){hide('screen-aq');show('screen-practice-menu');});
+$('btn-sm-next').addEventListener('click',buildSynMatchRound);
+$('btn-aq-check').addEventListener('click',function(){$('aq-checklist').classList.add('shown');});
+$('btn-aq-next').addEventListener('click',function(){aqIndex=(aqIndex+1)%WORDS.length;renderAq();});
+
+})();
+</script>
+</body>
+</html>

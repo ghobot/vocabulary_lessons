@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Outsiders: Ch. 3–5</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#13090c;color:#e8e8f0;min-height:100vh;overflow-x:hidden}
+canvas#stars{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.screen{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+.screen.hidden{display:none}
+#home-link{position:fixed;top:14px;left:18px;z-index:100;color:#f97316;text-decoration:none;font-size:14px;background:rgba(249,115,22,.12);padding:6px 14px;border-radius:20px;border:1px solid #a14a0e;transition:background .2s}
+#home-link:hover{background:rgba(249,115,22,.28)}
+.start-card{background:#13090c;border:1px solid #a14a0e;border-radius:24px;padding:48px 40px;max-width:540px;width:100%;text-align:center;box-shadow:0 0 60px rgba(249,115,22,.22)}
+.start-card h1{font-size:2.4rem;font-weight:800;background:linear-gradient(135deg,#f97316,#a14a0e,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+.start-card .subtitle{color:#94a3b8;margin-bottom:28px;font-size:1rem}
+.start-card p{color:#cbd5e1;line-height:1.7;margin-bottom:32px;font-size:.97rem}
+.btn{display:inline-block;padding:13px 34px;border-radius:50px;border:none;cursor:pointer;font-size:1rem;font-weight:700;transition:transform .15s,box-shadow .15s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.btn-primary{background:linear-gradient(135deg,#a14a0e,#f97316);color:#fff;box-shadow:0 4px 18px rgba(249,115,22,.4)}
+.btn-secondary{background:rgba(249,115,22,.08);color:#f97316;border:1px solid #a14a0e;margin-top:14px}
+.btn-sm{padding:8px 20px;font-size:.85rem}
+.quiz-wrap{max-width:680px;width:100%}
+.progress-bar-outer{background:rgba(255,255,255,.08);border-radius:10px;height:8px;margin-bottom:20px;overflow:hidden}
+.progress-bar-inner{height:100%;border-radius:10px;background:linear-gradient(90deg,#a14a0e,#f97316);transition:width .4s}
+.q-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.q-counter{color:#94a3b8;font-size:.9rem}
+.streak-badge{background:rgba(251,191,36,.15);border:1px solid #f59e0b;color:#fbbf24;border-radius:20px;padding:4px 12px;font-size:.8rem;font-weight:700}
+.type-badge{border-radius:20px;padding:4px 14px;font-size:.78rem;font-weight:700;display:inline-block;margin-bottom:14px}
+.q-text{font-size:1.2rem;font-weight:600;color:#e2e8f0;line-height:1.6;margin-bottom:24px}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.choice-btn{background:rgba(249,115,22,.06);border:1.5px solid rgba(249,115,22,.2);border-radius:14px;padding:14px 18px;color:#e2e8f0;font-size:.95rem;cursor:pointer;transition:all .15s;text-align:left}
+.choice-btn:hover:not(:disabled){background:rgba(249,115,22,.18);border-color:#f97316}
+.choice-btn.correct{background:rgba(16,185,129,.2);border-color:#10b981;color:#6ee7b7}
+.choice-btn.wrong{background:rgba(239,68,68,.2);border-color:#ef4444;color:#fca5a5}
+.results-card{background:#13090c;border:1px solid #a14a0e;border-radius:24px;padding:40px 36px;max-width:620px;width:100%;text-align:center}
+.score-ring{width:120px;height:120px;border-radius:50%;margin:0 auto 20px;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:800;border:4px solid #f97316;background:rgba(249,115,22,.1)}
+.breakdown{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:20px 0}
+.bd-chip{border-radius:20px;padding:5px 14px;font-size:.8rem;font-weight:600}
+.review-list{margin-top:24px;text-align:left;max-height:280px;overflow-y:auto}
+.review-item{background:rgba(255,255,255,.05);border-radius:10px;padding:10px 14px;margin-bottom:8px;font-size:.85rem;line-height:1.5}
+.review-item .ri-q{color:#94a3b8}
+.review-item .ri-a{color:#6ee7b7;font-weight:600}
+.review-item .ri-yours{color:#fca5a5}
+.results-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:24px}
+.fc-wrap{max-width:540px;width:100%;display:flex;flex-direction:column;align-items:center}
+.fc-wrap h2{font-size:1.5rem;font-weight:700;color:#f97316;margin-bottom:6px}
+.fc-count{color:#64748b;font-size:.85rem;margin-bottom:24px}
+.fc-scene{width:100%;max-width:420px;height:260px;perspective:1000px;cursor:pointer;margin-bottom:20px}
+.fc-card{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.4,0,.2,1)}
+.fc-card.flipped{transform:rotateY(180deg)}
+.fc-face{position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center}
+.fc-front{background:linear-gradient(135deg,rgba(249,115,22,.22),rgba(249,115,22,.1));border:1.5px solid #a14a0e}
+.fc-back{background:linear-gradient(135deg,rgba(249,115,22,.4),rgba(249,115,22,.15));border:1.5px solid #f97316;transform:rotateY(180deg)}
+#fc-word{font-size:2rem;font-weight:800;color:#e2e8f0}
+#fc-pos{font-size:.85rem;color:#f97316;margin-top:6px}
+#fc-flip-hint{font-size:.75rem;color:#64748b;margin-top:14px}
+#fc-def{font-size:.95rem;color:#f0fdfa;line-height:1.6}
+#fc-example{font-size:.82rem;color:#f97316;font-style:italic;margin-top:10px}
+.fc-nav{display:flex;align-items:center;gap:18px}
+.fc-nav button{background:rgba(249,115,22,.15);border:1.5px solid #a14a0e;color:#f97316;border-radius:50%;width:42px;height:42px;font-size:1.2rem;cursor:pointer;transition:background .15s}
+.fc-nav button:hover{background:rgba(249,115,22,.32)}
+.fc-nav span{color:#94a3b8;font-size:.9rem;min-width:70px;text-align:center}
+.fc-progress{width:100%;background:rgba(255,255,255,.08);border-radius:10px;height:6px;margin-top:18px;overflow:hidden}
+.fc-progress-inner{height:100%;background:linear-gradient(90deg,#a14a0e,#f97316);transition:width .35s;border-radius:10px}
+.hint-text{color:#94a3b8;font-size:.85rem;font-style:italic;margin-top:8px;min-height:20px}
+#particle-canvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:200}
+@media(max-width:500px){.choices{grid-template-columns:1fr}.start-card h1{font-size:1.8rem}}
+
+.practice-menu{max-width:520px;width:100%}
+.practice-menu h2{font-size:1.6rem;font-weight:800;color:#f97316;margin-bottom:6px;text-align:center}
+.practice-menu .sub{color:#94a3b8;font-size:.88rem;text-align:center;margin-bottom:28px}
+.practice-card{display:block;width:100%;text-align:left;background:rgba(249,115,22,.06);border:1.5px solid #a14a0e;border-radius:16px;padding:18px 20px;margin-bottom:14px;cursor:pointer;transition:all .15s;color:#e2e8f0}
+.practice-card:hover{background:rgba(249,115,22,.15);border-color:#f97316}
+.practice-card .pc-title{font-size:1.05rem;font-weight:700;color:#e2e8f0;margin-bottom:4px}
+.practice-card .pc-desc{font-size:.82rem;color:#94a3b8}
+.practice-wrap{max-width:640px;width:100%}
+.practice-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.practice-score{color:#94a3b8;font-size:.85rem}
+.match-cols{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:20px}
+.match-item{background:rgba(249,115,22,.06);border:1.5px solid #a14a0e;border-radius:12px;padding:12px 14px;margin-bottom:10px;cursor:pointer;font-size:.9rem;color:#e2e8f0;transition:all .15s}
+.match-item:hover{border-color:#f97316}
+.match-item.selected{border-color:#f97316;background:rgba(249,115,22,.22)}
+.match-item.matched{background:rgba(16,185,129,.18);border-color:#10b981;color:#6ee7b7;cursor:default}
+.match-item.wrong-flash{background:rgba(239,68,68,.22);border-color:#ef4444}
+.blank-sentence{font-size:1.15rem;line-height:1.7;color:#e2e8f0;margin-bottom:26px;text-align:center}
+.blank-sentence .blank{color:#f97316;font-weight:800;letter-spacing:.05em}
+.fib-choices{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.aq-word{font-size:1.7rem;font-weight:800;color:#f97316;text-align:center;margin-bottom:4px}
+.aq-pos{text-align:center;color:#64748b;font-size:.82rem;margin-bottom:18px}
+.aq-prompt{font-size:1.02rem;color:#e2e8f0;line-height:1.6;margin-bottom:16px;text-align:center}
+.aq-textarea{width:100%;min-height:120px;background:rgba(249,115,22,.06);border:1.5px solid #a14a0e;border-radius:12px;padding:14px;color:#e8e8f0;font-family:inherit;font-size:.95rem;line-height:1.6;resize:vertical;margin-bottom:14px}
+.aq-textarea:focus{outline:none;border-color:#f97316}
+.aq-checklist{background:rgba(249,115,22,.08);border:1px solid #a14a0e;border-radius:12px;padding:16px 18px;margin-top:6px;text-align:left;display:none}
+.aq-checklist.shown{display:block}
+.aq-checklist ul{margin:8px 0 0 20px;color:#cbd5e1;font-size:.85rem;line-height:1.8}
+.aq-checklist .aq-def{color:#f97316;font-weight:700;font-size:.85rem;margin-bottom:4px}
+.practice-nav{display:flex;gap:12px;justify-content:center;margin-top:22px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+<canvas id="particle-canvas"></canvas>
+<a href="../index.html" id="home-link">&#8592; Home</a>
+
+<div id="screen-start" class="screen">
+  <div class="start-card">
+    <div style="font-size:3rem;margin-bottom:10px">&#x1F4D6;</div>
+    <h1>The Outsiders: Ch. 3–5</h1>
+    <div class="subtitle">S.E. Hinton&rsquo;s <em>The Outsiders</em> &middot; Lesson 18</div>
+    <p>Master 10 key vocabulary words from <em>The Outsiders</em>. Test yourself with synonyms, antonyms, analogies, similes, and metaphors, then try Test Practice &mdash; the same synonym-match, fill-in-the-blank, and short-answer format as your real quiz.</p>
+    <div><button class="btn btn-primary" id="btn-start">Begin the Challenge &#8594;</button></div>
+    <div><button class="btn btn-secondary" id="btn-flash-start">&#x1F4DA; Study Flashcards</button></div>
+    <div><button class="btn btn-secondary" id="btn-practice-start">&#x1F4DD; Test Practice</button></div>
+  </div>
+</div>
+
+<div id="screen-quiz" class="screen hidden">
+  <div class="quiz-wrap">
+    <div class="progress-bar-outer"><div class="progress-bar-inner" id="prog-bar" style="width:0%"></div></div>
+    <div class="q-header">
+      <span class="q-counter" id="q-counter">Question 1 of 20</span>
+      <span class="streak-badge hidden" id="streak-badge">&#x1F525; 0 streak</span>
+    </div>
+    <div id="type-badge" class="type-badge"></div>
+    <div class="q-text" id="q-text"></div>
+    <div class="choices" id="choices"></div>
+    <div class="hint-text" id="hint-text"></div>
+  </div>
+</div>
+
+<div id="screen-results" class="screen hidden">
+  <div class="results-card">
+    <div class="score-ring" id="score-ring"></div>
+    <h2 id="results-title" style="margin-bottom:6px;color:#e2e8f0"></h2>
+    <p id="results-msg" style="color:#94a3b8;margin-bottom:4px"></p>
+    <div class="breakdown" id="breakdown"></div>
+    <div class="review-list" id="review-list"></div>
+    <div class="results-btns">
+      <button class="btn btn-primary btn-sm" id="btn-retry">Try Again</button>
+      <button class="btn btn-secondary btn-sm" id="btn-flash-results">&#x1F4DA; Review Flashcards</button>
+    </div>
+  </div>
+</div>
+
+<div id="screen-flash" class="screen hidden">
+  <div class="fc-wrap">
+    <h2>&#x1F4DA; Lesson 18 Flashcards</h2>
+    <div class="fc-count" id="fc-count">Card 1 of 10</div>
+    <div class="fc-scene" id="fc-scene">
+      <div class="fc-card" id="fc-card">
+        <div class="fc-face fc-front">
+          <div id="fc-word"></div>
+          <div id="fc-pos"></div>
+          <div id="fc-flip-hint">tap to reveal &#8594;</div>
+        </div>
+        <div class="fc-face fc-back">
+          <div id="fc-def"></div>
+          <div id="fc-example"></div>
+        </div>
+      </div>
+    </div>
+    <div class="fc-nav">
+      <button id="fc-prev">&#8249;</button>
+      <span id="fc-nav-label">1 / 10</span>
+      <button id="fc-next">&#8250;</button>
+    </div>
+    <div class="fc-progress"><div class="fc-progress-inner" id="fc-prog" style="width:10.00%"></div></div>
+    <button class="btn btn-secondary btn-sm" id="btn-fc-back" style="margin-top:22px">&#8592; Back</button>
+  </div>
+</div>
+
+<div id="screen-practice-menu" class="screen hidden">
+  <div class="practice-menu">
+    <h2>&#x1F4DD; Test Practice</h2>
+    <div class="sub">Same format as your real vocab test &mdash; three parts</div>
+    <button class="practice-card" id="btn-open-synmatch">
+      <div class="pc-title">1. Synonym Match</div>
+      <div class="pc-desc">Match each clue to its vocabulary word</div>
+    </button>
+    <button class="practice-card" id="btn-open-fib">
+      <div class="pc-title">2. Fill-in-the-Blank</div>
+      <div class="pc-desc">Pick the word that best completes the sentence</div>
+    </button>
+    <button class="practice-card" id="btn-open-aq">
+      <div class="pc-title">3. Answer the Question</div>
+      <div class="pc-desc">Practice writing a full-sentence response</div>
+    </button>
+    <div style="text-align:center"><button class="btn btn-secondary btn-sm" id="btn-practice-back">&#8592; Back</button></div>
+  </div>
+</div>
+
+<div id="screen-synmatch" class="screen hidden">
+  <div class="practice-wrap">
+    <div class="practice-head">
+      <span class="practice-score" id="sm-score">Matched 0 of 5</span>
+      <button class="btn btn-secondary btn-sm" id="btn-sm-back">&#8592; Menu</button>
+    </div>
+    <div class="match-cols">
+      <div id="sm-clues"></div>
+      <div id="sm-words"></div>
+    </div>
+    <div class="practice-nav"><button class="btn btn-primary btn-sm" id="btn-sm-next">New Round &#8594;</button></div>
+  </div>
+</div>
+
+<div id="screen-fib" class="screen hidden">
+  <div class="practice-wrap">
+    <div class="practice-head">
+      <span class="practice-score" id="fib-score">Question 1 of 8</span>
+      <button class="btn btn-secondary btn-sm" id="btn-fib-back">&#8592; Menu</button>
+    </div>
+    <div class="blank-sentence" id="fib-sentence"></div>
+    <div class="fib-choices" id="fib-choices"></div>
+    <div class="hint-text" id="fib-hint"></div>
+  </div>
+</div>
+
+<div id="screen-aq" class="screen hidden">
+  <div class="practice-wrap">
+    <div class="practice-head">
+      <span class="practice-score" id="aq-count">Word 1 of 10</span>
+      <button class="btn btn-secondary btn-sm" id="btn-aq-back">&#8592; Menu</button>
+    </div>
+    <div class="aq-word" id="aq-word"></div>
+    <div class="aq-pos" id="aq-pos"></div>
+    <div class="aq-prompt" id="aq-prompt"></div>
+    <textarea class="aq-textarea" id="aq-textarea" placeholder="Write your answer in complete sentences..."></textarea>
+    <div class="practice-nav">
+      <button class="btn btn-secondary btn-sm" id="btn-aq-check">Show Checklist &amp; Definition</button>
+      <button class="btn btn-primary btn-sm" id="btn-aq-next">Next Word &#8594;</button>
+    </div>
+    <div class="aq-checklist" id="aq-checklist">
+      <div class="aq-def" id="aq-def"></div>
+      <div id="aq-ex" style="color:#94a3b8;font-size:.85rem;font-style:italic;margin-top:6px"></div>
+      <ul>
+        <li>Did you use the word <b>correctly</b>, matching its real meaning?</li>
+        <li>Did you write in <b>complete sentences</b>?</li>
+        <li>Did you include enough <b>detail</b> that someone could guess the word's meaning from your answer?</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+var sc=document.getElementById('stars'),ctx=sc.getContext('2d'),W,H,stars=[];
+function initStars(){W=sc.width=window.innerWidth;H=sc.height=window.innerHeight;stars=[];for(var i=0;i<220;i++)stars.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.4+.3,s:Math.random()*.4+.1,b:Math.random()});}
+function drawStars(){ctx.clearRect(0,0,W,H);var g=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,W*.7);g.addColorStop(0,'rgba(249,115,22,.12)');g.addColorStop(.5,'rgba(249,115,22,.05)');g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);stars.forEach(function(s){s.b+=s.s*.016;var a=.4+.55*Math.abs(Math.sin(s.b));ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle='rgba(249,115,22,'+a+')';ctx.fill();});requestAnimationFrame(drawStars);}
+window.addEventListener('resize',initStars);initStars();drawStars();
+
+var pc=document.getElementById('particle-canvas'),pctx=pc.getContext('2d'),particles=[];
+function resizePC(){pc.width=window.innerWidth;pc.height=window.innerHeight;}resizePC();window.addEventListener('resize',resizePC);
+function burst(x,y,color,count){for(var i=0;i<count;i++)particles.push({x:x,y:y,vx:(Math.random()-0.5)*7,vy:(Math.random()-2.5)*6,r:Math.random()*5+2,color:color,life:1,dec:Math.random()*.025+.015});}
+function confettiBurst(){var cols=['#f97316','#38bdf8','#34d399','#fbbf24','#f472b6'];for(var i=0;i<90;i++){var c=cols[Math.floor(Math.random()*cols.length)];particles.push({x:Math.random()*pc.width,y:-10,vx:(Math.random()-0.5)*4,vy:Math.random()*4+2,r:Math.random()*6+2,color:c,life:1,dec:Math.random()*.012+.008});}}
+function animParticles(){pctx.clearRect(0,0,pc.width,pc.height);particles=particles.filter(function(p){p.x+=p.vx;p.y+=p.vy;p.vy+=0.12;p.life-=p.dec;if(p.life<=0)return false;pctx.globalAlpha=p.life;pctx.beginPath();pctx.arc(p.x,p.y,p.r,0,Math.PI*2);pctx.fillStyle=p.color;pctx.fill();return true;});pctx.globalAlpha=1;requestAnimationFrame(animParticles);}animParticles();
+
+function clearEl(el){while(el.firstChild)el.removeChild(el.firstChild);}
+function mk(tag,cls,txt){var el=document.createElement(tag);if(cls)el.className=cls;if(txt!==undefined)el.textContent=txt;return el;}
+function show(id){document.getElementById(id).classList.remove('hidden');}
+function hide(id){document.getElementById(id).classList.add('hidden');}
+function $(id){return document.getElementById(id);}
+
+var WORDS=[
+  {word:"grimly",pos:"adv.",def:"Firmly and cheerlessly, without giving rise to hope of change of mind or fate.",ex:"\u201cAnd,\u201d Two-Bit added grimly, \u201ca few other of the socially elite checkered-shirt set.\u201d"},
+  {word:"quiver",pos:"v.",def:"To shake with very small, quick movements.",ex:"Ponyboy's breath came in quivering sobs as he admitted to Johnny that he was scared."},
+  {word:"unceasingly",pos:"adv.",def:"Without pause or respite; continuous.",ex:"\u201cMy teeth chattered unceasingly, and I couldn't stop them,\u201d Ponyboy admits, hiding in the old church."},
+  {word:"absently",pos:"adv.",def:"In an absent-minded manner; inattentively.",ex:"\u201cI wish I was home,\u201d Ponyboy thought absently, half-asleep and half-somewhere else entirely."},
+  {word:"imploringly",pos:"adv.",def:"In a way that expresses urgent pleading, begging.",ex:"Ponyboy looked at Johnny imploringly, hoping he wouldn't have to cut his hair alone."},
+  {word:"reluctantly",pos:"adv.",def:"Without really wanting to, unwillingly.",ex:"\u201cGee, thanks,\u201d Ponyboy said, and put the book down reluctantly, wishing he had more time to read it."},
+  {word:"gallant",pos:"adj.",def:"Brave, spirited, noble-minded, or chivalrous.",ex:"Johnny thought the soldiers in the poem were gallant, riding into sure death \u2014 and it reminded him of Dally."},
+  {word:"elude",pos:"v.",def:"To avoid or escape the understanding of.",ex:"The meaning of the poem eluded Ponyboy at first, even though he never forgot the lines."},
+  {word:"indignant",pos:"adj.",def:"Feeling or showing anger about something considered to be unfair or without value.",ex:"\u201cYou're starved?\u201d Johnny was so indignant he nearly squeaked, offended that anyone would think otherwise."},
+  {word:"bewilder",pos:"v.",def:"To confuse or puzzle.",ex:"\u201cSodapop?\u201d Ponyboy said, bewildered, unable to figure out how his brother could possibly know."}
+];
+
+var TYPE_STYLES={
+  synonym:{label:'Synonym',color:'#60a5fa',bg:'rgba(96,165,250,.15)'},
+  antonym:{label:'Antonym',color:'#f472b6',bg:'rgba(244,114,182,.15)'},
+  analogy:{label:'Analogy',color:'#a78bfa',bg:'rgba(167,139,250,.15)'},
+  simile:{label:'Simile',color:'#34d399',bg:'rgba(52,211,153,.15)'},
+  metaphor:{label:'Metaphor',color:'#fbbf24',bg:'rgba(251,191,36,.15)'}
+};
+
+var QUESTIONS=[
+{"type": "antonym", "word": "unceasingly", "q": "UNCEASINGLY is most nearly OPPOSITE in meaning to:", "a": "intermittently", "ch": ["intermittently", "ceaselessly", "resentful", "routine"], "hint": "'Unceasingly' means Without pause or respite; continuous — 'intermittently' is the opposite idea."},
+{"type": "simile", "word": "reluctantly", "q": "Complete the simile: RELUCTANTLY — it was like ___", "a": "a kid handing over the last slice of cake, doing the math on how fast they could grab it back", "ch": ["a kid handing over the last slice of cake, doing the math on how fast they could grab it back", "a list completed ahead of schedule with every item checked", "something expected and received exactly as advertised", "a routine confirmed by everyone in the room before it began"], "hint": "Think about what 'reluctantly' means: Without really wanting to, unwillingly The best completion captures that feeling in a concrete image."},
+{"type": "simile", "word": "grimly", "q": "Complete the simile: Being grimly felt like ___", "a": "a coach announcing the score at halftime when everyone already knows it's bad", "ch": ["a coach announcing the score at halftime when everyone already knows it's bad", "something expected and received exactly as advertised", "a routine confirmed by everyone in the room before it began", "a schedule that stayed exactly the same from morning to night"], "hint": "Think about what 'grimly' means: Firmly and cheerlessly, without giving rise to hope of change of mind  The best completion captures that feeling in a concrete image."},
+{"type": "antonym", "word": "absently", "q": "Which word is the OPPOSITE of ABSENTLY?", "a": "attentively", "ch": ["attentively", "heroic", "ceaselessly", "desperately"], "hint": "'Absently' means In an absent-minded manner; inattentively — 'attentively' is the opposite idea."},
+{"type": "synonym", "word": "absently", "q": "ABSENTLY is closest in meaning to:", "a": "vacantly", "ch": ["vacantly", "gradual", "coldly", "loud"], "hint": "'Absently' means In an absent-minded manner; inattentively — 'vacantly' captures the same idea."},
+{"type": "synonym", "word": "unceasingly", "q": "UNCEASINGLY is closest in meaning to:", "a": "endlessly", "ch": ["endlessly", "intermittently", "mindfully", "attentively"], "hint": "'Unceasingly' means Without pause or respite; continuous — 'endlessly' captures the same idea."},
+{"type": "analogy", "word": "unceasingly", "q": "UNCEASINGLY is to OCCASIONALLY as IMPLORINGLY is to _____", "a": "coldly", "ch": ["coldly", "sudden", "gentle", "quiver"], "hint": "Both pairs are antonyms — unceasingly opposes occasionally, and imploringly opposes coldly."},
+{"type": "synonym", "word": "quiver", "q": "QUIVER most nearly means:", "a": "tremble", "ch": ["tremble", "steady", "briefly", "typical"], "hint": "'Quiver' means To shake with very small, quick movements — 'tremble' captures the same idea."},
+{"type": "metaphor", "word": "bewilder", "q": "Which sentence is a metaphor using BEWILDER?", "a": "Bewildered is not confusion — it is the moment the ground you were standing on turns out to be a question instead of an answer.", "ch": ["Bewildered is not confusion — it is the moment the ground you were standing on turns out to be a question instead of an answer.", "“Sodapop?” Ponyboy said, bewildered, unable to figure out how his brother could possibly know.", "Bewilder was like someone handed a map with no streets labeled and told to find their way home anyway.", "Bewilder felt like a substitute teacher trying to follow directions left by three different people."], "hint": "A metaphor makes a direct equation without 'like' or 'as'. The correct answer calls bewilder something else directly, not comparing it to something."},
+{"type": "antonym", "word": "indignant", "q": "INDIGNANT is most nearly OPPOSITE in meaning to:", "a": "pleased", "ch": ["pleased", "dreamily", "endlessly", "plain"], "hint": "'Indignant' means Feeling or showing anger about something considered to be un — 'pleased' is the opposite idea."},
+{"type": "synonym", "word": "bewilder", "q": "Which word is a synonym for BEWILDER?", "a": "puzzle", "ch": ["puzzle", "familiar", "inform", "briefly"], "hint": "'Bewilder' means To confuse or puzzle — 'puzzle' captures the same idea."},
+{"type": "synonym", "word": "bewilder", "q": "BEWILDER most nearly means:", "a": "mystify", "ch": ["mystify", "timid", "dismissively", "silent"], "hint": "'Bewilder' means To confuse or puzzle — 'mystify' captures the same idea."},
+{"type": "antonym", "word": "indignant", "q": "Which word is the OPPOSITE of INDIGNANT?", "a": "content", "ch": ["content", "sudden", "continuously", "relentlessly"], "hint": "'Indignant' means Feeling or showing anger about something considered to be un — 'content' is the opposite idea."},
+{"type": "antonym", "word": "gallant", "q": "Which word is the OPPOSITE of GALLANT?", "a": "craven", "ch": ["craven", "pleadingly", "beseechingly", "casual"], "hint": "'Gallant' means Brave, spirited, noble-minded, or chivalrous — 'craven' is the opposite idea."},
+{"type": "synonym", "word": "bewilder", "q": "BEWILDER most nearly means:", "a": "confuse", "ch": ["confuse", "sudden", "casual", "mindfully"], "hint": "'Bewilder' means To confuse or puzzle — 'confuse' captures the same idea."},
+{"type": "synonym", "word": "gallant", "q": "GALLANT most nearly means:", "a": "brave", "ch": ["brave", "typical", "craven", "reveal itself to"], "hint": "'Gallant' means Brave, spirited, noble-minded, or chivalrous — 'brave' captures the same idea."},
+{"type": "synonym", "word": "imploringly", "q": "IMPLORINGLY most nearly means:", "a": "pleadingly", "ch": ["pleadingly", "familiar", "inform", "cheerfully"], "hint": "'Imploringly' means In a way that expresses urgent pleading, begging — 'pleadingly' captures the same idea."},
+{"type": "antonym", "word": "quiver", "q": "Which word is the OPPOSITE of QUIVER?", "a": "stay still", "ch": ["stay still", "unwillingly", "shiver", "harsh"], "hint": "'Quiver' means To shake with very small, quick movements — 'stay still' is the opposite idea."},
+{"type": "analogy", "word": "grimly", "q": "GRIMLY is to BRIGHTLY as UNCEASINGLY is to _____", "a": "briefly", "ch": ["briefly", "imploringly", "continuously", "ordinary"], "hint": "Both pairs are antonyms — grimly opposes brightly, and unceasingly opposes briefly."},
+{"type": "metaphor", "word": "quiver", "q": "Which sentence is a metaphor using QUIVER?", "a": "A quiver is not just a shake — it is fear leaking out through the body when the voice won't say it out loud.", "ch": ["A quiver is not just a shake — it is fear leaking out through the body when the voice won't say it out loud.", "Ponyboy's breath came in quivering sobs as he admitted to Johnny that he was scared.", "Quiver was like a candle flame in a room where someone just opened a door they shouldn't have.", "Quiver felt like a leaf still shaking on a branch long after the wind has passed."], "hint": "A metaphor makes a direct equation without 'like' or 'as'. The correct answer calls quiver something else directly, not comparing it to something."},
+{"type": "synonym", "word": "absently", "q": "Which word is a synonym for ABSENTLY?", "a": "inattentively", "ch": ["inattentively", "clarify", "alertly", "indifferently"], "hint": "'Absently' means In an absent-minded manner; inattentively — 'inattentively' captures the same idea."},
+{"type": "simile", "word": "quiver", "q": "Complete the simile: Being quiver felt like ___", "a": "a leaf still shaking on a branch long after the wind has passed", "ch": ["a leaf still shaking on a branch long after the wind has passed", "a sunny afternoon with nothing unusual on the horizon", "a schedule that stayed exactly the same from morning to night", "a routine confirmed by everyone in the room before it began"], "hint": "Think about what 'quiver' means: To shake with very small, quick movements The best completion captures that feeling in a concrete image."},
+{"type": "synonym", "word": "grimly", "q": "GRIMLY most nearly means:", "a": "severely", "ch": ["severely", "reveal itself to", "intermittently", "loud"], "hint": "'Grimly' means Firmly and cheerlessly, without giving rise to hope of change of mind  — 'severely' captures the same idea."},
+{"type": "synonym", "word": "reluctantly", "q": "RELUCTANTLY is closest in meaning to:", "a": "grudgingly", "ch": ["grudgingly", "indifferently", "satisfied", "clarify"], "hint": "'Reluctantly' means Without really wanting to, unwillingly — 'grudgingly' captures the same idea."},
+{"type": "antonym", "word": "bewilder", "q": "BEWILDER is most nearly OPPOSITE in meaning to:", "a": "enlighten", "ch": ["enlighten", "endlessly", "plain", "loud"], "hint": "'Bewilder' means To confuse or puzzle — 'enlighten' is the opposite idea."},
+{"type": "antonym", "word": "absently", "q": "Which word is the OPPOSITE of ABSENTLY?", "a": "mindfully", "ch": ["mindfully", "severely", "relentlessly", "casual"], "hint": "'Absently' means In an absent-minded manner; inattentively — 'mindfully' is the opposite idea."},
+{"type": "synonym", "word": "indignant", "q": "INDIGNANT most nearly means:", "a": "outraged", "ch": ["outraged", "warmly", "sudden", "timid"], "hint": "'Indignant' means Feeling or showing anger about something considered to be unfair or wi — 'outraged' captures the same idea."},
+{"type": "analogy", "word": "grimly", "q": "GRIMLY is to SEVERELY as QUIVER is to _____", "a": "tremble", "ch": ["tremble", "ordinary", "stay still", "unceasingly"], "hint": "Both pairs are synonyms — grimly/severely and quiver/tremble share the same relationship."},
+{"type": "synonym", "word": "reluctantly", "q": "RELUCTANTLY most nearly means:", "a": "half-heartedly", "ch": ["half-heartedly", "silent", "inform", "attentively"], "hint": "'Reluctantly' means Without really wanting to, unwillingly — 'half-heartedly' captures the same idea."},
+{"type": "analogy", "word": "elude", "q": "ELUDE is to CLARIFY as BEWILDER is to _____", "a": "enlighten", "ch": ["enlighten", "confuse", "gallant", "harsh"], "hint": "Both pairs are antonyms — elude opposes clarify, and bewilder opposes enlighten."},
+{"type": "synonym", "word": "unceasingly", "q": "Which word is a synonym for UNCEASINGLY?", "a": "ceaselessly", "ch": ["ceaselessly", "intermittently", "indifferently", "craven"], "hint": "'Unceasingly' means Without pause or respite; continuous — 'ceaselessly' captures the same idea."},
+{"type": "synonym", "word": "unceasingly", "q": "UNCEASINGLY most nearly means:", "a": "relentlessly", "ch": ["relentlessly", "content", "enlighten", "inform"], "hint": "'Unceasingly' means Without pause or respite; continuous — 'relentlessly' captures the same idea."},
+{"type": "analogy", "word": "bewilder", "q": "BEWILDER is to ENLIGHTEN as QUIVER is to _____", "a": "steady", "ch": ["steady", "plain", "absently", "sudden"], "hint": "Both pairs are antonyms — bewilder opposes enlighten, and quiver opposes steady."},
+{"type": "analogy", "word": "quiver", "q": "QUIVER is to STAY STILL as ABSENTLY is to _____", "a": "attentively", "ch": ["attentively", "familiar", "ordinary", "typical"], "hint": "Both pairs are antonyms — quiver opposes stay still, and absently opposes attentively."},
+{"type": "antonym", "word": "imploringly", "q": "Which word is the OPPOSITE of IMPLORINGLY?", "a": "coldly", "ch": ["coldly", "silent", "pleadingly", "sternly"], "hint": "'Imploringly' means In a way that expresses urgent pleading, begging — 'coldly' is the opposite idea."},
+{"type": "antonym", "word": "quiver", "q": "QUIVER is most nearly OPPOSITE in meaning to:", "a": "steady", "ch": ["steady", "sternly", "beseechingly", "inattentively"], "hint": "'Quiver' means To shake with very small, quick movements — 'steady' is the opposite idea."},
+{"type": "antonym", "word": "elude", "q": "ELUDE is most nearly OPPOSITE in meaning to:", "a": "reveal itself to", "ch": ["reveal itself to", "perplex", "baffle", "confuse"], "hint": "'Elude' means To avoid or escape the understanding of — 'reveal itself to' is the opposite idea."},
+{"type": "antonym", "word": "bewilder", "q": "Which word is the OPPOSITE of BEWILDER?", "a": "clarify", "ch": ["clarify", "loud", "shake", "sudden"], "hint": "'Bewilder' means To confuse or puzzle — 'clarify' is the opposite idea."},
+{"type": "synonym", "word": "gallant", "q": "GALLANT is closest in meaning to:", "a": "heroic", "ch": ["heroic", "dismissively", "sudden", "craven"], "hint": "'Gallant' means Brave, spirited, noble-minded, or chivalrous — 'heroic' captures the same idea."},
+{"type": "antonym", "word": "grimly", "q": "Which word is the OPPOSITE of GRIMLY?", "a": "cheerfully", "ch": ["cheerfully", "bleakly", "sudden", "typical"], "hint": "'Grimly' means Firmly and cheerlessly, without giving rise to hope of chang — 'cheerfully' is the opposite idea."},
+{"type": "metaphor", "word": "unceasingly", "q": "Which sentence is a metaphor using UNCEASINGLY?", "a": "Unceasingly is not a length of time — it is a clock with the hands removed so it can never claim to be done.", "ch": ["Unceasingly is not a length of time — it is a clock with the hands removed so it can never claim to be done.", "“My teeth chattered unceasingly, and I couldn't stop them,” Ponyboy admits, hiding in the old church.", "Unceasingly was like rain that never once checks the clock to see if it's been raining too long.", "Unceasingly felt like a clock ticking in an empty house, running whether anyone hears it or not."], "hint": "A metaphor makes a direct equation without 'like' or 'as'. The correct answer calls unceasingly something else directly, not comparing it to something."},
+{"type": "simile", "word": "elude", "q": "Complete the simile: Being elude felt like ___", "a": "a math problem that makes perfect sense right up until you try to write down the answer", "ch": ["a math problem that makes perfect sense right up until you try to write down the answer", "a routine confirmed by everyone in the room before it began", "something expected and received exactly as advertised", "a schedule that stayed exactly the same from morning to night"], "hint": "Think about what 'elude' means: To avoid or escape the understanding of The best completion captures that feeling in a concrete image."},
+{"type": "antonym", "word": "bewilder", "q": "Which word is the OPPOSITE of BEWILDER?", "a": "inform", "ch": ["inform", "incensed", "brave", "silent"], "hint": "'Bewilder' means To confuse or puzzle — 'inform' is the opposite idea."},
+{"type": "antonym", "word": "reluctantly", "q": "Which word is the OPPOSITE of RELUCTANTLY?", "a": "readily", "ch": ["readily", "shudder", "evade", "sternly"], "hint": "'Reluctantly' means Without really wanting to, unwillingly — 'readily' is the opposite idea."},
+{"type": "metaphor", "word": "absently", "q": "Which sentence is a metaphor using ABSENTLY?", "a": "Absently is not forgetting — it is a mind that quietly stepped out of the room and left the body to answer the door.", "ch": ["Absently is not forgetting — it is a mind that quietly stepped out of the room and left the body to answer the door.", "“I wish I was home,” Ponyboy thought absently, half-asleep and half-somewhere else entirely.", "Absently was like someone answering a question while their eyes are already halfway out the window.", "Absently felt like a student nodding along to a lecture that stopped registering ten minutes ago."], "hint": "A metaphor makes a direct equation without 'like' or 'as'. The correct answer calls absently something else directly, not comparing it to something."},
+{"type": "analogy", "word": "bewilder", "q": "BEWILDER is to PUZZLE as GRIMLY is to _____", "a": "sternly", "ch": ["sternly", "cheerfully", "plain", "sudden"], "hint": "Both pairs are synonyms — bewilder/puzzle and grimly/sternly share the same relationship."},
+{"type": "simile", "word": "bewilder", "q": "Complete the simile: BEWILDER — it was like ___", "a": "someone handed a map with no streets labeled and told to find their way home anyway", "ch": ["someone handed a map with no streets labeled and told to find their way home anyway", "something expected and received exactly as advertised", "a list completed ahead of schedule with every item checked", "a routine confirmed by everyone in the room before it began"], "hint": "Think about what 'bewilder' means: To confuse or puzzle The best completion captures that feeling in a concrete image."},
+{"type": "metaphor", "word": "elude", "q": "Which sentence is a metaphor using ELUDE?", "a": "To elude understanding is not to hide — it is a meaning that keeps one step ahead of you no matter how fast you follow.", "ch": ["To elude understanding is not to hide — it is a meaning that keeps one step ahead of you no matter how fast you follow.", "The meaning of the poem eluded Ponyboy at first, even though he never forgot the lines.", "Elude was like a word sitting right on the tip of your tongue that vanishes the second you try to say it.", "Elude felt like a math problem that makes perfect sense right up until you try to write down the answer."], "hint": "A metaphor makes a direct equation without 'like' or 'as'. The correct answer calls elude something else directly, not comparing it to something."},
+{"type": "simile", "word": "unceasingly", "q": "Complete the simile: Being unceasingly felt like ___", "a": "a clock ticking in an empty house, running whether anyone hears it or not", "ch": ["a clock ticking in an empty house, running whether anyone hears it or not", "a familiar road taken so many times that nothing about it required attention", "a list completed ahead of schedule with every item checked", "a sunny afternoon with nothing unusual on the horizon"], "hint": "Think about what 'unceasingly' means: Without pause or respite; continuous The best completion captures that feeling in a concrete image."},
+{"type": "antonym", "word": "grimly", "q": "Which word is the OPPOSITE of GRIMLY?", "a": "warmly", "ch": ["warmly", "escape", "half-heartedly", "bleakly"], "hint": "'Grimly' means Firmly and cheerlessly, without giving rise to hope of chang — 'warmly' is the opposite idea."},
+{"type": "antonym", "word": "gallant", "q": "GALLANT is most nearly OPPOSITE in meaning to:", "a": "timid", "ch": ["timid", "outraged", "silent", "perplex"], "hint": "'Gallant' means Brave, spirited, noble-minded, or chivalrous — 'timid' is the opposite idea."},
+{"type": "analogy", "word": "elude", "q": "ELUDE is to EVADE as INDIGNANT is to _____", "a": "offended", "ch": ["offended", "pleased", "imploringly", "gallant"], "hint": "Both pairs are synonyms — elude/evade and indignant/offended share the same relationship."},
+{"type": "synonym", "word": "quiver", "q": "Which word is a synonym for QUIVER?", "a": "shake", "ch": ["shake", "dismissively", "enlighten", "readily"], "hint": "'Quiver' means To shake with very small, quick movements — 'shake' captures the same idea."},
+{"type": "analogy", "word": "gallant", "q": "GALLANT is to CRAVEN as INDIGNANT is to _____", "a": "content", "ch": ["content", "outraged", "elude", "typical"], "hint": "Both pairs are antonyms — gallant opposes craven, and indignant opposes content."},
+{"type": "antonym", "word": "unceasingly", "q": "Which word is the OPPOSITE of UNCEASINGLY?", "a": "occasionally", "ch": ["occasionally", "routine", "escape", "outraged"], "hint": "'Unceasingly' means Without pause or respite; continuous — 'occasionally' is the opposite idea."},
+{"type": "synonym", "word": "gallant", "q": "Which word is a synonym for GALLANT?", "a": "courageous", "ch": ["courageous", "clarify", "timid", "gentle"], "hint": "'Gallant' means Brave, spirited, noble-minded, or chivalrous — 'courageous' captures the same idea."},
+{"type": "simile", "word": "bewilder", "q": "Complete the simile: Being bewilder felt like ___", "a": "a substitute teacher trying to follow directions left by three different people", "ch": ["a substitute teacher trying to follow directions left by three different people", "a list completed ahead of schedule with every item checked", "a familiar road taken so many times that nothing about it required attention", "something expected and received exactly as advertised"], "hint": "Think about what 'bewilder' means: To confuse or puzzle The best completion captures that feeling in a concrete image."},
+{"type": "synonym", "word": "imploringly", "q": "IMPLORINGLY is closest in meaning to:", "a": "desperately", "ch": ["desperately", "stay still", "sudden", "eagerly"], "hint": "'Imploringly' means In a way that expresses urgent pleading, begging — 'desperately' captures the same idea."},
+{"type": "synonym", "word": "absently", "q": "ABSENTLY most nearly means:", "a": "dreamily", "ch": ["dreamily", "casual", "coldly", "eagerly"], "hint": "'Absently' means In an absent-minded manner; inattentively — 'dreamily' captures the same idea."},
+{"type": "synonym", "word": "bewilder", "q": "BEWILDER is closest in meaning to:", "a": "perplex", "ch": ["perplex", "mindfully", "clarify", "clarify"], "hint": "'Bewilder' means To confuse or puzzle — 'perplex' captures the same idea."},
+{"type": "metaphor", "word": "gallant", "q": "Which sentence is a metaphor using GALLANT?", "a": "Gallant is not a compliment — it is what people call you after you've already decided the risk was worth it.", "ch": ["Gallant is not a compliment — it is what people call you after you've already decided the risk was worth it.", "Johnny thought the soldiers in the poem were gallant, riding into sure death — and it reminded him of Dally.", "Gallant was like a knight who rides toward the danger everyone else is already running from, and never once looks back.", "Gallant felt like a firefighter walking into the smoke while everyone else is walking out."], "hint": "A metaphor makes a direct equation without 'like' or 'as'. The correct answer calls gallant something else directly, not comparing it to something."},
+{"type": "synonym", "word": "unceasingly", "q": "UNCEASINGLY most nearly means:", "a": "continuously", "ch": ["continuously", "loud", "briefly", "enlighten"], "hint": "'Unceasingly' means Without pause or respite; continuous — 'continuously' captures the same idea."},
+{"type": "synonym", "word": "grimly", "q": "GRIMLY is closest in meaning to:", "a": "somberly", "ch": ["somberly", "reveal itself to", "indifferently", "craven"], "hint": "'Grimly' means Firmly and cheerlessly, without giving rise to hope of change of mind  — 'somberly' captures the same idea."},
+{"type": "simile", "word": "quiver", "q": "Complete the simile: QUIVER — it was like ___", "a": "a candle flame in a room where someone just opened a door they shouldn't have", "ch": ["a candle flame in a room where someone just opened a door they shouldn't have", "a schedule that stayed exactly the same from morning to night", "a routine confirmed by everyone in the room before it began", "something expected and received exactly as advertised"], "hint": "Think about what 'quiver' means: To shake with very small, quick movements The best completion captures that feeling in a concrete image."},
+{"type": "antonym", "word": "indignant", "q": "Which word is the OPPOSITE of INDIGNANT?", "a": "satisfied", "ch": ["satisfied", "hesitantly", "relentlessly", "familiar"], "hint": "'Indignant' means Feeling or showing anger about something considered to be un — 'satisfied' is the opposite idea."},
+{"type": "synonym", "word": "quiver", "q": "QUIVER most nearly means:", "a": "shiver", "ch": ["shiver", "pleased", "casual", "familiar"], "hint": "'Quiver' means To shake with very small, quick movements — 'shiver' captures the same idea."},
+{"type": "antonym", "word": "imploringly", "q": "Which word is the OPPOSITE of IMPLORINGLY?", "a": "indifferently", "ch": ["indifferently", "offended", "heroic", "continuously"], "hint": "'Imploringly' means In a way that expresses urgent pleading, begging — 'indifferently' is the opposite idea."},
+{"type": "synonym", "word": "grimly", "q": "Which word is a synonym for GRIMLY?", "a": "bleakly", "ch": ["bleakly", "cheerfully", "enlighten", "routine"], "hint": "'Grimly' means Firmly and cheerlessly, without giving rise to hope of change of mind  — 'bleakly' captures the same idea."},
+{"type": "analogy", "word": "imploringly", "q": "IMPLORINGLY is to COLDLY as GALLANT is to _____", "a": "cowardly", "ch": ["cowardly", "typical", "indignant", "brave"], "hint": "Both pairs are antonyms — imploringly opposes coldly, and gallant opposes cowardly."},
+{"type": "antonym", "word": "reluctantly", "q": "RELUCTANTLY is most nearly OPPOSITE in meaning to:", "a": "willingly", "ch": ["willingly", "distractedly", "escape", "shiver"], "hint": "'Reluctantly' means Without really wanting to, unwillingly — 'willingly' is the opposite idea."},
+{"type": "simile", "word": "indignant", "q": "Complete the simile: Being indignant felt like ___", "a": "a player pulled from the game the one time they were finally about to score", "ch": ["a player pulled from the game the one time they were finally about to score", "a sunny afternoon with nothing unusual on the horizon", "a routine confirmed by everyone in the room before it began", "a list completed ahead of schedule with every item checked"], "hint": "Think about what 'indignant' means: Feeling or showing anger about something considered to be unfair or wi The best completion captures that feeling in a concrete image."},
+{"type": "analogy", "word": "indignant", "q": "INDIGNANT is to CONTENT as GRIMLY is to _____", "a": "cheerfully", "ch": ["cheerfully", "gradual", "elude", "bleakly"], "hint": "Both pairs are antonyms — indignant opposes content, and grimly opposes cheerfully."},
+{"type": "metaphor", "word": "imploringly", "q": "Which sentence is a metaphor using IMPLORINGLY?", "a": "An imploring look is not a request — it is a whole argument made with just the eyes, because the mouth is too afraid to lose.", "ch": ["An imploring look is not a request — it is a whole argument made with just the eyes, because the mouth is too afraid to lose.", "Ponyboy looked at Johnny imploringly, hoping he wouldn't have to cut his hair alone.", "Imploringly was like a dog sitting by the table during dinner, sure that this time the answer will be yes.", "Imploringly felt like a kid holding up a permission slip a half second before the deadline."], "hint": "A metaphor makes a direct equation without 'like' or 'as'. The correct answer calls imploringly something else directly, not comparing it to something."},
+{"type": "analogy", "word": "imploringly", "q": "IMPLORINGLY is to PLEADINGLY as RELUCTANTLY is to _____", "a": "hesitantly", "ch": ["hesitantly", "bewilder", "ordinary", "quiver"], "hint": "Both pairs are synonyms — imploringly/pleadingly and reluctantly/hesitantly share the same relationship."},
+{"type": "analogy", "word": "absently", "q": "ABSENTLY is to MINDFULLY as RELUCTANTLY is to _____", "a": "willingly", "ch": ["willingly", "gentle", "loud", "gallant"], "hint": "Both pairs are antonyms — absently opposes mindfully, and reluctantly opposes willingly."},
+{"type": "simile", "word": "elude", "q": "Complete the simile: ELUDE — it was like ___", "a": "a word sitting right on the tip of your tongue that vanishes the second you try to say it", "ch": ["a word sitting right on the tip of your tongue that vanishes the second you try to say it", "a schedule that stayed exactly the same from morning to night", "a familiar road taken so many times that nothing about it required attention", "a sunny afternoon with nothing unusual on the horizon"], "hint": "Think about what 'elude' means: To avoid or escape the understanding of The best completion captures that feeling in a concrete image."},
+{"type": "synonym", "word": "grimly", "q": "GRIMLY most nearly means:", "a": "sternly", "ch": ["sternly", "sudden", "willingly", "briefly"], "hint": "'Grimly' means Firmly and cheerlessly, without giving rise to hope of change of mind  — 'sternly' captures the same idea."},
+{"type": "metaphor", "word": "reluctantly", "q": "Which sentence is a metaphor using RELUCTANTLY?", "a": "Reluctantly is not slowness — it is a yes that your hands agree to before your heart has actually signed off on it.", "ch": ["Reluctantly is not slowness — it is a yes that your hands agree to before your heart has actually signed off on it.", "“Gee, thanks,” Ponyboy said, and put the book down reluctantly, wishing he had more time to read it.", "Reluctantly was like a kid handing over the last slice of cake, doing the math on how fast they could grab it back.", "Reluctantly felt like someone letting go of a rope in tug-of-war only because their hands finally gave out."], "hint": "A metaphor makes a direct equation without 'like' or 'as'. The correct answer calls reluctantly something else directly, not comparing it to something."},
+{"type": "simile", "word": "imploringly", "q": "Complete the simile: Being imploringly felt like ___", "a": "a kid holding up a permission slip a half second before the deadline", "ch": ["a kid holding up a permission slip a half second before the deadline", "something expected and received exactly as advertised", "a familiar road taken so many times that nothing about it required attention", "a routine confirmed by everyone in the room before it began"], "hint": "Think about what 'imploringly' means: In a way that expresses urgent pleading, begging The best completion captures that feeling in a concrete image."},
+{"type": "synonym", "word": "elude", "q": "ELUDE is closest in meaning to:", "a": "baffle", "ch": ["baffle", "alertly", "clarify", "enlighten"], "hint": "'Elude' means To avoid or escape the understanding of — 'baffle' captures the same idea."},
+{"type": "analogy", "word": "quiver", "q": "QUIVER is to SHAKE as UNCEASINGLY is to _____", "a": "ceaselessly", "ch": ["ceaselessly", "grimly", "routine", "silent"], "hint": "Both pairs are synonyms — quiver/shake and unceasingly/ceaselessly share the same relationship."},
+{"type": "simile", "word": "grimly", "q": "Complete the simile: GRIMLY — it was like ___", "a": "a judge reading a sentence he already knows nobody in the room wants to hear", "ch": ["a judge reading a sentence he already knows nobody in the room wants to hear", "something expected and received exactly as advertised", "a list completed ahead of schedule with every item checked", "a schedule that stayed exactly the same from morning to night"], "hint": "Think about what 'grimly' means: Firmly and cheerlessly, without giving rise to hope of change of mind  The best completion captures that feeling in a concrete image."},
+{"type": "simile", "word": "absently", "q": "Complete the simile: ABSENTLY — it was like ___", "a": "someone answering a question while their eyes are already halfway out the window", "ch": ["someone answering a question while their eyes are already halfway out the window", "a sunny afternoon with nothing unusual on the horizon", "a list completed ahead of schedule with every item checked", "a schedule that stayed exactly the same from morning to night"], "hint": "Think about what 'absently' means: In an absent-minded manner; inattentively The best completion captures that feeling in a concrete image."},
+{"type": "synonym", "word": "quiver", "q": "QUIVER is closest in meaning to:", "a": "shudder", "ch": ["shudder", "pleased", "gradual", "silent"], "hint": "'Quiver' means To shake with very small, quick movements — 'shudder' captures the same idea."},
+{"type": "analogy", "word": "indignant", "q": "INDIGNANT is to OUTRAGED as BEWILDER is to _____", "a": "perplex", "ch": ["perplex", "unceasingly", "typical", "quiver"], "hint": "Both pairs are synonyms — indignant/outraged and bewilder/perplex share the same relationship."},
+{"type": "simile", "word": "unceasingly", "q": "Complete the simile: UNCEASINGLY — it was like ___", "a": "rain that never once checks the clock to see if it's been raining too long", "ch": ["rain that never once checks the clock to see if it's been raining too long", "a routine confirmed by everyone in the room before it began", "a schedule that stayed exactly the same from morning to night", "something expected and received exactly as advertised"], "hint": "Think about what 'unceasingly' means: Without pause or respite; continuous The best completion captures that feeling in a concrete image."},
+{"type": "synonym", "word": "reluctantly", "q": "RELUCTANTLY most nearly means:", "a": "unwillingly", "ch": ["unwillingly", "routine", "gradual", "plain"], "hint": "'Reluctantly' means Without really wanting to, unwillingly — 'unwillingly' captures the same idea."},
+{"type": "synonym", "word": "elude", "q": "Which word is a synonym for ELUDE?", "a": "evade", "ch": ["evade", "clarify", "silent", "enlighten"], "hint": "'Elude' means To avoid or escape the understanding of — 'evade' captures the same idea."},
+{"type": "antonym", "word": "reluctantly", "q": "Which word is the OPPOSITE of RELUCTANTLY?", "a": "eagerly", "ch": ["eagerly", "continuously", "gradual", "ordinary"], "hint": "'Reluctantly' means Without really wanting to, unwillingly — 'eagerly' is the opposite idea."},
+{"type": "antonym", "word": "imploringly", "q": "IMPLORINGLY is most nearly OPPOSITE in meaning to:", "a": "dismissively", "ch": ["dismissively", "evade", "familiar", "perplex"], "hint": "'Imploringly' means In a way that expresses urgent pleading, begging — 'dismissively' is the opposite idea."},
+{"type": "synonym", "word": "reluctantly", "q": "Which word is a synonym for RELUCTANTLY?", "a": "hesitantly", "ch": ["hesitantly", "occasionally", "ordinary", "eagerly"], "hint": "'Reluctantly' means Without really wanting to, unwillingly — 'hesitantly' captures the same idea."},
+{"type": "antonym", "word": "absently", "q": "ABSENTLY is most nearly OPPOSITE in meaning to:", "a": "alertly", "ch": ["alertly", "harsh", "somberly", "silent"], "hint": "'Absently' means In an absent-minded manner; inattentively — 'alertly' is the opposite idea."},
+{"type": "simile", "word": "reluctantly", "q": "Complete the simile: Being reluctantly felt like ___", "a": "someone letting go of a rope in tug-of-war only because their hands finally gave out", "ch": ["someone letting go of a rope in tug-of-war only because their hands finally gave out", "something expected and received exactly as advertised", "a routine confirmed by everyone in the room before it began", "a schedule that stayed exactly the same from morning to night"], "hint": "Think about what 'reluctantly' means: Without really wanting to, unwillingly The best completion captures that feeling in a concrete image."},
+{"type": "analogy", "word": "unceasingly", "q": "UNCEASINGLY is to RELENTLESSLY as ABSENTLY is to _____", "a": "vacantly", "ch": ["vacantly", "casual", "routine", "gentle"], "hint": "Both pairs are synonyms — unceasingly/relentlessly and absently/vacantly share the same relationship."},
+{"type": "simile", "word": "imploringly", "q": "Complete the simile: IMPLORINGLY — it was like ___", "a": "a dog sitting by the table during dinner, sure that this time the answer will be yes", "ch": ["a dog sitting by the table during dinner, sure that this time the answer will be yes", "a list completed ahead of schedule with every item checked", "a familiar road taken so many times that nothing about it required attention", "a sunny afternoon with nothing unusual on the horizon"], "hint": "Think about what 'imploringly' means: In a way that expresses urgent pleading, begging The best completion captures that feeling in a concrete image."},
+{"type": "synonym", "word": "indignant", "q": "INDIGNANT most nearly means:", "a": "incensed", "ch": ["incensed", "cowardly", "familiar", "alertly"], "hint": "'Indignant' means Feeling or showing anger about something considered to be unfair or wi — 'incensed' captures the same idea."},
+{"type": "analogy", "word": "absently", "q": "ABSENTLY is to VACANTLY as IMPLORINGLY is to _____", "a": "pleadingly", "ch": ["pleadingly", "quiver", "indignant", "typical"], "hint": "Both pairs are synonyms — absently/vacantly and imploringly/pleadingly share the same relationship."},
+{"type": "synonym", "word": "indignant", "q": "INDIGNANT is closest in meaning to:", "a": "resentful", "ch": ["resentful", "attentively", "timid", "occasionally"], "hint": "'Indignant' means Feeling or showing anger about something considered to be unfair or wi — 'resentful' captures the same idea."},
+{"type": "analogy", "word": "reluctantly", "q": "RELUCTANTLY is to WILLINGLY as ELUDE is to _____", "a": "clarify", "ch": ["clarify", "bewilder", "plain", "sudden"], "hint": "Both pairs are antonyms — reluctantly opposes willingly, and elude opposes clarify."},
+{"type": "synonym", "word": "elude", "q": "ELUDE most nearly means:", "a": "slip away from", "ch": ["slip away from", "attentively", "occasionally", "steady"], "hint": "'Elude' means To avoid or escape the understanding of — 'slip away from' captures the same idea."},
+{"type": "antonym", "word": "elude", "q": "Which word is the OPPOSITE of ELUDE?", "a": "clarify", "ch": ["clarify", "evade", "sternly", "somberly"], "hint": "'Elude' means To avoid or escape the understanding of — 'clarify' is the opposite idea."},
+{"type": "antonym", "word": "unceasingly", "q": "Which word is the OPPOSITE of UNCEASINGLY?", "a": "briefly", "ch": ["briefly", "routine", "beseechingly", "inattentively"], "hint": "'Unceasingly' means Without pause or respite; continuous — 'briefly' is the opposite idea."},
+{"type": "analogy", "word": "reluctantly", "q": "RELUCTANTLY is to HESITANTLY as GALLANT is to _____", "a": "courageous", "ch": ["courageous", "craven", "grimly", "bewilder"], "hint": "Both pairs are synonyms — reluctantly/hesitantly and gallant/courageous share the same relationship."},
+{"type": "antonym", "word": "gallant", "q": "Which word is the OPPOSITE of GALLANT?", "a": "cowardly", "ch": ["cowardly", "shudder", "offended", "casual"], "hint": "'Gallant' means Brave, spirited, noble-minded, or chivalrous — 'cowardly' is the opposite idea."},
+{"type": "analogy", "word": "gallant", "q": "GALLANT is to COURAGEOUS as ELUDE is to _____", "a": "escape", "ch": ["escape", "unceasingly", "typical", "reluctantly"], "hint": "Both pairs are synonyms — gallant/courageous and elude/escape share the same relationship."},
+{"type": "simile", "word": "absently", "q": "Complete the simile: Being absently felt like ___", "a": "a student nodding along to a lecture that stopped registering ten minutes ago", "ch": ["a student nodding along to a lecture that stopped registering ten minutes ago", "a routine confirmed by everyone in the room before it began", "something expected and received exactly as advertised", "a familiar road taken so many times that nothing about it required attention"], "hint": "Think about what 'absently' means: In an absent-minded manner; inattentively The best completion captures that feeling in a concrete image."},
+{"type": "metaphor", "word": "indignant", "q": "Which sentence is a metaphor using INDIGNANT?", "a": "Indignant is not just angry — it is fairness itself slamming its fist on the table and demanding to be heard.", "ch": ["Indignant is not just angry — it is fairness itself slamming its fist on the table and demanding to be heard.", "“You're starved?” Johnny was so indignant he nearly squeaked, offended that anyone would think otherwise.", "Indignant was like a kid who did all the chores watching someone else take the credit at dinner.", "Indignant felt like a player pulled from the game the one time they were finally about to score."], "hint": "A metaphor makes a direct equation without 'like' or 'as'. The correct answer calls indignant something else directly, not comparing it to something."},
+{"type": "synonym", "word": "elude", "q": "ELUDE most nearly means:", "a": "escape", "ch": ["escape", "content", "attentively", "satisfied"], "hint": "'Elude' means To avoid or escape the understanding of — 'escape' captures the same idea."},
+{"type": "simile", "word": "gallant", "q": "Complete the simile: Being gallant felt like ___", "a": "a firefighter walking into the smoke while everyone else is walking out", "ch": ["a firefighter walking into the smoke while everyone else is walking out", "a familiar road taken so many times that nothing about it required attention", "a sunny afternoon with nothing unusual on the horizon", "something expected and received exactly as advertised"], "hint": "Think about what 'gallant' means: Brave, spirited, noble-minded, or chivalrous The best completion captures that feeling in a concrete image."},
+{"type": "synonym", "word": "imploringly", "q": "Which word is a synonym for IMPLORINGLY?", "a": "beseechingly", "ch": ["beseechingly", "occasionally", "dismissively", "cheerfully"], "hint": "'Imploringly' means In a way that expresses urgent pleading, begging — 'beseechingly' captures the same idea."},
+{"type": "simile", "word": "indignant", "q": "Complete the simile: INDIGNANT — it was like ___", "a": "a kid who did all the chores watching someone else take the credit at dinner", "ch": ["a kid who did all the chores watching someone else take the credit at dinner", "a routine confirmed by everyone in the room before it began", "a list completed ahead of schedule with every item checked", "a sunny afternoon with nothing unusual on the horizon"], "hint": "Think about what 'indignant' means: Feeling or showing anger about something considered to be unfair or wi The best completion captures that feeling in a concrete image."},
+{"type": "synonym", "word": "absently", "q": "ABSENTLY most nearly means:", "a": "distractedly", "ch": ["distractedly", "gentle", "loud", "craven"], "hint": "'Absently' means In an absent-minded manner; inattentively — 'distractedly' captures the same idea."},
+{"type": "antonym", "word": "grimly", "q": "GRIMLY is most nearly OPPOSITE in meaning to:", "a": "brightly", "ch": ["brightly", "casual", "typical", "bleakly"], "hint": "'Grimly' means Firmly and cheerlessly, without giving rise to hope of chang — 'brightly' is the opposite idea."},
+{"type": "synonym", "word": "indignant", "q": "Which word is a synonym for INDIGNANT?", "a": "offended", "ch": ["offended", "dismissively", "readily", "cowardly"], "hint": "'Indignant' means Feeling or showing anger about something considered to be unfair or wi — 'offended' captures the same idea."},
+{"type": "simile", "word": "gallant", "q": "Complete the simile: GALLANT — it was like ___", "a": "a knight who rides toward the danger everyone else is already running from, and never once looks back", "ch": ["a knight who rides toward the danger everyone else is already running from, and never once looks back", "a sunny afternoon with nothing unusual on the horizon", "a familiar road taken so many times that nothing about it required attention", "a routine confirmed by everyone in the room before it began"], "hint": "Think about what 'gallant' means: Brave, spirited, noble-minded, or chivalrous The best completion captures that feeling in a concrete image."},
+{"type": "synonym", "word": "gallant", "q": "GALLANT most nearly means:", "a": "noble", "ch": ["noble", "briefly", "attentively", "loud"], "hint": "'Gallant' means Brave, spirited, noble-minded, or chivalrous — 'noble' captures the same idea."},
+{"type": "metaphor", "word": "grimly", "q": "Which sentence is a metaphor using GRIMLY?", "a": "Grimly is not a tone of voice — it is bad news arriving before the sentence even finishes.", "ch": ["Grimly is not a tone of voice — it is bad news arriving before the sentence even finishes.", "“And,” Two-Bit added grimly, “a few other of the socially elite checkered-shirt set.”", "Grimly was like a judge reading a sentence he already knows nobody in the room wants to hear.", "Grimly felt like a coach announcing the score at halftime when everyone already knows it's bad."], "hint": "A metaphor makes a direct equation without 'like' or 'as'. The correct answer calls grimly something else directly, not comparing it to something."}
+];
+
+var quiz={questions:[],index:0,score:0,streak:0,answers:[],answered:false};
+var fcIndex=0,fcFlipped=false;
+
+function shuffle(arr){var a=arr.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+
+function showStart(){show('screen-start');hide('screen-quiz');hide('screen-results');hide('screen-flash');}
+function showQuiz(){hide('screen-start');show('screen-quiz');hide('screen-results');hide('screen-flash');}
+function showResults(){hide('screen-start');hide('screen-quiz');show('screen-results');hide('screen-flash');}
+function showFlashcards(){hide('screen-start');hide('screen-quiz');hide('screen-results');show('screen-flash');fcIndex=0;fcFlipped=false;renderFlashcard();}
+
+function startQuiz(){
+  var pool=shuffle(QUESTIONS).slice(0,20);
+  quiz.questions=pool;quiz.index=0;quiz.score=0;quiz.streak=0;quiz.answers=[];quiz.answered=false;
+  showQuiz();renderQuestion();
+}
+
+function renderQuestion(){
+  var q=quiz.questions[quiz.index];
+  var pct=Math.round((quiz.index/20)*100);
+  $('prog-bar').style.width=pct+'%';
+  $('q-counter').textContent='Question '+(quiz.index+1)+' of 20';
+  var sb=$('streak-badge');
+  if(quiz.streak>=3){sb.classList.remove('hidden');sb.textContent='🔥 '+quiz.streak+' streak';}else{sb.classList.add('hidden');}
+  var ts=TYPE_STYLES[q.type];
+  var badge=$('type-badge');
+  badge.textContent=ts.label;badge.style.color=ts.color;badge.style.background=ts.bg;badge.style.border='1px solid '+ts.color;
+  $('q-text').textContent=q.q;
+  var choiceBox=$('choices');clearEl(choiceBox);
+  var shuffled=shuffle(q.ch);
+  shuffled.forEach(function(c){
+    var btn=document.createElement('button');
+    btn.className='choice-btn';btn.textContent=c;
+    btn.addEventListener('click',function(){selectAnswer(c,btn,q);});
+    choiceBox.appendChild(btn);
+  });
+  $('hint-text').textContent='';
+  quiz.answered=false;
+}
+
+function selectAnswer(choice,btn,q){
+  if(quiz.answered)return;
+  quiz.answered=true;
+  var correct=choice===q.a;
+  var allBtns=$('choices').querySelectorAll('.choice-btn');
+  allBtns.forEach(function(b){
+    b.disabled=true;
+    if(b.textContent===q.a)b.classList.add('correct');
+    else if(b===btn&&!correct)b.classList.add('wrong');
+  });
+  if(correct){
+    quiz.score++;quiz.streak++;
+    burst(btn.getBoundingClientRect().left+btn.offsetWidth/2,btn.getBoundingClientRect().top,'#34d399',22);
+    if(quiz.streak>0&&quiz.streak%3===0)confettiBurst();
+  }else{
+    quiz.streak=0;
+    $('hint-text').textContent='💡 '+q.hint;
+    burst(btn.getBoundingClientRect().left+btn.offsetWidth/2,btn.getBoundingClientRect().top,'#ef4444',14);
+  }
+  quiz.answers.push({q:q,chosen:choice,correct:correct});
+  setTimeout(function(){
+    quiz.index++;
+    if(quiz.index<quiz.questions.length){renderQuestion();}
+    else{buildResults();}
+  },1100);
+}
+
+function buildResults(){
+  showResults();
+  var pct=Math.round((quiz.score/20)*100);
+  var ring=$('score-ring');clearEl(ring);
+  var span=mk('span','',quiz.score+'/20');ring.appendChild(span);
+  ring.style.borderColor=pct>=80?'#34d399':pct>=60?'#fbbf24':'#ef4444';
+  var title=$('results-title');
+  if(pct===100)title.textContent='Perfect Score! 🏆';
+  else if(pct>=80)title.textContent='Excellent Work! ⭐';
+  else if(pct>=60)title.textContent='Good Effort! Keep Studying! 📚';
+  else title.textContent="Keep Practicing — You'll Get There! 💪";
+  $('results-msg').textContent='You scored '+quiz.score+' out of 20 ('+pct+'%)';
+  var bd=$('breakdown');clearEl(bd);
+  var counts={synonym:0,antonym:0,analogy:0,simile:0,metaphor:0};
+  var totals={synonym:0,antonym:0,analogy:0,simile:0,metaphor:0};
+  quiz.answers.forEach(function(a){totals[a.q.type]++;if(a.correct)counts[a.q.type]++;});
+  Object.keys(counts).forEach(function(t){
+    if(totals[t]===0)return;
+    var ts=TYPE_STYLES[t];var chip=mk('span','bd-chip',ts.label+': '+counts[t]+'/'+totals[t]);
+    chip.style.color=ts.color;chip.style.background=ts.bg;chip.style.border='1px solid '+ts.color;
+    bd.appendChild(chip);
+  });
+  var rl=$('review-list');clearEl(rl);
+  var wrong=quiz.answers.filter(function(a){return!a.correct;});
+  if(wrong.length===0){var p=mk('p','','✨ Perfect score — no missed questions!');p.style.color='#34d399';p.style.textAlign='center';rl.appendChild(p);}
+  else{
+    wrong.forEach(function(a){
+      var div=mk('div','review-item');
+      div.appendChild(mk('div','ri-q',a.q.q));
+      div.appendChild(mk('div','ri-a','✓ Correct: '+a.q.a));
+      div.appendChild(mk('div','ri-yours','✗ Your answer: '+a.chosen));
+      rl.appendChild(div);
+    });
+  }
+}
+
+function renderFlashcard(){
+  var w=WORDS[fcIndex];fcFlipped=false;
+  $('fc-card').classList.remove('flipped');
+  $('fc-word').textContent=w.word;
+  $('fc-pos').textContent=w.pos;
+  $('fc-def').textContent=w.def;
+  $('fc-example').textContent=w.ex;
+  $('fc-count').textContent='Card '+(fcIndex+1)+' of '+WORDS.length;
+  $('fc-nav-label').textContent=(fcIndex+1)+' / '+WORDS.length;
+  $('fc-prog').style.width=(((fcIndex+1)/WORDS.length)*100)+'%';
+}
+
+function flipCard(){
+  fcFlipped=!fcFlipped;
+  if(fcFlipped)$('fc-card').classList.add('flipped');
+  else $('fc-card').classList.remove('flipped');
+}
+
+function fcNav(dir){
+  fcIndex=(fcIndex+dir+WORDS.length)%WORDS.length;
+  renderFlashcard();
+}
+
+$('btn-start').addEventListener('click',startQuiz);
+$('btn-flash-start').addEventListener('click',showFlashcards);
+$('btn-retry').addEventListener('click',startQuiz);
+$('btn-flash-results').addEventListener('click',showFlashcards);
+$('btn-fc-back').addEventListener('click',showStart);
+$('fc-scene').addEventListener('click',flipCard);
+$('fc-prev').addEventListener('click',function(){fcNav(-1);});
+$('fc-next').addEventListener('click',function(){fcNav(1);});
+
+var PRACTICE_PROMPTS={"grimly": "Describe a moment when someone delivered news grimly — seriously, without any hope things would get better.", "quiver": "Describe a time your voice or hands quivered — shook — because you were scared or upset.", "unceasingly": "Describe something that seems to happen unceasingly — without ever stopping — in your own life.", "absently": "Describe a time you did something absently — without really paying attention, your mind somewhere else.", "imploringly": "Describe a time you looked at someone imploringly — begged with your eyes — hoping they'd say yes.", "reluctantly": "Describe something you did reluctantly — unwillingly — even though you knew you had to do it.", "gallant": "Describe someone — real or fictional — who acted gallantly. What brave or noble thing did they do?", "elude": "Describe something whose meaning eluded you at first — that you didn't understand right away.", "indignant": "Describe a time you felt indignant — angry because something seemed completely unfair.", "bewilder": "Describe a time you felt bewildered — completely confused or puzzled by something."};
+var smState={clues:[],selClue:null,matched:0,total:0};
+var fibState={items:[],index:0,score:0};
+var aqIndex=0;
+
+function showPracticeMenu(){hide('screen-start');hide('screen-quiz');hide('screen-results');hide('screen-flash');show('screen-practice-menu');hide('screen-synmatch');hide('screen-fib');hide('screen-aq');}
+
+function buildSynMatchRound(){
+  var pool=shuffle(WORDS).slice(0,5);
+  var clues=pool.map(function(w){return {word:w.word,clue:w.def.split('.')[0]};});
+  var wordsCol=shuffle(pool.map(function(w){return w.word;}));
+  smState={clues:clues,selClue:null,matched:0,total:clues.length};
+  $('sm-score').textContent='Matched 0 of '+smState.total;
+  var clueBox=$('sm-clues');clearEl(clueBox);
+  clues.forEach(function(c,i){
+    var div=mk('div','match-item',(i+1)+'. '+c.clue);
+    div.dataset.word=c.word;
+    div.addEventListener('click',function(){selectClue(div,c.word);});
+    clueBox.appendChild(div);
+  });
+  var wordBox=$('sm-words');clearEl(wordBox);
+  var letters='ABCDE';
+  wordsCol.forEach(function(w,i){
+    var div=mk('div','match-item',letters[i]+') '+w);
+    div.dataset.word=w;
+    div.addEventListener('click',function(){selectWord(div,w);});
+    wordBox.appendChild(div);
+  });
+}
+
+function selectClue(el,word){
+  if(el.classList.contains('matched'))return;
+  document.querySelectorAll('#sm-clues .match-item').forEach(function(d){d.classList.remove('selected');});
+  el.classList.add('selected');
+  smState.selClue={el:el,word:word};
+}
+
+function selectWord(el,word){
+  if(el.classList.contains('matched')||!smState.selClue)return;
+  var clue=smState.selClue;
+  if(clue.word===word){
+    clue.el.classList.remove('selected');clue.el.classList.add('matched');
+    el.classList.add('matched');
+    smState.matched++;
+    smState.selClue=null;
+    $('sm-score').textContent='Matched '+smState.matched+' of '+smState.total;
+    if(smState.matched===smState.total)confettiBurst();
+  }else{
+    el.classList.add('wrong-flash');
+    setTimeout(function(){el.classList.remove('wrong-flash');},450);
+  }
+}
+
+function buildFibRound(){
+  var pool=shuffle(WORDS).slice(0,Math.min(8,WORDS.length));
+  fibState={items:pool,index:0,score:0};
+  renderFib();
+}
+
+function renderFib(){
+  var w=fibState.items[fibState.index];
+  $('fib-score').textContent='Question '+(fibState.index+1)+' of '+fibState.items.length;
+  var sentence=w.ex.replace(new RegExp(w.word+'[a-z]*','gi'),'<span class="blank">_____</span>');
+  $('fib-sentence').innerHTML=sentence;
+  var others=shuffle(WORDS.filter(function(x){return x.word!==w.word;})).slice(0,3).map(function(x){return x.word;});
+  var choices=shuffle([w.word].concat(others));
+  var box=$('fib-choices');clearEl(box);
+  choices.forEach(function(c){
+    var btn=document.createElement('button');
+    btn.className='choice-btn';btn.textContent=c;
+    btn.addEventListener('click',function(){fibAnswer(c,btn,w);});
+    box.appendChild(btn);
+  });
+  $('fib-hint').textContent='';
+}
+
+function fibAnswer(choice,btn,w){
+  var allBtns=$('fib-choices').querySelectorAll('.choice-btn');
+  var correct=choice===w.word;
+  allBtns.forEach(function(b){
+    b.disabled=true;
+    if(b.textContent===w.word)b.classList.add('correct');
+    else if(b===btn&&!correct)b.classList.add('wrong');
+  });
+  if(correct){fibState.score++;burst(btn.getBoundingClientRect().left+btn.offsetWidth/2,btn.getBoundingClientRect().top,'#34d399',18);}
+  else{$('fib-hint').textContent='\ud83d\udca1 The word was "'+w.word+'" \u2014 '+w.def.split('.')[0]+'.';}
+  setTimeout(function(){
+    fibState.index++;
+    if(fibState.index<fibState.items.length)renderFib();
+    else{
+      $('fib-sentence').textContent='Round complete! You scored '+fibState.score+' of '+fibState.items.length+'.';
+      clearEl($('fib-choices'));
+      $('fib-hint').textContent='';
+      if(fibState.score===fibState.items.length)confettiBurst();
+    }
+  },1300);
+}
+
+function renderAq(){
+  var w=WORDS[aqIndex];
+  $('aq-count').textContent='Word '+(aqIndex+1)+' of '+WORDS.length;
+  $('aq-word').textContent=w.word;
+  $('aq-pos').textContent=w.pos;
+  $('aq-prompt').textContent=PRACTICE_PROMPTS[w.word]||('Use "'+w.word+'" correctly in a few complete sentences.');
+  $('aq-textarea').value='';
+  $('aq-checklist').classList.remove('shown');
+  $('aq-def').textContent=w.word+': '+w.def;
+  $('aq-ex').textContent=w.ex;
+}
+
+$('btn-practice-start').addEventListener('click',showPracticeMenu);
+$('btn-practice-back').addEventListener('click',showStart);
+$('btn-open-synmatch').addEventListener('click',function(){hide('screen-practice-menu');show('screen-synmatch');buildSynMatchRound();});
+$('btn-open-fib').addEventListener('click',function(){hide('screen-practice-menu');show('screen-fib');buildFibRound();});
+$('btn-open-aq').addEventListener('click',function(){hide('screen-practice-menu');show('screen-aq');aqIndex=0;renderAq();});
+$('btn-sm-back').addEventListener('click',function(){hide('screen-synmatch');show('screen-practice-menu');});
+$('btn-fib-back').addEventListener('click',function(){hide('screen-fib');show('screen-practice-menu');});
+$('btn-aq-back').addEventListener('click',function(){hide('screen-aq');show('screen-practice-menu');});
+$('btn-sm-next').addEventListener('click',buildSynMatchRound);
+$('btn-aq-check').addEventListener('click',function(){$('aq-checklist').classList.add('shown');});
+$('btn-aq-next').addEventListener('click',function(){aqIndex=(aqIndex+1)%WORDS.length;renderAq();});
+
+})();
+</script>
+</body>
+</html>
