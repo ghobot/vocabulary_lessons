@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Outsiders: Ch. 6–9</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#11030c;color:#e8e8f0;min-height:100vh;overflow-x:hidden}
+canvas#stars{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.screen{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+.screen.hidden{display:none}
+#home-link{position:fixed;top:14px;left:18px;z-index:100;color:#dc2626;text-decoration:none;font-size:14px;background:rgba(220,38,38,.12);padding:6px 14px;border-radius:20px;border:1px solid #8f1818;transition:background .2s}
+#home-link:hover{background:rgba(220,38,38,.28)}
+.start-card{background:#11030c;border:1px solid #8f1818;border-radius:24px;padding:48px 40px;max-width:540px;width:100%;text-align:center;box-shadow:0 0 60px rgba(220,38,38,.22)}
+.start-card h1{font-size:2.4rem;font-weight:800;background:linear-gradient(135deg,#dc2626,#8f1818,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+.start-card .subtitle{color:#94a3b8;margin-bottom:28px;font-size:1rem}
+.start-card p{color:#cbd5e1;line-height:1.7;margin-bottom:32px;font-size:.97rem}
+.btn{display:inline-block;padding:13px 34px;border-radius:50px;border:none;cursor:pointer;font-size:1rem;font-weight:700;transition:transform .15s,box-shadow .15s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.btn-primary{background:linear-gradient(135deg,#8f1818,#dc2626);color:#fff;box-shadow:0 4px 18px rgba(220,38,38,.4)}
+.btn-secondary{background:rgba(220,38,38,.08);color:#dc2626;border:1px solid #8f1818;margin-top:14px}
+.btn-sm{padding:8px 20px;font-size:.85rem}
+.quiz-wrap{max-width:680px;width:100%}
+.progress-bar-outer{background:rgba(255,255,255,.08);border-radius:10px;height:8px;margin-bottom:20px;overflow:hidden}
+.progress-bar-inner{height:100%;border-radius:10px;background:linear-gradient(90deg,#8f1818,#dc2626);transition:width .4s}
+.q-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.q-counter{color:#94a3b8;font-size:.9rem}
+.streak-badge{background:rgba(251,191,36,.15);border:1px solid #f59e0b;color:#fbbf24;border-radius:20px;padding:4px 12px;font-size:.8rem;font-weight:700}
+.type-badge{border-radius:20px;padding:4px 14px;font-size:.78rem;font-weight:700;display:inline-block;margin-bottom:14px}
+.q-text{font-size:1.2rem;font-weight:600;color:#e2e8f0;line-height:1.6;margin-bottom:24px}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.choice-btn{background:rgba(220,38,38,.06);border:1.5px solid rgba(220,38,38,.2);border-radius:14px;padding:14px 18px;color:#e2e8f0;font-size:.95rem;cursor:pointer;transition:all .15s;text-align:left}
+.choice-btn:hover:not(:disabled){background:rgba(220,38,38,.18);border-color:#dc2626}
+.choice-btn.correct{background:rgba(16,185,129,.2);border-color:#10b981;color:#6ee7b7}
+.choice-btn.wrong{background:rgba(239,68,68,.2);border-color:#ef4444;color:#fca5a5}
+.results-card{background:#11030c;border:1px solid #8f1818;border-radius:24px;padding:40px 36px;max-width:620px;width:100%;text-align:center}
+.score-ring{width:120px;height:120px;border-radius:50%;margin:0 auto 20px;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:800;border:4px solid #dc2626;background:rgba(220,38,38,.1)}
+.breakdown{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:20px 0}
+.bd-chip{border-radius:20px;padding:5px 14px;font-size:.8rem;font-weight:600}
+.review-list{margin-top:24px;text-align:left;max-height:280px;overflow-y:auto}
+.review-item{background:rgba(255,255,255,.05);border-radius:10px;padding:10px 14px;margin-bottom:8px;font-size:.85rem;line-height:1.5}
+.review-item .ri-q{color:#94a3b8}
+.review-item .ri-a{color:#6ee7b7;font-weight:600}
+.review-item .ri-yours{color:#fca5a5}
+.results-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:24px}
+.fc-wrap{max-width:540px;width:100%;display:flex;flex-direction:column;align-items:center}
+.fc-wrap h2{font-size:1.5rem;font-weight:700;color:#dc2626;margin-bottom:6px}
+.fc-count{color:#64748b;font-size:.85rem;margin-bottom:24px}
+.fc-scene{width:100%;max-width:420px;height:260px;perspective:1000px;cursor:pointer;margin-bottom:20px}
+.fc-card{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.4,0,.2,1)}
+.fc-card.flipped{transform:rotateY(180deg)}
+.fc-face{position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center}
+.fc-front{background:linear-gradient(135deg,rgba(220,38,38,.22),rgba(220,38,38,.1));border:1.5px solid #8f1818}
+.fc-back{background:linear-gradient(135deg,rgba(220,38,38,.4),rgba(220,38,38,.15));border:1.5px solid #dc2626;transform:rotateY(180deg)}
+#fc-word{font-size:2rem;font-weight:800;color:#e2e8f0}
+#fc-pos{font-size:.85rem;color:#dc2626;margin-top:6px}
+#fc-flip-hint{font-size:.75rem;color:#64748b;margin-top:14px}
+#fc-def{font-size:.95rem;color:#f0fdfa;line-height:1.6}
+#fc-example{font-size:.82rem;color:#dc2626;font-style:italic;margin-top:10px}
+.fc-nav{display:flex;align-items:center;gap:18px}
+.fc-nav button{background:rgba(220,38,38,.15);border:1.5px solid #8f1818;color:#dc2626;border-radius:50%;width:42px;height:42px;font-size:1.2rem;cursor:pointer;transition:background .15s}
+.fc-nav button:hover{background:rgba(220,38,38,.32)}
+.fc-nav span{color:#94a3b8;font-size:.9rem;min-width:70px;text-align:center}
+.fc-progress{width:100%;background:rgba(255,255,255,.08);border-radius:10px;height:6px;margin-top:18px;overflow:hidden}
+.fc-progress-inner{height:100%;background:linear-gradient(90deg,#8f1818,#dc2626);transition:width .35s;border-radius:10px}
+.hint-text{color:#94a3b8;font-size:.85rem;font-style:italic;margin-top:8px;min-height:20px}
+#particle-canvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:200}
+@media(max-width:500px){.choices{grid-template-columns:1fr}.start-card h1{font-size:1.8rem}}
+
+.practice-menu{max-width:520px;width:100%}
+.practice-menu h2{font-size:1.6rem;font-weight:800;color:#dc2626;margin-bottom:6px;text-align:center}
+.practice-menu .sub{color:#94a3b8;font-size:.88rem;text-align:center;margin-bottom:28px}
+.practice-card{display:block;width:100%;text-align:left;background:rgba(220,38,38,.06);border:1.5px solid #8f1818;border-radius:16px;padding:18px 20px;margin-bottom:14px;cursor:pointer;transition:all .15s;color:#e2e8f0}
+.practice-card:hover{background:rgba(220,38,38,.15);border-color:#dc2626}
+.practice-card .pc-title{font-size:1.05rem;font-weight:700;color:#e2e8f0;margin-bottom:4px}
+.practice-card .pc-desc{font-size:.82rem;color:#94a3b8}
+.practice-wrap{max-width:640px;width:100%}
+.practice-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.practice-score{color:#94a3b8;font-size:.85rem}
+.match-cols{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:20px}
+.match-item{background:rgba(220,38,38,.06);border:1.5px solid #8f1818;border-radius:12px;padding:12px 14px;margin-bottom:10px;cursor:pointer;font-size:.9rem;color:#e2e8f0;transition:all .15s}
+.match-item:hover{border-color:#dc2626}
+.match-item.selected{border-color:#dc2626;background:rgba(220,38,38,.22)}
+.match-item.matched{background:rgba(16,185,129,.18);border-color:#10b981;color:#6ee7b7;cursor:default}
+.match-item.wrong-flash{background:rgba(239,68,68,.22);border-color:#ef4444}
+.blank-sentence{font-size:1.15rem;line-height:1.7;color:#e2e8f0;margin-bottom:26px;text-align:center}
+.blank-sentence .blank{color:#dc2626;font-weight:800;letter-spacing:.05em}
+.fib-choices{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.aq-word{font-size:1.7rem;font-weight:800;color:#dc2626;text-align:center;margin-bottom:4px}
+.aq-pos{text-align:center;color:#64748b;font-size:.82rem;margin-bottom:18px}
+.aq-prompt{font-size:1.02rem;color:#e2e8f0;line-height:1.6;margin-bottom:16px;text-align:center}
+.aq-textarea{width:100%;min-height:120px;background:rgba(220,38,38,.06);border:1.5px solid #8f1818;border-radius:12px;padding:14px;color:#e8e8f0;font-family:inherit;font-size:.95rem;line-height:1.6;resize:vertical;margin-bottom:14px}
+.aq-textarea:focus{outline:none;border-color:#dc2626}
+.aq-checklist{background:rgba(220,38,38,.08);border:1px solid #8f1818;border-radius:12px;padding:16px 18px;margin-top:6px;text-align:left;display:none}
+.aq-checklist.shown{display:block}
+.aq-checklist ul{margin:8px 0 0 20px;color:#cbd5e1;font-size:.85rem;line-height:1.8}
+.aq-checklist .aq-def{color:#dc2626;font-weight:700;font-size:.85rem;margin-bottom:4px}
+.practice-nav{display:flex;gap:12px;justify-content:center;margin-top:22px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+<canvas id="particle-canvas"></canvas>
+<a href="../index.html" id="home-link">&#8592; Home</a>
+
+<div id="screen-start" class="screen">
+  <div class="start-card">
+    <div style="font-size:3rem;margin-bottom:10px">&#x1F4D6;</div>
+    <h1>The Outsiders: Ch. 6–9</h1>
+    <div class="subtitle">S.E. Hinton&rsquo;s <em>The Outsiders</em> &middot; Lesson 19</div>
+    <p>Master 13 key vocabulary words from <em>The Outsiders</em>. Test yourself with synonyms, antonyms, analogies, similes, and metaphors, then try Test Practice &mdash; the same synonym-match, fill-in-the-blank, and short-answer format as your real quiz.</p>
+    <div><button class="btn btn-primary" id="btn-start">Begin the Challenge &#8594;</button></div>
+    <div><button class="btn btn-secondary" id="btn-flash-start">&#x1F4DA; Study Flashcards</button></div>
+    <div><button class="btn btn-secondary" id="btn-practice-start">&#x1F4DD; Test Practice</button></div>
+  </div>
+</div>
+
+<div id="screen-quiz" class="screen hidden">
+  <div class="quiz-wrap">
+    <div class="progress-bar-outer"><div class="progress-bar-inner" id="prog-bar" style="width:0%"></div></div>
+    <div class="q-header">
+      <span class="q-counter" id="q-counter">Question 1 of 20</span>
+      <span class="streak-badge hidden" id="streak-badge">&#x1F525; 0 streak</span>
+    </div>
+    <div id="type-badge" class="type-badge"></div>
+    <div class="q-text" id="q-text"></div>
+    <div class="choices" id="choices"></div>
+    <div class="hint-text" id="hint-text"></div>
+  </div>
+</div>
+
+<div id="screen-results" class="screen hidden">
+  <div class="results-card">
+    <div class="score-ring" id="score-ring"></div>
+    <h2 id="results-title" style="margin-bottom:6px;color:#e2e8f0"></h2>
+    <p id="results-msg" style="color:#94a3b8;margin-bottom:4px"></p>
+    <div class="breakdown" id="breakdown"></div>
+    <div class="review-list" id="review-list"></div>
+    <div class="results-btns">
+      <button class="btn btn-primary btn-sm" id="btn-retry">Try Again</button>
+      <button class="btn btn-secondary btn-sm" id="btn-flash-results">&#x1F4DA; Review Flashcards</button>
+    </div>
+  </div>
+</div>
+
+<div id="screen-flash" class="screen hidden">
+  <div class="fc-wrap">
+    <h2>&#x1F4DA; Lesson 19 Flashcards</h2>
+    <div class="fc-count" id="fc-count">Card 1 of 13</div>
+    <div class="fc-scene" id="fc-scene">
+      <div class="fc-card" id="fc-card">
+        <div class="fc-face fc-front">
+          <div id="fc-word"></div>
+          <div id="fc-pos"></div>
+          <div id="fc-flip-hint">tap to reveal &#8594;</div>
+        </div>
+        <div class="fc-face fc-back">
+          <div id="fc-def"></div>
+          <div id="fc-example"></div>
+        </div>
+      </div>
+    </div>
+    <div class="fc-nav">
+      <button id="fc-prev">&#8249;</button>
+      <span id="fc-nav-label">1 / 13</span>
+      <button id="fc-next">&#8250;</button>
+    </div>
+    <div class="fc-progress"><div class="fc-progress-inner" id="fc-prog" style="width:7.69%"></div></div>
+    <button class="btn btn-secondary btn-sm" id="btn-fc-back" style="margin-top:22px">&#8592; Back</button>
+  </div>
+</div>
+
+<div id="screen-practice-menu" class="screen hidden">
+  <div class="practice-menu">
+    <h2>&#x1F4DD; Test Practice</h2>
+    <div class="sub">Same format as your real vocab test &mdash; three parts</div>
+    <button class="practice-card" id="btn-open-synmatch">
+      <div class="pc-title">1. Synonym Match</div>
+      <div class="pc-desc">Match each clue to its vocabulary word</div>
+    </button>
+    <button class="practice-card" id="btn-open-fib">
+      <div class="pc-title">2. Fill-in-the-Blank</div>
+      <div class="pc-desc">Pick the word that best completes the sentence</div>
+    </button>
+    <button class="practice-card" id="btn-open-aq">
+      <div class="pc-title">3. Answer the Question</div>
+      <div class="pc-desc">Practice writing a full-sentence response</div>
+    </button>
+    <div style="text-align:center"><button class="btn btn-secondary btn-sm" id="btn-practice-back">&#8592; Back</button></div>
+  </div>
+</div>
+
+<div id="screen-synmatch" class="screen hidden">
+  <div class="practice-wrap">
+    <div class="practice-head">
+      <span class="practice-score" id="sm-score">Matched 0 of 5</span>
+      <button class="btn btn-secondary btn-sm" id="btn-sm-back">&#8592; Menu</button>
+    </div>
+    <div class="match-cols">
+      <div id="sm-clues"></div>
+      <div id="sm-words"></div>
+    </div>
+    <div class="practice-nav"><button class="btn btn-primary btn-sm" id="btn-sm-next">New Round &#8594;</button></div>
+  </div>
+</div>
+
+<div id="screen-fib" class="screen hidden">
+  <div class="practice-wrap">
+    <div class="practice-head">
+      <span class="practice-score" id="fib-score">Question 1 of 8</span>
+      <button class="btn btn-secondary btn-sm" id="btn-fib-back">&#8592; Menu</button>
+    </div>
+    <div class="blank-sentence" id="fib-sentence"></div>
+    <div class="fib-choices" id="fib-choices"></div>
+    <div class="hint-text" id="fib-hint"></div>
+  </div>
+</div>
+
+<div id="screen-aq" class="screen hidden">
+  <div class="practice-wrap">
+    <div class="practice-head">
+      <span class="practice-score" id="aq-count">Word 1 of 13</span>
+      <button class="btn btn-secondary btn-sm" id="btn-aq-back">&#8592; Menu</button>
+    </div>
+    <div class="aq-word" id="aq-word"></div>
+    <div class="aq-pos" id="aq-pos"></div>
+    <div class="aq-prompt" id="aq-prompt"></div>
+    <textarea class="aq-textarea" id="aq-textarea" placeholder="Write your answer in complete sentences..."></textarea>
+    <div class="practice-nav">
+      <button class="btn btn-secondary btn-sm" id="btn-aq-check">Show Checklist &amp; Definition</button>
+      <button class="btn btn-primary btn-sm" id="btn-aq-next">Next Word &#8594;</button>
+    </div>
+    <div class="aq-checklist" id="aq-checklist">
+      <div class="aq-def" id="aq-def"></div>
+      <div id="aq-ex" style="color:#94a3b8;font-size:.85rem;font-style:italic;margin-top:6px"></div>
+      <ul>
+        <li>Did you use the word <b>correctly</b>, matching its real meaning?</li>
+        <li>Did you write in <b>complete sentences</b>?</li>
+        <li>Did you include enough <b>detail</b> that someone could guess the word's meaning from your answer?</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+var sc=document.getElementById('stars'),ctx=sc.getContext('2d'),W,H,stars=[];
+function initStars(){W=sc.width=window.innerWidth;H=sc.height=window.innerHeight;stars=[];for(var i=0;i<220;i++)stars.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.4+.3,s:Math.random()*.4+.1,b:Math.random()});}
+function drawStars(){ctx.clearRect(0,0,W,H);var g=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,W*.7);g.addColorStop(0,'rgba(220,38,38,.12)');g.addColorStop(.5,'rgba(220,38,38,.05)');g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);stars.forEach(function(s){s.b+=s.s*.016;var a=.4+.55*Math.abs(Math.sin(s.b));ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle='rgba(220,38,38,'+a+')';ctx.fill();});requestAnimationFrame(drawStars);}
+window.addEventListener('resize',initStars);initStars();drawStars();
+
+var pc=document.getElementById('particle-canvas'),pctx=pc.getContext('2d'),particles=[];
+function resizePC(){pc.width=window.innerWidth;pc.height=window.innerHeight;}resizePC();window.addEventListener('resize',resizePC);
+function burst(x,y,color,count){for(var i=0;i<count;i++)particles.push({x:x,y:y,vx:(Math.random()-0.5)*7,vy:(Math.random()-2.5)*6,r:Math.random()*5+2,color:color,life:1,dec:Math.random()*.025+.015});}
+function confettiBurst(){var cols=['#dc2626','#38bdf8','#34d399','#fbbf24','#f472b6'];for(var i=0;i<90;i++){var c=cols[Math.floor(Math.random()*cols.length)];particles.push({x:Math.random()*pc.width,y:-10,vx:(Math.random()-0.5)*4,vy:Math.random()*4+2,r:Math.random()*6+2,color:c,life:1,dec:Math.random()*.012+.008});}}
+function animParticles(){pctx.clearRect(0,0,pc.width,pc.height);particles=particles.filter(function(p){p.x+=p.vx;p.y+=p.vy;p.vy+=0.12;p.life-=p.dec;if(p.life<=0)return false;pctx.globalAlpha=p.life;pctx.beginPath();pctx.arc(p.x,p.y,p.r,0,Math.PI*2);pctx.fillStyle=p.color;pctx.fill();return true;});pctx.globalAlpha=1;requestAnimationFrame(animParticles);}animParticles();
+
+function clearEl(el){while(el.firstChild)el.removeChild(el.firstChild);}
+function mk(tag,cls,txt){var el=document.createElement(tag);if(cls)el.className=cls;if(txt!==undefined)el.textContent=txt;return el;}
+function show(id){document.getElementById(id).classList.remove('hidden');}
+function hide(id){document.getElementById(id).classList.add('hidden');}
+function $(id){return document.getElementById(id);}
+
+var WORDS=[
+  {word:"hitchhike",pos:"v.",def:"To travel by getting free rides from passing vehicles, usually by signaling with a thumb.",ex:"The boys thought about saying they'd hitchhiked back into town so Dally wouldn't get blamed for driving them."},
+  {word:"bawl",pos:"v.",def:"To cry loudly and without restraint; to wail.",ex:"Ponyboy stared at Johnny's hurt, bewildered face and felt like he could have bawled right there in the car."},
+  {word:"conviction",pos:"n.",def:"A firmly held belief or opinion.",ex:"\u201cI was scared,\u201d Johnny said with conviction. \u201cI still am\u201d \u2014 and nobody doubted he meant every word."},
+  {word:"towheaded",pos:"adj.",def:"Having very light blond or yellowish-white hair.",ex:"The doctors said the towheaded kid Ponyboy pulled from the fire would probably be okay, though his arm was burned badly."},
+  {word:"mimic",pos:"v.",def:"To imitate or copy someone's actions, speech, or mannerisms, often for comic effect.",ex:"Sodapop kept the ward in stitches, grabbing a reporter's hat and mimicking the TV newsmen for the nurses."},
+  {word:"crippled",pos:"adj.",def:"(Dated) Unable to use one's arms or legs normally; disabled. Considered outdated and offensive today \u2014 \u201cperson with a disability\u201d is the respectful modern term.",ex:"The doctors said that even if the man survived, he'd be crippled \u2014 unable to walk \u2014 for the rest of his life."},
+  {word:"bleak",pos:"adj.",def:"Cold, empty, and without hope; cheerless.",ex:"Soda looked stony-faced, as if he hadn't heard the doctor at all, but his eyes were bleak and stunned."},
+  {word:"delinquent",pos:"n.",def:"A person, especially a young person, who is guilty of breaking the law.",ex:"The newspaper's headline read JUVENILE DELINQUENTS TURN HEROES, calling the boys lawbreakers and saviors in the same sentence."},
+  {word:"contemptuously",pos:"adv.",def:"In a way that shows scorn or disgust for someone or something considered worthless or beneath respect.",ex:"Ponyboy hated the Socs as bitterly and as contemptuously as he'd ever seen Dally hate anyone."},
+  {word:"recur",pos:"v.",def:"To happen again, especially repeatedly or after a period of time.",ex:"Ponyboy's nightmare kept recurring night after night until Soda started sleeping beside him and it finally eased."},
+  {word:"aimlessly",pos:"adv.",def:"Without any clear purpose, goal, or direction.",ex:"Two-Bit spent two hours wandering aimlessly around the hardware store just to steal a switchblade without anyone noticing."},
+  {word:"divert",pos:"v.",def:"To turn something aside from its course; to distract attention away from something.",ex:"Two-Bit wandered the store aimlessly just to divert suspicion while he worked up the nerve to pocket the knife."},
+  {word:"doggedly",pos:"adv.",def:"In a stubbornly persistent way; refusing to give up.",ex:"Two-Bit knew exactly what Ponyboy meant but doggedly pretended not to, same as he'd been doing his whole life."}
+];
+
+var TYPE_STYLES={
+  synonym:{label:'Synonym',color:'#60a5fa',bg:'rgba(96,165,250,.15)'},
+  antonym:{label:'Antonym',color:'#f472b6',bg:'rgba(244,114,182,.15)'},
+  analogy:{label:'Analogy',color:'#a78bfa',bg:'rgba(167,139,250,.15)'},
+  simile:{label:'Simile',color:'#34d399',bg:'rgba(52,211,153,.15)'},
+  metaphor:{label:'Metaphor',color:'#fbbf24',bg:'rgba(251,191,36,.15)'}
+};
+
+var QUESTIONS=[
+{"type": "antonym", "word": "aimlessly", "q": "AIMLESSLY is most nearly OPPOSITE in meaning to:", "a": "deliberately", "ch": ["deliberately", "bum a ride", "return", "randomly"], "hint": "'Aimlessly' means Without any clear purpose, goal, or direction — 'deliberately' is the opposite idea."},
+{"type": "analogy", "word": "bawl", "q": "BAWL is to WAIL as CONVICTION is to _____", "a": "confidence", "ch": ["confidence", "loud", "familiar", "gradual"], "hint": "Both pairs are synonyms — bawl/wail and conviction/confidence share the same relationship."},
+{"type": "synonym", "word": "recur", "q": "Which word is a synonym for RECUR?", "a": "reappear", "ch": ["reappear", "laugh", "familiar", "respectfully"], "hint": "'Recur' means To happen again, especially repeatedly or after a period of time — 'reappear' captures the same idea."},
+{"type": "antonym", "word": "mimic", "q": "Which word is the OPPOSITE of MIMIC?", "a": "originate", "ch": ["originate", "incapacitated", "catch a ride", "blond"], "hint": "'Mimic' means To imitate or copy someone's actions, speech, or mannerisms, — 'originate' is the opposite idea."},
+{"type": "simile", "word": "contemptuously", "q": "Complete the simile: CONTEMPTUOUSLY — it was like ___", "a": "a door slammed shut on someone standing right in front of it", "ch": ["a door slammed shut on someone standing right in front of it", "a familiar road taken so many times that nothing about it required attention", "a list completed ahead of schedule with every item checked", "a schedule that stayed exactly the same from morning to night"], "hint": "Think about what 'contemptuously' means: In a way that shows scorn or disgust for someone or something consider The best completion captures that feeling in a concrete image."},
+{"type": "metaphor", "word": "recur", "q": "Which sentence is a metaphor using RECUR?", "a": "A recurring dream is not a memory — it is a question your mind keeps asking because it never liked the first answer.", "ch": ["A recurring dream is not a memory — it is a question your mind keeps asking because it never liked the first answer.", "Ponyboy's nightmare kept recurring night after night until Soda started sleeping beside him and it finally eased.", "Recur was like a song stuck on the same four bars no matter how many times you change the station.", "Recur felt like a bruise that fades and then somehow shows up again in the exact same spot."], "hint": "A metaphor makes a direct equation without 'like' or 'as'. The correct answer calls recur something else directly, not comparing it to something."},
+{"type": "antonym", "word": "bawl", "q": "Which word is the OPPOSITE of BAWL?", "a": "laugh", "ch": ["laugh", "distract", "desolate", "wail"], "hint": "'Bawl' means To cry loudly and without restraint; to wail — 'laugh' is the opposite idea."},
+{"type": "analogy", "word": "conviction", "q": "CONVICTION is to HESITATION as MIMIC is to _____", "a": "be himself", "ch": ["be himself", "crippled", "delinquent", "aimlessly"], "hint": "Both pairs are antonyms — conviction opposes hesitation, and mimic opposes be himself."},
+{"type": "analogy", "word": "doggedly", "q": "DOGGEDLY is to RELENTLESSLY as HITCHHIKE is to _____", "a": "flag down rides", "ch": ["flag down rides", "ordinary", "bawl", "sudden"], "hint": "Both pairs are synonyms — doggedly/relentlessly and hitchhike/flag down rides share the same relationship."},
+{"type": "analogy", "word": "bleak", "q": "BLEAK is to HOPEFUL as CONTEMPTUOUSLY is to _____", "a": "admiringly", "ch": ["admiringly", "with disgust", "crippled", "conviction"], "hint": "Both pairs are antonyms — bleak opposes hopeful, and contemptuously opposes admiringly."},
+{"type": "synonym", "word": "bawl", "q": "Which word is a synonym for BAWL?", "a": "wail", "ch": ["wail", "unharmed", "model citizen", "sudden"], "hint": "'Bawl' means To cry loudly and without restraint; to wail — 'wail' captures the same idea."},
+{"type": "synonym", "word": "bleak", "q": "BLEAK is closest in meaning to:", "a": "grim", "ch": ["grim", "walk the whole way", "familiar", "raven-haired"], "hint": "'Bleak' means Cold, empty, and without hope; cheerless — 'grim' captures the same idea."},
+{"type": "synonym", "word": "doggedly", "q": "DOGGEDLY most nearly means:", "a": "tenaciously", "ch": ["tenaciously", "uncertainty", "indifferently", "end for good"], "hint": "'Doggedly' means In a stubbornly persistent way; refusing to give up — 'tenaciously' captures the same idea."},
+{"type": "analogy", "word": "contemptuously", "q": "CONTEMPTUOUSLY is to WARMLY as AIMLESSLY is to _____", "a": "deliberately", "ch": ["deliberately", "conviction", "plain", "sudden"], "hint": "Both pairs are antonyms — contemptuously opposes warmly, and aimlessly opposes deliberately."},
+{"type": "simile", "word": "conviction", "q": "Complete the simile: CONVICTION — it was like ___", "a": "a nail driven so deep into wood that no one could ever pry it back out", "ch": ["a nail driven so deep into wood that no one could ever pry it back out", "a schedule that stayed exactly the same from morning to night", "a familiar road taken so many times that nothing about it required attention", "a routine confirmed by everyone in the room before it began"], "hint": "Think about what 'conviction' means: A firmly held belief or opinion The best completion captures that feeling in a concrete image."},
+{"type": "analogy", "word": "delinquent", "q": "DELINQUENT is to TROUBLEMAKER as CONTEMPTUOUSLY is to _____", "a": "with disgust", "ch": ["with disgust", "towheaded", "aimlessly", "gentle"], "hint": "Both pairs are synonyms — delinquent/troublemaker and contemptuously/with disgust share the same relationship."},
+{"type": "analogy", "word": "aimlessly", "q": "AIMLESSLY is to WITH INTENT as DOGGEDLY is to _____", "a": "halfway", "ch": ["halfway", "divert", "familiar", "plain"], "hint": "Both pairs are antonyms — aimlessly opposes with intent, and doggedly opposes halfway."},
+{"type": "simile", "word": "towheaded", "q": "Complete the simile: TOWHEADED — it was like ___", "a": "hair so pale it looked like it had been bleached by every summer the kid had ever lived through", "ch": ["hair so pale it looked like it had been bleached by every summer the kid had ever lived through", "a sunny afternoon with nothing unusual on the horizon", "a familiar road taken so many times that nothing about it required attention", "a schedule that stayed exactly the same from morning to night"], "hint": "Think about what 'towheaded' means: Having very light blond or yellowish-white hair The best completion captures that feeling in a concrete image."},
+{"type": "synonym", "word": "aimlessly", "q": "AIMLESSLY most nearly means:", "a": "purposelessly", "ch": ["purposelessly", "harsh", "originate", "cheerful"], "hint": "'Aimlessly' means Without any clear purpose, goal, or direction — 'purposelessly' captures the same idea."},
+{"type": "antonym", "word": "crippled", "q": "Which word is the OPPOSITE of CRIPPLED?", "a": "able-bodied", "ch": ["able-bodied", "sudden", "deflect", "desolate"], "hint": "'Crippled' means (Dated) Unable to use one's arms or legs normally; disabled — 'able-bodied' is the opposite idea."},
+{"type": "antonym", "word": "bleak", "q": "Which word is the OPPOSITE of BLEAK?", "a": "cheerful", "ch": ["cheerful", "incapacitated", "immobilized", "gradual"], "hint": "'Bleak' means Cold, empty, and without hope; cheerless — 'cheerful' is the opposite idea."},
+{"type": "synonym", "word": "contemptuously", "q": "CONTEMPTUOUSLY most nearly means:", "a": "scornfully", "ch": ["scornfully", "gradual", "law-abider", "draw attention to"], "hint": "'Contemptuously' means In a way that shows scorn or disgust for someone or something consider — 'scornfully' captures the same idea."},
+{"type": "metaphor", "word": "conviction", "q": "Which sentence is a metaphor using CONVICTION?", "a": "Conviction is not an opinion — it is a belief that has grown roots too deep for anyone to argue loose.", "ch": ["Conviction is not an opinion — it is a belief that has grown roots too deep for anyone to argue loose.", "“I was scared,” Johnny said with conviction. “I still am” — and nobody doubted he meant every word.", "Conviction was like a nail driven so deep into wood that no one could ever pry it back out.", "Conviction felt like a compass needle that points the same direction no matter how hard you shake it."], "hint": "A metaphor makes a direct equation without 'like' or 'as'. The correct answer calls conviction something else directly, not comparing it to something."},
+{"type": "synonym", "word": "hitchhike", "q": "HITCHHIKE is closest in meaning to:", "a": "bum a ride", "ch": ["bum a ride", "gradual", "cheerful", "half-heartedly"], "hint": "'Hitchhike' means To travel by getting free rides from passing vehicles, usually by sign — 'bum a ride' captures the same idea."},
+{"type": "antonym", "word": "conviction", "q": "CONVICTION is most nearly OPPOSITE in meaning to:", "a": "uncertainty", "ch": ["uncertainty", "distract", "plain", "scornfully"], "hint": "'Conviction' means A firmly held belief or opinion — 'uncertainty' is the opposite idea."},
+{"type": "simile", "word": "recur", "q": "Complete the simile: RECUR — it was like ___", "a": "a song stuck on the same four bars no matter how many times you change the station", "ch": ["a song stuck on the same four bars no matter how many times you change the station", "a schedule that stayed exactly the same from morning to night", "a familiar road taken so many times that nothing about it required attention", "something expected and received exactly as advertised"], "hint": "Think about what 'recur' means: To happen again, especially repeatedly or after a period of time The best completion captures that feeling in a concrete image."},
+{"type": "synonym", "word": "recur", "q": "RECUR most nearly means:", "a": "repeat", "ch": ["repeat", "ordinary", "cease", "originate"], "hint": "'Recur' means To happen again, especially repeatedly or after a period of time — 'repeat' captures the same idea."},
+{"type": "synonym", "word": "bleak", "q": "Which word is a synonym for BLEAK?", "a": "cheerless", "ch": ["cheerless", "originate", "model citizen", "bright"], "hint": "'Bleak' means Cold, empty, and without hope; cheerless — 'cheerless' captures the same idea."},
+{"type": "metaphor", "word": "bawl", "q": "Which sentence is a metaphor using BAWL?", "a": "To bawl is not to cry — it is every quiet feeling you've been holding finally breaking the dam at once.", "ch": ["To bawl is not to cry — it is every quiet feeling you've been holding finally breaking the dam at once.", "Ponyboy stared at Johnny's hurt, bewildered face and felt like he could have bawled right there in the car.", "Bawl was like a fire alarm that won't stop ringing even after everyone already knows something is wrong.", "Bawl felt like a faucet left running long after the sink is already full."], "hint": "A metaphor makes a direct equation without 'like' or 'as'. The correct answer calls bawl something else directly, not comparing it to something."},
+{"type": "synonym", "word": "hitchhike", "q": "HITCHHIKE most nearly means:", "a": "catch a ride", "ch": ["catch a ride", "doubt", "harsh", "indifferently"], "hint": "'Hitchhike' means To travel by getting free rides from passing vehicles, usually by sign — 'catch a ride' captures the same idea."},
+{"type": "metaphor", "word": "aimlessly", "q": "Which sentence is a metaphor using AIMLESSLY?", "a": "To wander aimlessly is not to be lost — it is to let your feet ask the questions your mind hasn't answered yet.", "ch": ["To wander aimlessly is not to be lost — it is to let your feet ask the questions your mind hasn't answered yet.", "Two-Bit spent two hours wandering aimlessly around the hardware store just to steal a switchblade without anyone noticing.", "Aimlessly was like a shopping cart with one wheel that just won't go the way you push it.", "Aimlessly felt like a balloon let go in a parking lot, drifting wherever the wind happens to decide."], "hint": "A metaphor makes a direct equation without 'like' or 'as'. The correct answer calls aimlessly something else directly, not comparing it to something."},
+{"type": "synonym", "word": "towheaded", "q": "TOWHEADED is closest in meaning to:", "a": "fair-haired", "ch": ["fair-haired", "half-heartedly", "ordinary", "beam"], "hint": "'Towheaded' means Having very light blond or yellowish-white hair — 'fair-haired' captures the same idea."},
+{"type": "antonym", "word": "towheaded", "q": "Which word is the OPPOSITE of TOWHEADED?", "a": "dark-haired", "ch": ["dark-haired", "silent", "flaxen-haired", "offender"], "hint": "'Towheaded' means Having very light blond or yellowish-white hair — 'dark-haired' is the opposite idea."},
+{"type": "antonym", "word": "contemptuously", "q": "Which word is the OPPOSITE of CONTEMPTUOUSLY?", "a": "respectfully", "ch": ["respectfully", "belief", "cheerless", "copy"], "hint": "'Contemptuously' means In a way that shows scorn or disgust for someone or somethin — 'respectfully' is the opposite idea."},
+{"type": "antonym", "word": "doggedly", "q": "Which word is the OPPOSITE of DOGGEDLY?", "a": "half-heartedly", "ch": ["half-heartedly", "scornfully", "grim", "gentle"], "hint": "'Doggedly' means In a stubbornly persistent way; refusing to give up — 'half-heartedly' is the opposite idea."},
+{"type": "antonym", "word": "bawl", "q": "Which word is the OPPOSITE of BAWL?", "a": "beam", "ch": ["beam", "impersonate", "purposelessly", "tenaciously"], "hint": "'Bawl' means To cry loudly and without restraint; to wail — 'beam' is the opposite idea."},
+{"type": "synonym", "word": "hitchhike", "q": "Which word is a synonym for HITCHHIKE?", "a": "flag down rides", "ch": ["flag down rides", "stop", "cheerful", "drive yourself"], "hint": "'Hitchhike' means To travel by getting free rides from passing vehicles, usually by sign — 'flag down rides' captures the same idea."},
+{"type": "metaphor", "word": "crippled", "q": "Which sentence is a metaphor using CRIPPLED?", "a": "To call someone crippled is not to describe an injury — it is an old word the language itself has limped away from.", "ch": ["To call someone crippled is not to describe an injury — it is an old word the language itself has limped away from.", "The doctors said that even if the man survived, he'd be crippled — unable to walk — for the rest of his life.", "Crippled was like a chair missing one leg, still standing but never quite steady again.", "Crippled felt like a clock with a cracked gear, still ticking but never keeping the same time twice."], "hint": "A metaphor makes a direct equation without 'like' or 'as'. The correct answer calls crippled something else directly, not comparing it to something."},
+{"type": "antonym", "word": "recur", "q": "Which word is the OPPOSITE of RECUR?", "a": "end for good", "ch": ["end for good", "sidetrack", "weep loudly", "repeat"], "hint": "'Recur' means To happen again, especially repeatedly or after a period of  — 'end for good' is the opposite idea."},
+{"type": "synonym", "word": "mimic", "q": "Which word is a synonym for MIMIC?", "a": "impersonate", "ch": ["impersonate", "silent", "halfway", "hopeful"], "hint": "'Mimic' means To imitate or copy someone's actions, speech, or mannerisms, often for — 'impersonate' captures the same idea."},
+{"type": "simile", "word": "bleak", "q": "Complete the simile: Being bleak felt like ___", "a": "a porch light left on in a house everyone has already moved out of", "ch": ["a porch light left on in a house everyone has already moved out of", "a schedule that stayed exactly the same from morning to night", "a list completed ahead of schedule with every item checked", "a sunny afternoon with nothing unusual on the horizon"], "hint": "Think about what 'bleak' means: Cold, empty, and without hope; cheerless The best completion captures that feeling in a concrete image."},
+{"type": "simile", "word": "bleak", "q": "Complete the simile: BLEAK — it was like ___", "a": "a window looking out on a parking lot in the middle of a gray, windless winter", "ch": ["a window looking out on a parking lot in the middle of a gray, windless winter", "a schedule that stayed exactly the same from morning to night", "something expected and received exactly as advertised", "a routine confirmed by everyone in the room before it began"], "hint": "Think about what 'bleak' means: Cold, empty, and without hope; cheerless The best completion captures that feeling in a concrete image."},
+{"type": "simile", "word": "crippled", "q": "Complete the simile: CRIPPLED — it was like ___", "a": "a chair missing one leg, still standing but never quite steady again", "ch": ["a chair missing one leg, still standing but never quite steady again", "something expected and received exactly as advertised", "a schedule that stayed exactly the same from morning to night", "a routine confirmed by everyone in the room before it began"], "hint": "Think about what 'crippled' means: (Dated) Unable to use one's arms or legs normally; disabled. Considere The best completion captures that feeling in a concrete image."},
+{"type": "antonym", "word": "aimlessly", "q": "Which word is the OPPOSITE of AIMLESSLY?", "a": "with intent", "ch": ["with intent", "repeat", "thumb a ride", "relentlessly"], "hint": "'Aimlessly' means Without any clear purpose, goal, or direction — 'with intent' is the opposite idea."},
+{"type": "simile", "word": "aimlessly", "q": "Complete the simile: AIMLESSLY — it was like ___", "a": "a shopping cart with one wheel that just won't go the way you push it", "ch": ["a shopping cart with one wheel that just won't go the way you push it", "a schedule that stayed exactly the same from morning to night", "a routine confirmed by everyone in the room before it began", "a list completed ahead of schedule with every item checked"], "hint": "Think about what 'aimlessly' means: Without any clear purpose, goal, or direction The best completion captures that feeling in a concrete image."},
+{"type": "analogy", "word": "mimic", "q": "MIMIC is to IMPERSONATE as CRIPPLED is to _____", "a": "disabled", "ch": ["disabled", "contemptuously", "harsh", "divert"], "hint": "Both pairs are synonyms — mimic/impersonate and crippled/disabled share the same relationship."},
+{"type": "synonym", "word": "bleak", "q": "BLEAK most nearly means:", "a": "desolate", "ch": ["desolate", "cheerful", "halfway", "hopeful"], "hint": "'Bleak' means Cold, empty, and without hope; cheerless — 'desolate' captures the same idea."},
+{"type": "analogy", "word": "crippled", "q": "CRIPPLED is to ABLE-BODIED as DELINQUENT is to _____", "a": "law-abider", "ch": ["law-abider", "lawbreaker", "gradual", "ordinary"], "hint": "Both pairs are antonyms — crippled opposes able-bodied, and delinquent opposes law-abider."},
+{"type": "antonym", "word": "recur", "q": "Which word is the OPPOSITE of RECUR?", "a": "stop", "ch": ["stop", "certainty", "stubbornly", "troublemaker"], "hint": "'Recur' means To happen again, especially repeatedly or after a period of  — 'stop' is the opposite idea."},
+{"type": "synonym", "word": "doggedly", "q": "DOGGEDLY is closest in meaning to:", "a": "relentlessly", "ch": ["relentlessly", "gradual", "half-heartedly", "stop"], "hint": "'Doggedly' means In a stubbornly persistent way; refusing to give up — 'relentlessly' captures the same idea."},
+{"type": "synonym", "word": "mimic", "q": "MIMIC most nearly means:", "a": "ape", "ch": ["ape", "originate", "routine", "ordinary"], "hint": "'Mimic' means To imitate or copy someone's actions, speech, or mannerisms, often for — 'ape' captures the same idea."},
+{"type": "analogy", "word": "bawl", "q": "BAWL is to BEAM as TOWHEADED is to _____", "a": "dark-haired", "ch": ["dark-haired", "ordinary", "blond", "fair-haired"], "hint": "Both pairs are antonyms — bawl opposes beam, and towheaded opposes dark-haired."},
+{"type": "synonym", "word": "contemptuously", "q": "CONTEMPTUOUSLY is closest in meaning to:", "a": "with disgust", "ch": ["with disgust", "with intent", "respectfully", "laugh"], "hint": "'Contemptuously' means In a way that shows scorn or disgust for someone or something consider — 'with disgust' captures the same idea."},
+{"type": "antonym", "word": "hitchhike", "q": "Which word is the OPPOSITE of HITCHHIKE?", "a": "drive yourself", "ch": ["drive yourself", "assurance", "thumb a ride", "confidence"], "hint": "'Hitchhike' means To travel by getting free rides from passing vehicles, usual — 'drive yourself' is the opposite idea."},
+{"type": "synonym", "word": "divert", "q": "Which word is a synonym for DIVERT?", "a": "redirect", "ch": ["redirect", "be himself", "harsh", "bright"], "hint": "'Divert' means To turn something aside from its course; to distract attention away fr — 'redirect' captures the same idea."},
+{"type": "synonym", "word": "divert", "q": "DIVERT most nearly means:", "a": "distract", "ch": ["distract", "gradual", "typical", "cease"], "hint": "'Divert' means To turn something aside from its course; to distract attention away fr — 'distract' captures the same idea."},
+{"type": "synonym", "word": "crippled", "q": "CRIPPLED most nearly means:", "a": "disabled", "ch": ["disabled", "warmly", "routine", "ordinary"], "hint": "'Crippled' means (Dated) Unable to use one's arms or legs normally; disabled. Considere — 'disabled' captures the same idea."},
+{"type": "antonym", "word": "delinquent", "q": "DELINQUENT is most nearly OPPOSITE in meaning to:", "a": "law-abider", "ch": ["law-abider", "cheerless", "ape", "thumb a ride"], "hint": "'Delinquent' means A person, especially a young person, who is guilty of breaki — 'law-abider' is the opposite idea."},
+{"type": "antonym", "word": "mimic", "q": "MIMIC is most nearly OPPOSITE in meaning to:", "a": "be himself", "ch": ["be himself", "ape", "disabled", "purposelessly"], "hint": "'Mimic' means To imitate or copy someone's actions, speech, or mannerisms, — 'be himself' is the opposite idea."},
+{"type": "synonym", "word": "mimic", "q": "MIMIC is closest in meaning to:", "a": "copy", "ch": ["copy", "admiringly", "ordinary", "routine"], "hint": "'Mimic' means To imitate or copy someone's actions, speech, or mannerisms, often for — 'copy' captures the same idea."},
+{"type": "synonym", "word": "bawl", "q": "BAWL is closest in meaning to:", "a": "weep loudly", "ch": ["weep loudly", "be himself", "focus", "casual"], "hint": "'Bawl' means To cry loudly and without restraint; to wail — 'weep loudly' captures the same idea."},
+{"type": "synonym", "word": "delinquent", "q": "DELINQUENT most nearly means:", "a": "lawbreaker", "ch": ["lawbreaker", "sudden", "doubt", "casual"], "hint": "'Delinquent' means A person, especially a young person, who is guilty of breaking the law — 'lawbreaker' captures the same idea."},
+{"type": "metaphor", "word": "mimic", "q": "Which sentence is a metaphor using MIMIC?", "a": "To mimic someone is not to mock them — it is to borrow their voice just long enough to make a hospital room laugh.", "ch": ["To mimic someone is not to mock them — it is to borrow their voice just long enough to make a hospital room laugh.", "Sodapop kept the ward in stitches, grabbing a reporter's hat and mimicking the TV newsmen for the nurses.", "Mimic was like a mirror that decided to start talking back in someone else's voice.", "Mimic felt like a parrot that's been listening in the next room a little too closely."], "hint": "A metaphor makes a direct equation without 'like' or 'as'. The correct answer calls mimic something else directly, not comparing it to something."},
+{"type": "synonym", "word": "doggedly", "q": "Which word is a synonym for DOGGEDLY?", "a": "stubbornly", "ch": ["stubbornly", "able-bodied", "draw attention to", "beam"], "hint": "'Doggedly' means In a stubbornly persistent way; refusing to give up — 'stubbornly' captures the same idea."},
+{"type": "simile", "word": "conviction", "q": "Complete the simile: Being conviction felt like ___", "a": "a compass needle that points the same direction no matter how hard you shake it", "ch": ["a compass needle that points the same direction no matter how hard you shake it", "something expected and received exactly as advertised", "a schedule that stayed exactly the same from morning to night", "a sunny afternoon with nothing unusual on the horizon"], "hint": "Think about what 'conviction' means: A firmly held belief or opinion The best completion captures that feeling in a concrete image."},
+{"type": "analogy", "word": "hitchhike", "q": "HITCHHIKE is to DRIVE YOURSELF as CONVICTION is to _____", "a": "uncertainty", "ch": ["uncertainty", "doggedly", "assurance", "ordinary"], "hint": "Both pairs are antonyms — hitchhike opposes drive yourself, and conviction opposes uncertainty."},
+{"type": "synonym", "word": "aimlessly", "q": "AIMLESSLY is closest in meaning to:", "a": "without direction", "ch": ["without direction", "raven-haired", "indifferently", "harsh"], "hint": "'Aimlessly' means Without any clear purpose, goal, or direction — 'without direction' captures the same idea."},
+{"type": "synonym", "word": "divert", "q": "DIVERT most nearly means:", "a": "sidetrack", "ch": ["sidetrack", "concentrate", "purposefully", "halfway"], "hint": "'Divert' means To turn something aside from its course; to distract attention away fr — 'sidetrack' captures the same idea."},
+{"type": "simile", "word": "crippled", "q": "Complete the simile: Being crippled felt like ___", "a": "a clock with a cracked gear, still ticking but never keeping the same time twice", "ch": ["a clock with a cracked gear, still ticking but never keeping the same time twice", "a sunny afternoon with nothing unusual on the horizon", "something expected and received exactly as advertised", "a routine confirmed by everyone in the room before it began"], "hint": "Think about what 'crippled' means: (Dated) Unable to use one's arms or legs normally; disabled. Considere The best completion captures that feeling in a concrete image."},
+{"type": "antonym", "word": "doggedly", "q": "DOGGEDLY is most nearly OPPOSITE in meaning to:", "a": "indifferently", "ch": ["indifferently", "certainty", "persistently", "stubbornly"], "hint": "'Doggedly' means In a stubbornly persistent way; refusing to give up — 'indifferently' is the opposite idea."},
+{"type": "synonym", "word": "crippled", "q": "CRIPPLED is closest in meaning to:", "a": "immobilized", "ch": ["immobilized", "sudden", "warmly", "half-heartedly"], "hint": "'Crippled' means (Dated) Unable to use one's arms or legs normally; disabled. Considere — 'immobilized' captures the same idea."},
+{"type": "antonym", "word": "aimlessly", "q": "Which word is the OPPOSITE of AIMLESSLY?", "a": "purposefully", "ch": ["purposefully", "ordinary", "offender", "bum a ride"], "hint": "'Aimlessly' means Without any clear purpose, goal, or direction — 'purposefully' is the opposite idea."},
+{"type": "antonym", "word": "doggedly", "q": "Which word is the OPPOSITE of DOGGEDLY?", "a": "halfway", "ch": ["halfway", "familiar", "grim", "with disgust"], "hint": "'Doggedly' means In a stubbornly persistent way; refusing to give up — 'halfway' is the opposite idea."},
+{"type": "simile", "word": "mimic", "q": "Complete the simile: Being mimic felt like ___", "a": "a parrot that's been listening in the next room a little too closely", "ch": ["a parrot that's been listening in the next room a little too closely", "a familiar road taken so many times that nothing about it required attention", "a routine confirmed by everyone in the room before it began", "a sunny afternoon with nothing unusual on the horizon"], "hint": "Think about what 'mimic' means: To imitate or copy someone's actions, speech, or mannerisms, often for The best completion captures that feeling in a concrete image."},
+{"type": "antonym", "word": "bawl", "q": "BAWL is most nearly OPPOSITE in meaning to:", "a": "stay dry-eyed", "ch": ["stay dry-eyed", "casual", "gradual", "plain"], "hint": "'Bawl' means To cry loudly and without restraint; to wail — 'stay dry-eyed' is the opposite idea."},
+{"type": "simile", "word": "contemptuously", "q": "Complete the simile: Being contemptuously felt like ___", "a": "a glance thrown sideways at something scraped off the bottom of a shoe", "ch": ["a glance thrown sideways at something scraped off the bottom of a shoe", "something expected and received exactly as advertised", "a list completed ahead of schedule with every item checked", "a routine confirmed by everyone in the room before it began"], "hint": "Think about what 'contemptuously' means: In a way that shows scorn or disgust for someone or something consider The best completion captures that feeling in a concrete image."},
+{"type": "analogy", "word": "mimic", "q": "MIMIC is to BE HIMSELF as BLEAK is to _____", "a": "bright", "ch": ["bright", "delinquent", "towheaded", "doggedly"], "hint": "Both pairs are antonyms — mimic opposes be himself, and bleak opposes bright."},
+{"type": "analogy", "word": "conviction", "q": "CONVICTION is to ASSURANCE as TOWHEADED is to _____", "a": "fair-haired", "ch": ["fair-haired", "gentle", "ordinary", "loud"], "hint": "Both pairs are synonyms — conviction/assurance and towheaded/fair-haired share the same relationship."},
+{"type": "metaphor", "word": "bleak", "q": "Which sentence is a metaphor using BLEAK?", "a": "Bleak is not a feeling — it is a landscape with all the color drained out before anyone thought to stop it.", "ch": ["Bleak is not a feeling — it is a landscape with all the color drained out before anyone thought to stop it.", "Soda looked stony-faced, as if he hadn't heard the doctor at all, but his eyes were bleak and stunned.", "Bleak was like a window looking out on a parking lot in the middle of a gray, windless winter.", "Bleak felt like a porch light left on in a house everyone has already moved out of."], "hint": "A metaphor makes a direct equation without 'like' or 'as'. The correct answer calls bleak something else directly, not comparing it to something."},
+{"type": "analogy", "word": "crippled", "q": "CRIPPLED is to IMMOBILIZED as BLEAK is to _____", "a": "grim", "ch": ["grim", "recur", "contemptuously", "towheaded"], "hint": "Both pairs are synonyms — crippled/immobilized and bleak/grim share the same relationship."},
+{"type": "analogy", "word": "doggedly", "q": "DOGGEDLY is to HALFWAY as BAWL is to _____", "a": "laugh", "ch": ["laugh", "towheaded", "casual", "typical"], "hint": "Both pairs are antonyms — doggedly opposes halfway, and bawl opposes laugh."},
+{"type": "simile", "word": "mimic", "q": "Complete the simile: MIMIC — it was like ___", "a": "a mirror that decided to start talking back in someone else's voice", "ch": ["a mirror that decided to start talking back in someone else's voice", "a schedule that stayed exactly the same from morning to night", "a sunny afternoon with nothing unusual on the horizon", "a list completed ahead of schedule with every item checked"], "hint": "Think about what 'mimic' means: To imitate or copy someone's actions, speech, or mannerisms, often for The best completion captures that feeling in a concrete image."},
+{"type": "simile", "word": "doggedly", "q": "Complete the simile: Being doggedly felt like ___", "a": "a nail that keeps being hammered back in after it works itself loose, over and over", "ch": ["a nail that keeps being hammered back in after it works itself loose, over and over", "something expected and received exactly as advertised", "a familiar road taken so many times that nothing about it required attention", "a sunny afternoon with nothing unusual on the horizon"], "hint": "Think about what 'doggedly' means: In a stubbornly persistent way; refusing to give up The best completion captures that feeling in a concrete image."},
+{"type": "synonym", "word": "conviction", "q": "CONVICTION most nearly means:", "a": "assurance", "ch": ["assurance", "model citizen", "be himself", "casual"], "hint": "'Conviction' means A firmly held belief or opinion — 'assurance' captures the same idea."},
+{"type": "antonym", "word": "contemptuously", "q": "Which word is the OPPOSITE of CONTEMPTUOUSLY?", "a": "warmly", "ch": ["warmly", "grim", "silent", "harsh"], "hint": "'Contemptuously' means In a way that shows scorn or disgust for someone or somethin — 'warmly' is the opposite idea."},
+{"type": "antonym", "word": "divert", "q": "DIVERT is most nearly OPPOSITE in meaning to:", "a": "concentrate", "ch": ["concentrate", "catch a ride", "sudden", "bum a ride"], "hint": "'Divert' means To turn something aside from its course; to distract attenti — 'concentrate' is the opposite idea."},
+{"type": "analogy", "word": "contemptuously", "q": "CONTEMPTUOUSLY is to SCORNFULLY as RECUR is to _____", "a": "repeat", "ch": ["repeat", "gentle", "doggedly", "ordinary"], "hint": "Both pairs are synonyms — contemptuously/scornfully and recur/repeat share the same relationship."},
+{"type": "antonym", "word": "delinquent", "q": "Which word is the OPPOSITE of DELINQUENT?", "a": "model citizen", "ch": ["model citizen", "blond", "cheerless", "ordinary"], "hint": "'Delinquent' means A person, especially a young person, who is guilty of breaki — 'model citizen' is the opposite idea."},
+{"type": "antonym", "word": "conviction", "q": "Which word is the OPPOSITE of CONVICTION?", "a": "hesitation", "ch": ["hesitation", "silent", "stubbornly", "bum a ride"], "hint": "'Conviction' means A firmly held belief or opinion — 'hesitation' is the opposite idea."},
+{"type": "antonym", "word": "bleak", "q": "BLEAK is most nearly OPPOSITE in meaning to:", "a": "hopeful", "ch": ["hopeful", "tenaciously", "thumb a ride", "bum a ride"], "hint": "'Bleak' means Cold, empty, and without hope; cheerless — 'hopeful' is the opposite idea."},
+{"type": "simile", "word": "bawl", "q": "Complete the simile: BAWL — it was like ___", "a": "a fire alarm that won't stop ringing even after everyone already knows something is wrong", "ch": ["a fire alarm that won't stop ringing even after everyone already knows something is wrong", "a familiar road taken so many times that nothing about it required attention", "a sunny afternoon with nothing unusual on the horizon", "something expected and received exactly as advertised"], "hint": "Think about what 'bawl' means: To cry loudly and without restraint; to wail The best completion captures that feeling in a concrete image."},
+{"type": "synonym", "word": "bawl", "q": "BAWL most nearly means:", "a": "blubber", "ch": ["blubber", "ordinary", "gradual", "model citizen"], "hint": "'Bawl' means To cry loudly and without restraint; to wail — 'blubber' captures the same idea."},
+{"type": "simile", "word": "towheaded", "q": "Complete the simile: Being towheaded felt like ___", "a": "a dandelion gone to seed, white-gold and almost glowing in the sun", "ch": ["a dandelion gone to seed, white-gold and almost glowing in the sun", "a list completed ahead of schedule with every item checked", "a routine confirmed by everyone in the room before it began", "a schedule that stayed exactly the same from morning to night"], "hint": "Think about what 'towheaded' means: Having very light blond or yellowish-white hair The best completion captures that feeling in a concrete image."},
+{"type": "synonym", "word": "delinquent", "q": "DELINQUENT is closest in meaning to:", "a": "troublemaker", "ch": ["troublemaker", "sudden", "stay dry-eyed", "drive yourself"], "hint": "'Delinquent' means A person, especially a young person, who is guilty of breaking the law — 'troublemaker' captures the same idea."},
+{"type": "synonym", "word": "conviction", "q": "Which word is a synonym for CONVICTION?", "a": "belief", "ch": ["belief", "halfway", "half-heartedly", "respectfully"], "hint": "'Conviction' means A firmly held belief or opinion — 'belief' captures the same idea."},
+{"type": "metaphor", "word": "doggedly", "q": "Which sentence is a metaphor using DOGGEDLY?", "a": "Doggedly is not stubbornness — it is a decision made once that refuses to be made twice.", "ch": ["Doggedly is not stubbornness — it is a decision made once that refuses to be made twice.", "Two-Bit knew exactly what Ponyboy meant but doggedly pretended not to, same as he'd been doing his whole life.", "Doggedly was like a dog refusing to drop a rope no matter how many times you tug back.", "Doggedly felt like a nail that keeps being hammered back in after it works itself loose, over and over."], "hint": "A metaphor makes a direct equation without 'like' or 'as'. The correct answer calls doggedly something else directly, not comparing it to something."},
+{"type": "antonym", "word": "recur", "q": "RECUR is most nearly OPPOSITE in meaning to:", "a": "cease", "ch": ["cease", "flag down rides", "imitate", "reappear"], "hint": "'Recur' means To happen again, especially repeatedly or after a period of  — 'cease' is the opposite idea."},
+{"type": "analogy", "word": "towheaded", "q": "TOWHEADED is to FLAXEN-HAIRED as MIMIC is to _____", "a": "ape", "ch": ["ape", "originate", "divert", "typical"], "hint": "Both pairs are synonyms — towheaded/flaxen-haired and mimic/ape share the same relationship."},
+{"type": "antonym", "word": "conviction", "q": "Which word is the OPPOSITE of CONVICTION?", "a": "doubt", "ch": ["doubt", "return", "disabled", "distract"], "hint": "'Conviction' means A firmly held belief or opinion — 'doubt' is the opposite idea."},
+{"type": "analogy", "word": "recur", "q": "RECUR is to RETURN as AIMLESSLY is to _____", "a": "purposelessly", "ch": ["purposelessly", "delinquent", "hitchhike", "silent"], "hint": "Both pairs are synonyms — recur/return and aimlessly/purposelessly share the same relationship."},
+{"type": "metaphor", "word": "delinquent", "q": "Which sentence is a metaphor using DELINQUENT?", "a": "Delinquent is not a description — it is a verdict the world hands down before the trial even starts.", "ch": ["Delinquent is not a description — it is a verdict the world hands down before the trial even starts.", "The newspaper's headline read JUVENILE DELINQUENTS TURN HEROES, calling the boys lawbreakers and saviors in the same sentence.", "Delinquent was like a label stitched onto a jacket before anyone bothers to ask what's actually inside it.", "Delinquent felt like a headline written about you before the reporter has heard your side of the story."], "hint": "A metaphor makes a direct equation without 'like' or 'as'. The correct answer calls delinquent something else directly, not comparing it to something."},
+{"type": "simile", "word": "divert", "q": "Complete the simile: DIVERT — it was like ___", "a": "a river given a new channel so it never once touches the dam built to stop it", "ch": ["a river given a new channel so it never once touches the dam built to stop it", "something expected and received exactly as advertised", "a familiar road taken so many times that nothing about it required attention", "a list completed ahead of schedule with every item checked"], "hint": "Think about what 'divert' means: To turn something aside from its course; to distract attention away fr The best completion captures that feeling in a concrete image."},
+{"type": "synonym", "word": "divert", "q": "DIVERT is closest in meaning to:", "a": "deflect", "ch": ["deflect", "bright", "harsh", "doubt"], "hint": "'Divert' means To turn something aside from its course; to distract attention away fr — 'deflect' captures the same idea."},
+{"type": "synonym", "word": "bleak", "q": "BLEAK most nearly means:", "a": "dismal", "ch": ["dismal", "walk the whole way", "raven-haired", "admiringly"], "hint": "'Bleak' means Cold, empty, and without hope; cheerless — 'dismal' captures the same idea."},
+{"type": "antonym", "word": "divert", "q": "Which word is the OPPOSITE of DIVERT?", "a": "draw attention to", "ch": ["draw attention to", "plain", "disabled", "cheerless"], "hint": "'Divert' means To turn something aside from its course; to distract attenti — 'draw attention to' is the opposite idea."},
+{"type": "synonym", "word": "recur", "q": "RECUR is closest in meaning to:", "a": "return", "ch": ["return", "ordinary", "concentrate", "cease"], "hint": "'Recur' means To happen again, especially repeatedly or after a period of time — 'return' captures the same idea."},
+{"type": "synonym", "word": "towheaded", "q": "TOWHEADED most nearly means:", "a": "blond", "ch": ["blond", "plain", "familiar", "casual"], "hint": "'Towheaded' means Having very light blond or yellowish-white hair — 'blond' captures the same idea."},
+{"type": "metaphor", "word": "hitchhike", "q": "Which sentence is a metaphor using HITCHHIKE?", "a": "To hitchhike is not to travel — it is to borrow a stranger's direction because you've run out of your own.", "ch": ["To hitchhike is not to travel — it is to borrow a stranger's direction because you've run out of your own.", "The boys thought about saying they'd hitchhiked back into town so Dally wouldn't get blamed for driving them.", "Hitchhike was like a thumb stuck out into traffic, betting that some stranger's conscience is better than your luck.", "Hitchhike felt like standing at the edge of a highway and asking the whole world for a favor."], "hint": "A metaphor makes a direct equation without 'like' or 'as'. The correct answer calls hitchhike something else directly, not comparing it to something."},
+{"type": "synonym", "word": "aimlessly", "q": "Which word is a synonym for AIMLESSLY?", "a": "randomly", "ch": ["randomly", "indifferently", "model citizen", "doubt"], "hint": "'Aimlessly' means Without any clear purpose, goal, or direction — 'randomly' captures the same idea."},
+{"type": "simile", "word": "divert", "q": "Complete the simile: Being divert felt like ___", "a": "a magician's free hand, waving just so you won't look at the one doing the real trick", "ch": ["a magician's free hand, waving just so you won't look at the one doing the real trick", "a routine confirmed by everyone in the room before it began", "something expected and received exactly as advertised", "a list completed ahead of schedule with every item checked"], "hint": "Think about what 'divert' means: To turn something aside from its course; to distract attention away fr The best completion captures that feeling in a concrete image."},
+{"type": "simile", "word": "delinquent", "q": "Complete the simile: Being delinquent felt like ___", "a": "a headline written about you before the reporter has heard your side of the story", "ch": ["a headline written about you before the reporter has heard your side of the story", "a familiar road taken so many times that nothing about it required attention", "a routine confirmed by everyone in the room before it began", "something expected and received exactly as advertised"], "hint": "Think about what 'delinquent' means: A person, especially a young person, who is guilty of breaking the law The best completion captures that feeling in a concrete image."},
+{"type": "antonym", "word": "bleak", "q": "Which word is the OPPOSITE of BLEAK?", "a": "bright", "ch": ["bright", "cheerless", "lawbreaker", "routine"], "hint": "'Bleak' means Cold, empty, and without hope; cheerless — 'bright' is the opposite idea."},
+{"type": "antonym", "word": "hitchhike", "q": "HITCHHIKE is most nearly OPPOSITE in meaning to:", "a": "walk the whole way", "ch": ["walk the whole way", "persistently", "thumb a ride", "disabled"], "hint": "'Hitchhike' means To travel by getting free rides from passing vehicles, usual — 'walk the whole way' is the opposite idea."},
+{"type": "antonym", "word": "towheaded", "q": "TOWHEADED is most nearly OPPOSITE in meaning to:", "a": "raven-haired", "ch": ["raven-haired", "certainty", "silent", "grim"], "hint": "'Towheaded' means Having very light blond or yellowish-white hair — 'raven-haired' is the opposite idea."},
+{"type": "analogy", "word": "towheaded", "q": "TOWHEADED is to RAVEN-HAIRED as CRIPPLED is to _____", "a": "unharmed", "ch": ["unharmed", "harsh", "incapacitated", "bawl"], "hint": "Both pairs are antonyms — towheaded opposes raven-haired, and crippled opposes unharmed."},
+{"type": "analogy", "word": "delinquent", "q": "DELINQUENT is to LAW-ABIDER as RECUR is to _____", "a": "stop", "ch": ["stop", "towheaded", "typical", "conviction"], "hint": "Both pairs are antonyms — delinquent opposes law-abider, and recur opposes stop."},
+{"type": "simile", "word": "recur", "q": "Complete the simile: Being recur felt like ___", "a": "a bruise that fades and then somehow shows up again in the exact same spot", "ch": ["a bruise that fades and then somehow shows up again in the exact same spot", "something expected and received exactly as advertised", "a familiar road taken so many times that nothing about it required attention", "a list completed ahead of schedule with every item checked"], "hint": "Think about what 'recur' means: To happen again, especially repeatedly or after a period of time The best completion captures that feeling in a concrete image."},
+{"type": "synonym", "word": "delinquent", "q": "Which word is a synonym for DELINQUENT?", "a": "offender", "ch": ["offender", "halfway", "law-abider", "deliberately"], "hint": "'Delinquent' means A person, especially a young person, who is guilty of breaking the law — 'offender' captures the same idea."},
+{"type": "analogy", "word": "hitchhike", "q": "HITCHHIKE is to BUM A RIDE as BAWL is to _____", "a": "blubber", "ch": ["blubber", "ordinary", "plain", "stay dry-eyed"], "hint": "Both pairs are synonyms — hitchhike/bum a ride and bawl/blubber share the same relationship."},
+{"type": "metaphor", "word": "towheaded", "q": "Which sentence is a metaphor using TOWHEADED?", "a": "Towheaded is not a hair color — it is sunlight that decided to grow straight out of someone's scalp.", "ch": ["Towheaded is not a hair color — it is sunlight that decided to grow straight out of someone's scalp.", "The doctors said the towheaded kid Ponyboy pulled from the fire would probably be okay, though his arm was burned badly.", "Towheaded was like hair so pale it looked like it had been bleached by every summer the kid had ever lived through.", "Towheaded felt like a dandelion gone to seed, white-gold and almost glowing in the sun."], "hint": "A metaphor makes a direct equation without 'like' or 'as'. The correct answer calls towheaded something else directly, not comparing it to something."},
+{"type": "analogy", "word": "bleak", "q": "BLEAK is to DESOLATE as DELINQUENT is to _____", "a": "troublemaker", "ch": ["troublemaker", "hitchhike", "crippled", "typical"], "hint": "Both pairs are synonyms — bleak/desolate and delinquent/troublemaker share the same relationship."},
+{"type": "metaphor", "word": "divert", "q": "Which sentence is a metaphor using DIVERT?", "a": "To divert suspicion is not to hide — it is to hand someone a different question so they forget to ask the real one.", "ch": ["To divert suspicion is not to hide — it is to hand someone a different question so they forget to ask the real one.", "Two-Bit wandered the store aimlessly just to divert suspicion while he worked up the nerve to pocket the knife.", "Divert was like a river given a new channel so it never once touches the dam built to stop it.", "Divert felt like a magician's free hand, waving just so you won't look at the one doing the real trick."], "hint": "A metaphor makes a direct equation without 'like' or 'as'. The correct answer calls divert something else directly, not comparing it to something."},
+{"type": "simile", "word": "aimlessly", "q": "Complete the simile: Being aimlessly felt like ___", "a": "a balloon let go in a parking lot, drifting wherever the wind happens to decide", "ch": ["a balloon let go in a parking lot, drifting wherever the wind happens to decide", "a sunny afternoon with nothing unusual on the horizon", "something expected and received exactly as advertised", "a schedule that stayed exactly the same from morning to night"], "hint": "Think about what 'aimlessly' means: Without any clear purpose, goal, or direction The best completion captures that feeling in a concrete image."},
+{"type": "synonym", "word": "doggedly", "q": "DOGGEDLY most nearly means:", "a": "persistently", "ch": ["persistently", "be himself", "gradual", "half-heartedly"], "hint": "'Doggedly' means In a stubbornly persistent way; refusing to give up — 'persistently' captures the same idea."},
+{"type": "simile", "word": "delinquent", "q": "Complete the simile: DELINQUENT — it was like ___", "a": "a label stitched onto a jacket before anyone bothers to ask what's actually inside it", "ch": ["a label stitched onto a jacket before anyone bothers to ask what's actually inside it", "a sunny afternoon with nothing unusual on the horizon", "a familiar road taken so many times that nothing about it required attention", "a list completed ahead of schedule with every item checked"], "hint": "Think about what 'delinquent' means: A person, especially a young person, who is guilty of breaking the law The best completion captures that feeling in a concrete image."},
+{"type": "analogy", "word": "divert", "q": "DIVERT is to REDIRECT as DOGGEDLY is to _____", "a": "relentlessly", "ch": ["relentlessly", "towheaded", "aimlessly", "bleak"], "hint": "Both pairs are synonyms — divert/redirect and doggedly/relentlessly share the same relationship."},
+{"type": "antonym", "word": "crippled", "q": "CRIPPLED is most nearly OPPOSITE in meaning to:", "a": "unharmed", "ch": ["unharmed", "randomly", "disabled", "persistently"], "hint": "'Crippled' means (Dated) Unable to use one's arms or legs normally; disabled — 'unharmed' is the opposite idea."},
+{"type": "simile", "word": "hitchhike", "q": "Complete the simile: HITCHHIKE — it was like ___", "a": "a thumb stuck out into traffic, betting that some stranger's conscience is better than your luck", "ch": ["a thumb stuck out into traffic, betting that some stranger's conscience is better than your luck", "a list completed ahead of schedule with every item checked", "a sunny afternoon with nothing unusual on the horizon", "a schedule that stayed exactly the same from morning to night"], "hint": "Think about what 'hitchhike' means: To travel by getting free rides from passing vehicles, usually by sign The best completion captures that feeling in a concrete image."},
+{"type": "analogy", "word": "divert", "q": "DIVERT is to FOCUS as HITCHHIKE is to _____", "a": "walk the whole way", "ch": ["walk the whole way", "conviction", "harsh", "sudden"], "hint": "Both pairs are antonyms — divert opposes focus, and hitchhike opposes walk the whole way."},
+{"type": "synonym", "word": "conviction", "q": "CONVICTION most nearly means:", "a": "certainty", "ch": ["certainty", "be himself", "unharmed", "stay dry-eyed"], "hint": "'Conviction' means A firmly held belief or opinion — 'certainty' captures the same idea."},
+{"type": "analogy", "word": "recur", "q": "RECUR is to STOP as DIVERT is to _____", "a": "concentrate", "ch": ["concentrate", "routine", "sudden", "familiar"], "hint": "Both pairs are antonyms — recur opposes stop, and divert opposes concentrate."},
+{"type": "synonym", "word": "hitchhike", "q": "HITCHHIKE most nearly means:", "a": "thumb a ride", "ch": ["thumb a ride", "respectfully", "raven-haired", "beam"], "hint": "'Hitchhike' means To travel by getting free rides from passing vehicles, usually by sign — 'thumb a ride' captures the same idea."},
+{"type": "simile", "word": "hitchhike", "q": "Complete the simile: Being hitchhike felt like ___", "a": "standing at the edge of a highway and asking the whole world for a favor", "ch": ["standing at the edge of a highway and asking the whole world for a favor", "a familiar road taken so many times that nothing about it required attention", "something expected and received exactly as advertised", "a list completed ahead of schedule with every item checked"], "hint": "Think about what 'hitchhike' means: To travel by getting free rides from passing vehicles, usually by sign The best completion captures that feeling in a concrete image."},
+{"type": "analogy", "word": "aimlessly", "q": "AIMLESSLY is to PURPOSELESSLY as DIVERT is to _____", "a": "deflect", "ch": ["deflect", "plain", "focus", "typical"], "hint": "Both pairs are synonyms — aimlessly/purposelessly and divert/deflect share the same relationship."},
+{"type": "simile", "word": "bawl", "q": "Complete the simile: Being bawl felt like ___", "a": "a faucet left running long after the sink is already full", "ch": ["a faucet left running long after the sink is already full", "a routine confirmed by everyone in the room before it began", "something expected and received exactly as advertised", "a list completed ahead of schedule with every item checked"], "hint": "Think about what 'bawl' means: To cry loudly and without restraint; to wail The best completion captures that feeling in a concrete image."},
+{"type": "metaphor", "word": "contemptuously", "q": "Which sentence is a metaphor using CONTEMPTUOUSLY?", "a": "To look at someone contemptuously is not to judge them — it is to erase them with your eyes before you've said a single word.", "ch": ["To look at someone contemptuously is not to judge them — it is to erase them with your eyes before you've said a single word.", "Ponyboy hated the Socs as bitterly and as contemptuously as he'd ever seen Dally hate anyone.", "Contemptuously was like a door slammed shut on someone standing right in front of it.", "Contemptuously felt like a glance thrown sideways at something scraped off the bottom of a shoe."], "hint": "A metaphor makes a direct equation without 'like' or 'as'. The correct answer calls contemptuously something else directly, not comparing it to something."},
+{"type": "antonym", "word": "contemptuously", "q": "CONTEMPTUOUSLY is most nearly OPPOSITE in meaning to:", "a": "admiringly", "ch": ["admiringly", "thumb a ride", "copy", "sidetrack"], "hint": "'Contemptuously' means In a way that shows scorn or disgust for someone or somethin — 'admiringly' is the opposite idea."},
+{"type": "synonym", "word": "bawl", "q": "BAWL most nearly means:", "a": "sob", "ch": ["sob", "laugh", "stay dry-eyed", "beam"], "hint": "'Bawl' means To cry loudly and without restraint; to wail — 'sob' captures the same idea."},
+{"type": "simile", "word": "doggedly", "q": "Complete the simile: DOGGEDLY — it was like ___", "a": "a dog refusing to drop a rope no matter how many times you tug back", "ch": ["a dog refusing to drop a rope no matter how many times you tug back", "a schedule that stayed exactly the same from morning to night", "a familiar road taken so many times that nothing about it required attention", "a sunny afternoon with nothing unusual on the horizon"], "hint": "Think about what 'doggedly' means: In a stubbornly persistent way; refusing to give up The best completion captures that feeling in a concrete image."},
+{"type": "synonym", "word": "mimic", "q": "MIMIC most nearly means:", "a": "imitate", "ch": ["imitate", "sudden", "gentle", "ordinary"], "hint": "'Mimic' means To imitate or copy someone's actions, speech, or mannerisms, often for — 'imitate' captures the same idea."},
+{"type": "antonym", "word": "divert", "q": "Which word is the OPPOSITE of DIVERT?", "a": "focus", "ch": ["focus", "redirect", "loud", "immobilized"], "hint": "'Divert' means To turn something aside from its course; to distract attenti — 'focus' is the opposite idea."},
+{"type": "synonym", "word": "crippled", "q": "Which word is a synonym for CRIPPLED?", "a": "incapacitated", "ch": ["incapacitated", "hopeful", "originate", "stay dry-eyed"], "hint": "'Crippled' means (Dated) Unable to use one's arms or legs normally; disabled. Considere — 'incapacitated' captures the same idea."},
+{"type": "synonym", "word": "contemptuously", "q": "Which word is a synonym for CONTEMPTUOUSLY?", "a": "disdainfully", "ch": ["disdainfully", "originate", "sudden", "able-bodied"], "hint": "'Contemptuously' means In a way that shows scorn or disgust for someone or something consider — 'disdainfully' captures the same idea."},
+{"type": "synonym", "word": "towheaded", "q": "Which word is a synonym for TOWHEADED?", "a": "flaxen-haired", "ch": ["flaxen-haired", "dark-haired", "admiringly", "indifferently"], "hint": "'Towheaded' means Having very light blond or yellowish-white hair — 'flaxen-haired' captures the same idea."},
+{"type": "synonym", "word": "conviction", "q": "CONVICTION is closest in meaning to:", "a": "confidence", "ch": ["confidence", "be himself", "laugh", "end for good"], "hint": "'Conviction' means A firmly held belief or opinion — 'confidence' captures the same idea."}
+];
+
+var quiz={questions:[],index:0,score:0,streak:0,answers:[],answered:false};
+var fcIndex=0,fcFlipped=false;
+
+function shuffle(arr){var a=arr.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+
+function showStart(){show('screen-start');hide('screen-quiz');hide('screen-results');hide('screen-flash');}
+function showQuiz(){hide('screen-start');show('screen-quiz');hide('screen-results');hide('screen-flash');}
+function showResults(){hide('screen-start');hide('screen-quiz');show('screen-results');hide('screen-flash');}
+function showFlashcards(){hide('screen-start');hide('screen-quiz');hide('screen-results');show('screen-flash');fcIndex=0;fcFlipped=false;renderFlashcard();}
+
+function startQuiz(){
+  var pool=shuffle(QUESTIONS).slice(0,20);
+  quiz.questions=pool;quiz.index=0;quiz.score=0;quiz.streak=0;quiz.answers=[];quiz.answered=false;
+  showQuiz();renderQuestion();
+}
+
+function renderQuestion(){
+  var q=quiz.questions[quiz.index];
+  var pct=Math.round((quiz.index/20)*100);
+  $('prog-bar').style.width=pct+'%';
+  $('q-counter').textContent='Question '+(quiz.index+1)+' of 20';
+  var sb=$('streak-badge');
+  if(quiz.streak>=3){sb.classList.remove('hidden');sb.textContent='🔥 '+quiz.streak+' streak';}else{sb.classList.add('hidden');}
+  var ts=TYPE_STYLES[q.type];
+  var badge=$('type-badge');
+  badge.textContent=ts.label;badge.style.color=ts.color;badge.style.background=ts.bg;badge.style.border='1px solid '+ts.color;
+  $('q-text').textContent=q.q;
+  var choiceBox=$('choices');clearEl(choiceBox);
+  var shuffled=shuffle(q.ch);
+  shuffled.forEach(function(c){
+    var btn=document.createElement('button');
+    btn.className='choice-btn';btn.textContent=c;
+    btn.addEventListener('click',function(){selectAnswer(c,btn,q);});
+    choiceBox.appendChild(btn);
+  });
+  $('hint-text').textContent='';
+  quiz.answered=false;
+}
+
+function selectAnswer(choice,btn,q){
+  if(quiz.answered)return;
+  quiz.answered=true;
+  var correct=choice===q.a;
+  var allBtns=$('choices').querySelectorAll('.choice-btn');
+  allBtns.forEach(function(b){
+    b.disabled=true;
+    if(b.textContent===q.a)b.classList.add('correct');
+    else if(b===btn&&!correct)b.classList.add('wrong');
+  });
+  if(correct){
+    quiz.score++;quiz.streak++;
+    burst(btn.getBoundingClientRect().left+btn.offsetWidth/2,btn.getBoundingClientRect().top,'#34d399',22);
+    if(quiz.streak>0&&quiz.streak%3===0)confettiBurst();
+  }else{
+    quiz.streak=0;
+    $('hint-text').textContent='💡 '+q.hint;
+    burst(btn.getBoundingClientRect().left+btn.offsetWidth/2,btn.getBoundingClientRect().top,'#ef4444',14);
+  }
+  quiz.answers.push({q:q,chosen:choice,correct:correct});
+  setTimeout(function(){
+    quiz.index++;
+    if(quiz.index<quiz.questions.length){renderQuestion();}
+    else{buildResults();}
+  },1100);
+}
+
+function buildResults(){
+  showResults();
+  var pct=Math.round((quiz.score/20)*100);
+  var ring=$('score-ring');clearEl(ring);
+  var span=mk('span','',quiz.score+'/20');ring.appendChild(span);
+  ring.style.borderColor=pct>=80?'#34d399':pct>=60?'#fbbf24':'#ef4444';
+  var title=$('results-title');
+  if(pct===100)title.textContent='Perfect Score! 🏆';
+  else if(pct>=80)title.textContent='Excellent Work! ⭐';
+  else if(pct>=60)title.textContent='Good Effort! Keep Studying! 📚';
+  else title.textContent="Keep Practicing — You'll Get There! 💪";
+  $('results-msg').textContent='You scored '+quiz.score+' out of 20 ('+pct+'%)';
+  var bd=$('breakdown');clearEl(bd);
+  var counts={synonym:0,antonym:0,analogy:0,simile:0,metaphor:0};
+  var totals={synonym:0,antonym:0,analogy:0,simile:0,metaphor:0};
+  quiz.answers.forEach(function(a){totals[a.q.type]++;if(a.correct)counts[a.q.type]++;});
+  Object.keys(counts).forEach(function(t){
+    if(totals[t]===0)return;
+    var ts=TYPE_STYLES[t];var chip=mk('span','bd-chip',ts.label+': '+counts[t]+'/'+totals[t]);
+    chip.style.color=ts.color;chip.style.background=ts.bg;chip.style.border='1px solid '+ts.color;
+    bd.appendChild(chip);
+  });
+  var rl=$('review-list');clearEl(rl);
+  var wrong=quiz.answers.filter(function(a){return!a.correct;});
+  if(wrong.length===0){var p=mk('p','','✨ Perfect score — no missed questions!');p.style.color='#34d399';p.style.textAlign='center';rl.appendChild(p);}
+  else{
+    wrong.forEach(function(a){
+      var div=mk('div','review-item');
+      div.appendChild(mk('div','ri-q',a.q.q));
+      div.appendChild(mk('div','ri-a','✓ Correct: '+a.q.a));
+      div.appendChild(mk('div','ri-yours','✗ Your answer: '+a.chosen));
+      rl.appendChild(div);
+    });
+  }
+}
+
+function renderFlashcard(){
+  var w=WORDS[fcIndex];fcFlipped=false;
+  $('fc-card').classList.remove('flipped');
+  $('fc-word').textContent=w.word;
+  $('fc-pos').textContent=w.pos;
+  $('fc-def').textContent=w.def;
+  $('fc-example').textContent=w.ex;
+  $('fc-count').textContent='Card '+(fcIndex+1)+' of '+WORDS.length;
+  $('fc-nav-label').textContent=(fcIndex+1)+' / '+WORDS.length;
+  $('fc-prog').style.width=(((fcIndex+1)/WORDS.length)*100)+'%';
+}
+
+function flipCard(){
+  fcFlipped=!fcFlipped;
+  if(fcFlipped)$('fc-card').classList.add('flipped');
+  else $('fc-card').classList.remove('flipped');
+}
+
+function fcNav(dir){
+  fcIndex=(fcIndex+dir+WORDS.length)%WORDS.length;
+  renderFlashcard();
+}
+
+$('btn-start').addEventListener('click',startQuiz);
+$('btn-flash-start').addEventListener('click',showFlashcards);
+$('btn-retry').addEventListener('click',startQuiz);
+$('btn-flash-results').addEventListener('click',showFlashcards);
+$('btn-fc-back').addEventListener('click',showStart);
+$('fc-scene').addEventListener('click',flipCard);
+$('fc-prev').addEventListener('click',function(){fcNav(-1);});
+$('fc-next').addEventListener('click',function(){fcNav(1);});
+
+var PRACTICE_PROMPTS={"hitchhike": "Describe a time you had to rely on someone else to get you somewhere, the way the boys planned to say they hitchhiked.", "bawl": "Describe a moment you felt like you could have bawled — cried loudly — even if you held it in.", "conviction": "Describe something you believe with real conviction — so strongly that nothing could talk you out of it.", "towheaded": "Describe someone you know by one standout physical feature, the way the towheaded kid is remembered by his hair.", "mimic": "Describe a time you or someone you know mimicked another person's voice or mannerisms to get a laugh.", "crippled": "This word is outdated today. What more respectful term would you use instead, and why does the word we choose matter?", "bleak": "Describe a bleak moment — a time something felt cold, empty, or hopeless, even for just a second.", "delinquent": "Describe a time someone judged you — or someone else — unfairly with a label, the way the paper calls the boys delinquents.", "contemptuously": "Describe a time you or someone else reacted contemptuously — with real scorn — to something unfair.", "recur": "Describe something that recurs in your life — a thought, dream, or situation that keeps coming back.", "aimlessly": "Describe a time you wandered aimlessly — without any real plan or direction. Where did you end up?", "divert": "Describe a time someone (or something) diverted your attention away from what was really going on.", "doggedly": "Describe a time you doggedly stuck to something — refused to give up — even when it would've been easier to stop."};
+var smState={clues:[],selClue:null,matched:0,total:0};
+var fibState={items:[],index:0,score:0};
+var aqIndex=0;
+
+function showPracticeMenu(){hide('screen-start');hide('screen-quiz');hide('screen-results');hide('screen-flash');show('screen-practice-menu');hide('screen-synmatch');hide('screen-fib');hide('screen-aq');}
+
+function buildSynMatchRound(){
+  var pool=shuffle(WORDS).slice(0,5);
+  var clues=pool.map(function(w){return {word:w.word,clue:w.def.split('.')[0]};});
+  var wordsCol=shuffle(pool.map(function(w){return w.word;}));
+  smState={clues:clues,selClue:null,matched:0,total:clues.length};
+  $('sm-score').textContent='Matched 0 of '+smState.total;
+  var clueBox=$('sm-clues');clearEl(clueBox);
+  clues.forEach(function(c,i){
+    var div=mk('div','match-item',(i+1)+'. '+c.clue);
+    div.dataset.word=c.word;
+    div.addEventListener('click',function(){selectClue(div,c.word);});
+    clueBox.appendChild(div);
+  });
+  var wordBox=$('sm-words');clearEl(wordBox);
+  var letters='ABCDE';
+  wordsCol.forEach(function(w,i){
+    var div=mk('div','match-item',letters[i]+') '+w);
+    div.dataset.word=w;
+    div.addEventListener('click',function(){selectWord(div,w);});
+    wordBox.appendChild(div);
+  });
+}
+
+function selectClue(el,word){
+  if(el.classList.contains('matched'))return;
+  document.querySelectorAll('#sm-clues .match-item').forEach(function(d){d.classList.remove('selected');});
+  el.classList.add('selected');
+  smState.selClue={el:el,word:word};
+}
+
+function selectWord(el,word){
+  if(el.classList.contains('matched')||!smState.selClue)return;
+  var clue=smState.selClue;
+  if(clue.word===word){
+    clue.el.classList.remove('selected');clue.el.classList.add('matched');
+    el.classList.add('matched');
+    smState.matched++;
+    smState.selClue=null;
+    $('sm-score').textContent='Matched '+smState.matched+' of '+smState.total;
+    if(smState.matched===smState.total)confettiBurst();
+  }else{
+    el.classList.add('wrong-flash');
+    setTimeout(function(){el.classList.remove('wrong-flash');},450);
+  }
+}
+
+function buildFibRound(){
+  var pool=shuffle(WORDS).slice(0,Math.min(8,WORDS.length));
+  fibState={items:pool,index:0,score:0};
+  renderFib();
+}
+
+function renderFib(){
+  var w=fibState.items[fibState.index];
+  $('fib-score').textContent='Question '+(fibState.index+1)+' of '+fibState.items.length;
+  var sentence=w.ex.replace(new RegExp(w.word+'[a-z]*','gi'),'<span class="blank">_____</span>');
+  $('fib-sentence').innerHTML=sentence;
+  var others=shuffle(WORDS.filter(function(x){return x.word!==w.word;})).slice(0,3).map(function(x){return x.word;});
+  var choices=shuffle([w.word].concat(others));
+  var box=$('fib-choices');clearEl(box);
+  choices.forEach(function(c){
+    var btn=document.createElement('button');
+    btn.className='choice-btn';btn.textContent=c;
+    btn.addEventListener('click',function(){fibAnswer(c,btn,w);});
+    box.appendChild(btn);
+  });
+  $('fib-hint').textContent='';
+}
+
+function fibAnswer(choice,btn,w){
+  var allBtns=$('fib-choices').querySelectorAll('.choice-btn');
+  var correct=choice===w.word;
+  allBtns.forEach(function(b){
+    b.disabled=true;
+    if(b.textContent===w.word)b.classList.add('correct');
+    else if(b===btn&&!correct)b.classList.add('wrong');
+  });
+  if(correct){fibState.score++;burst(btn.getBoundingClientRect().left+btn.offsetWidth/2,btn.getBoundingClientRect().top,'#34d399',18);}
+  else{$('fib-hint').textContent='\ud83d\udca1 The word was "'+w.word+'" \u2014 '+w.def.split('.')[0]+'.';}
+  setTimeout(function(){
+    fibState.index++;
+    if(fibState.index<fibState.items.length)renderFib();
+    else{
+      $('fib-sentence').textContent='Round complete! You scored '+fibState.score+' of '+fibState.items.length+'.';
+      clearEl($('fib-choices'));
+      $('fib-hint').textContent='';
+      if(fibState.score===fibState.items.length)confettiBurst();
+    }
+  },1300);
+}
+
+function renderAq(){
+  var w=WORDS[aqIndex];
+  $('aq-count').textContent='Word '+(aqIndex+1)+' of '+WORDS.length;
+  $('aq-word').textContent=w.word;
+  $('aq-pos').textContent=w.pos;
+  $('aq-prompt').textContent=PRACTICE_PROMPTS[w.word]||('Use "'+w.word+'" correctly in a few complete sentences.');
+  $('aq-textarea').value='';
+  $('aq-checklist').classList.remove('shown');
+  $('aq-def').textContent=w.word+': '+w.def;
+  $('aq-ex').textContent=w.ex;
+}
+
+$('btn-practice-start').addEventListener('click',showPracticeMenu);
+$('btn-practice-back').addEventListener('click',showStart);
+$('btn-open-synmatch').addEventListener('click',function(){hide('screen-practice-menu');show('screen-synmatch');buildSynMatchRound();});
+$('btn-open-fib').addEventListener('click',function(){hide('screen-practice-menu');show('screen-fib');buildFibRound();});
+$('btn-open-aq').addEventListener('click',function(){hide('screen-practice-menu');show('screen-aq');aqIndex=0;renderAq();});
+$('btn-sm-back').addEventListener('click',function(){hide('screen-synmatch');show('screen-practice-menu');});
+$('btn-fib-back').addEventListener('click',function(){hide('screen-fib');show('screen-practice-menu');});
+$('btn-aq-back').addEventListener('click',function(){hide('screen-aq');show('screen-practice-menu');});
+$('btn-sm-next').addEventListener('click',buildSynMatchRound);
+$('btn-aq-check').addEventListener('click',function(){$('aq-checklist').classList.add('shown');});
+$('btn-aq-next').addEventListener('click',function(){aqIndex=(aqIndex+1)%WORDS.length;renderAq();});
+
+})();
+</script>
+</body>
+</html>

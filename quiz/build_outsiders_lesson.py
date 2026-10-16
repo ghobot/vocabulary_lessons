@@ -23,7 +23,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import generate_lesson as gl  # noqa: E402  (pure-python helpers only; avoid nltk-dependent calls)
-from outsiders_lesson_data import LESSON_17, LESSON_18  # noqa: E402
+from outsiders_lesson_data import LESSON_17, LESSON_18, LESSON_19  # noqa: E402
 from outsiders_practice_block import build_practice_block  # noqa: E402
 
 random.seed(1717)
@@ -223,3 +223,4 @@ def build_lesson(lesson_num, story, color, words, out_dir='/Users/dorsag01/Docum
 if __name__ == '__main__':
     build_lesson(17, 'The Outsiders: Ch. 1–2', '#0ea5e9', LESSON_17)
     build_lesson(18, 'The Outsiders: Ch. 3–5', '#f97316', LESSON_18)
+    build_lesson(19, 'The Outsiders: Ch. 6–9', '#dc2626', LESSON_19)
